@@ -36,6 +36,55 @@ Written 14 November 2026 against `cultural explorer.html`. Every number marked *
 
 Limits of the quiz: questions test facts about the books (who, when, what kind), not understanding of the texts, because the app holds no book content yet. Scores are not saved.
 
+### Third round: 3D scene quality
+
+The version before this round is kept as the git tag `backup-before-3d-upgrade` (commit `320801b`).
+
+Evaluation of the old scene: flat untextured planes for floor, walls and ceiling; books were flat pictures in frames; no reflections, no tone mapping, no depth cues; the entrance was plain boxes against a black background.
+
+| Area | Change |
+|---|---|
+| Rendering | Colour-managed output with filmic tone mapping, and a reflection environment so brass, lacquer, porcelain and the polished floor reflect light |
+| Corridor | Timber plank floor, red carpet runner with gold border, plaster walls shaded toward the ceiling, timber wainscot, dado rail, skirting, pilasters with brass bands, ceiling beams |
+| Light | Hanging lanterns that sway, glow halos, drifting dust, darker floor edges in place of real-time shadows |
+| Exhibits | Each book is a 3D book (cover, spine, page edges) leaning on a shelf, on a timber display board with cloth in the series colour, a brass frame, a caption plate and a picture light |
+| End wall | Signboard, ink-wash mountain painting, couplet banners (薪火相传 / 文脉长流), console table and two porcelain vases |
+| Entrance | Dusk sky with stars and moon, tree line, stone plaza with lamp posts, curved canopy roof on red pillars, lattice windows, red lanterns, studded door |
+| Safety net | A clear message appears if the 3D engine cannot be loaded (no internet) |
+
+Everything is still drawn by code in the one HTML file: no image or model files and no new libraries.
+
+Checked in the browser: 120 frames per second at about 655 draw calls on an AMD Radeon 780M laptop graphics chip; travel, clicking a 3D book, the flip-book cover, catalogue and quiz all still work; no console errors. Not checked: phones, tablets, older classroom PCs.
+
+### Fourth round: interface (UI) quality
+
+Evaluation of the old interface, and why it read as cheap:
+
+| Problem | Example |
+|---|---|
+| No system | Nine different corner sizes, four font stacks, the same thin gold outline on every button |
+| Scattered layout | Tool buttons floated above the walk buttons; the title was bare text over the scene |
+| Stock symbols | Unicode triangles for arrows, emoji in labels |
+| No feedback | No hover, press or keyboard-focus states; pop-ups appeared with no transition |
+| Weak hierarchy | The main action ("view this book") looked the same as every other button |
+| Hard to read | Bare text over a bright 3D wall; bullet lists for label and value pairs |
+
+What changed:
+
+| Area | Change |
+|---|---|
+| System | One set of tokens: one accent (brass gold, matching the scene), two fonts (a brush-style display face for titles, a clean sans for text), one corner rule (controls are pills or circles, panels are 16 to 20px) |
+| Layout | Brand lockup with a red seal mark at top left, search in the middle, one grouped tool bar at top right, minimap at bottom left, walk buttons at bottom right |
+| Hierarchy | "View this book" and "Class quiz" are solid gold; everything else is quiet glass |
+| Controls | Drawn chevrons in place of triangle characters, a `/` hint in the search bar, an `Enter` hint on the view button |
+| Panels | Frosted glass with soft shadows; book details as a label and value grid; pop-ups ease in; page controls under the book are one grouped bar |
+| Feedback | Hover, press and keyboard-focus states on every control |
+| Access | Pinch-zoom is no longer blocked; motion is reduced for people who ask their device for that |
+| Phones | Tool bar and search stack under the brand; the view button sits above the walk buttons |
+| Text | Emoji and decorative dashes removed |
+
+Checked in the browser at 1366×768 and at phone size (375×812): layout, search results, book with details panel, catalogue, quiz, no console errors. Frame rate is 103 per second on this laptop (120 before; the frosted glass costs a little). Not checked: a real phone, and keyboard-only use from start to finish.
+
 Not done on purpose: English summaries, English text for the Centre's history, and author biographies are placeholders (lorem), as agreed for the hackathon.
 
 ## 3. Evaluation

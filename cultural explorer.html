@@ -2,80 +2,130 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cultural Explorer</title>
 <style>
+  /* ---------- Design tokens ----------
+     One theme (dark, to sit on the 3D scene), one accent (brass gold, taken from the scene's brass fittings).
+     Corner rule: controls are full pills or circles, panels and cards are 16-20px, small inner items are 10px.
+     Layers: scene 0, HUD 3, open book 4, details panel 5, pop-up boxes 6. */
   :root{
-    --gold:#d9b25f; --ink:#f4ecdc; --muted:#b9ad97; --panel:rgba(20,16,12,.94);
-    --chip-fig:#3b6ea5; --chip-book:#4c8b5a; --chip-leg:#a5583b;
+    --gold:#d8b36a; --gold-strong:#e9c987; --ink:#f5eedf; --muted:#b9ac92; --on-gold:#1c140c;
+    --glass:rgba(20,15,10,.62); --glass-strong:rgba(17,12,8,.9); --panel:rgba(17,12,8,.9);
+    --line:rgba(232,205,140,.22); --line-strong:rgba(232,205,140,.5); --hover:rgba(216,179,106,.16);
+    --shadow:0 12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    --ui:"PingFang SC","Microsoft YaHei UI","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    --display:"Palatino Linotype","Book Antiqua",Palatino,"KaiTi","STKaiti","Kaiti SC",Georgia,serif;   /* heritage serif + brush-style Chinese */
+    --ease:cubic-bezier(.16,1,.3,1);
+    --chip-leg:#a5583b;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#0d0b09;color:var(--ink);
-    font-family:Georgia,"Times New Roman",serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+  html,body{margin:0;height:100%;background:#0d0b09;color:var(--ink);font-family:var(--ui);
+    overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;color:inherit}
+  button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-strong);outline-offset:2px}
+  ::-webkit-scrollbar{width:10px} ::-webkit-scrollbar-thumb{background:rgba(232,205,140,.25);border-radius:999px;border:3px solid transparent;background-clip:padding-box}
+  kbd{font:600 11px/1 var(--ui);color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:rgba(255,255,255,.04)}
   #scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}   /* fill the window on high-DPI screens too */
-  .hud-title{position:fixed;top:14px;left:16px;font-size:20px;letter-spacing:.08em;color:var(--gold);
-    text-shadow:0 2px 8px #000;pointer-events:none}
-  .hud-title small{display:block;font-size:12px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
-  #map{--mh:170px;position:fixed;left:16px;bottom:16px;height:var(--mh);width:calc(var(--mh) * 96 / 170);
-    border:1px solid rgba(217,178,95,.5);background:rgba(0,0,0,.45);border-radius:6px;cursor:pointer;z-index:3;
-    touch-action:none;transition:height .25s ease,width .25s ease,background .25s}
-  #map.big{--mh:min(440px, calc(100vh - 110px));background:rgba(0,0,0,.72)}   /* expands under the cursor */
-  #mapTip{position:fixed;z-index:3;pointer-events:none;background:rgba(20,16,12,.9);border:1px solid rgba(217,178,95,.6);
-    border-radius:6px;padding:6px 10px;font-size:14px;color:var(--ink);white-space:nowrap;opacity:0;transition:opacity .12s;
-    font-family:"Microsoft YaHei","PingFang SC",sans-serif}
-  #mapTip.show{opacity:1}
-  #mapTip small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
-  /* search bar: top middle, half transparent */
-  #search{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(340px, calc(100vw - 32px));z-index:3;
-    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
-  #q{width:100%;height:38px;padding:0 14px 0 38px;border-radius:19px;border:1px solid rgba(217,178,95,.45);
-    background:rgba(20,16,12,.42) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d9b25f' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.5 16.5L21 21'/%3E%3C/svg%3E") 13px 50%/16px no-repeat;
-    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:var(--ink);font:inherit;font-size:14px;outline:none;
-    -webkit-user-select:text;user-select:text;transition:background-color .2s,border-color .2s}
-  #q::placeholder{color:rgba(244,236,220,.6)}
-  #q:focus{background-color:rgba(20,16,12,.6);border-color:var(--gold)}
-  #results{list-style:none;margin:6px 0 0;padding:4px;border-radius:12px;border:1px solid rgba(217,178,95,.35);
-    background:rgba(20,16,12,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-    max-height:min(52vh,360px);overflow-y:auto;display:none}
+
+  /* ---------- Brand, top left ---------- */
+  .hud-title{position:fixed;top:16px;left:18px;height:46px;display:flex;align-items:center;gap:11px;pointer-events:none;
+    padding:0 18px 0 4px;border-radius:14px;border:1px solid var(--line);background:var(--glass);box-shadow:var(--shadow);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+  .seal-mark{flex:none;width:36px;height:36px;border-radius:10px;background:#a3271c;color:#fbe9c8;display:grid;place-items:center;
+    font:24px/1 "KaiTi","STKaiti","Kaiti SC",serif;box-shadow:inset 0 0 0 2px rgba(251,233,200,.35)}
+  .hud-title b{display:block;font:600 16px/1.15 var(--display);letter-spacing:.03em;color:var(--ink)}
+  .hud-title small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+
+  /* ---------- Search, top middle ---------- */
+  #search{position:fixed;top:16px;left:50%;transform:translateX(-50%);width:min(380px, calc(100vw - 32px));z-index:3}
+  #q{width:100%;height:44px;padding:0 48px 0 20px;border-radius:999px;border:1px solid var(--line);background:var(--glass);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);color:var(--ink);font:15px var(--ui);
+    outline:none;box-shadow:var(--shadow);-webkit-user-select:text;user-select:text;transition:border-color .2s,background-color .2s}
+  #q::placeholder{color:rgba(245,238,223,.62)}
+  #q:focus{border-color:var(--gold);background:rgba(20,15,10,.8)}
+  #search kbd{position:absolute;right:14px;top:11px;pointer-events:none}
+  #q:focus + kbd{opacity:0}
+  #results{list-style:none;margin:8px 0 0;padding:6px;border-radius:16px;border:1px solid var(--line);background:var(--glass-strong);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:var(--shadow);max-height:min(52vh,360px);overflow-y:auto;display:none}
   #results.show{display:block}
-  #results li{display:flex;gap:9px;align-items:baseline;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1.35}
-  #results li.on,#results li:hover{background:rgba(217,178,95,.22)}
+  #results li{display:flex;gap:10px;align-items:baseline;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14.5px;line-height:1.35}
+  #results li.on,#results li:hover{background:var(--hover)}
   #results li i{flex:none;width:8px;height:8px;border-radius:50%;transform:translateY(-1px)}
-  #results li small{display:block;font-size:11.5px;color:var(--muted)}
+  #results li small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
   #results li.none{cursor:default;color:var(--muted);background:none}
-  .controls{position:fixed;right:20px;bottom:20px;display:grid;grid-template-columns:repeat(3,auto);gap:8px}
+
+  /* ---------- Tools, top right ---------- */
+  #tools{position:fixed;top:16px;right:18px;z-index:3;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;
+    border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);
+    box-shadow:var(--shadow)}
+  .tool{height:36px;padding:0 15px;border-radius:999px;border:0;background:none;font-size:14px;cursor:pointer;white-space:nowrap;
+    transition:background-color .16s,transform .16s var(--ease)}
+  .tool:hover{background:var(--hover)} .tool:active{transform:scale(.96)}
+  .tool.primary{background:var(--gold);color:var(--on-gold);font-weight:600} .tool.primary:hover{background:var(--gold-strong)}
+  #helpBtn{width:36px;padding:0;font-weight:600;color:var(--muted)}
+
+  /* ---------- Minimap, bottom left ---------- */
+  #map{--mh:170px;position:fixed;left:18px;bottom:18px;height:var(--mh);width:calc(var(--mh) * 96 / 170);
+    border:1px solid var(--line);background:rgba(14,10,7,.6);border-radius:16px;cursor:pointer;z-index:3;box-shadow:var(--shadow);
+    touch-action:none;transition:height .25s var(--ease),width .25s var(--ease),background .25s}
+  #map.big{--mh:min(440px, calc(100vh - 110px));background:rgba(14,10,7,.85)}   /* expands under the cursor */
+  #mapTip{position:fixed;z-index:3;pointer-events:none;background:var(--glass-strong);border:1px solid var(--line);
+    border-radius:10px;padding:8px 12px;font-size:14px;color:var(--ink);white-space:nowrap;opacity:0;transition:opacity .12s;box-shadow:var(--shadow)}
+  #mapTip.show{opacity:1}
+  #mapTip small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* ---------- Walk buttons, bottom right ---------- */
+  .controls{position:fixed;right:18px;bottom:18px;display:grid;grid-template-columns:repeat(3,auto);gap:8px}
   .controls #fwd{grid-column:2;grid-row:1} .controls #left{grid-column:1;grid-row:2}
   .controls #back{grid-column:2;grid-row:2} .controls #right{grid-column:3;grid-row:2}
-  .arrow{width:64px;height:64px;border-radius:50%;border:2px solid var(--gold);background:rgba(20,16,12,.75);
-    color:var(--gold);font-size:28px;cursor:pointer;display:grid;place-items:center;touch-action:none}
-  .arrow:active,.arrow.held{background:var(--gold);color:#1a140d}
-  #viewBtn{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:12px 20px;border-radius:24px;
-    border:1px solid var(--gold);background:rgba(20,16,12,.85);color:var(--ink);font:inherit;font-size:15px;
-    cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100vw - 230px);
+  .arrow{width:58px;height:58px;border-radius:50%;border:1px solid var(--line-strong);background:rgba(17,12,8,.72);color:var(--gold);
+    cursor:pointer;display:grid;place-items:center;touch-action:none;box-shadow:var(--shadow);transition:background-color .12s,transform .12s var(--ease)}
+  .arrow:active,.arrow.held{background:var(--gold);color:var(--on-gold);transform:scale(.95)}
+  /* chevrons drawn with borders */
+  .chev{display:block;width:11px;height:11px;border:solid currentColor;border-width:2.5px 2.5px 0 0;pointer-events:none}
+  .chev.up{transform:translateY(3px) rotate(-45deg)} .chev.down{transform:translateY(-3px) rotate(135deg)}
+  .chev.left{transform:translateX(3px) rotate(-135deg)} .chev.right{transform:translateX(-3px) rotate(45deg)}
+
+  /* ---------- "View this book" button and messages ---------- */
+  #viewBtn{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);height:48px;padding:0 22px;border-radius:999px;border:0;
+    background:var(--gold);color:var(--on-gold);font:600 15px var(--ui);cursor:pointer;opacity:0;pointer-events:none;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);transition:opacity .2s,background-color .16s;max-width:calc(100vw - 420px);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #viewBtn.show{opacity:1;pointer-events:auto}
-  #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:8px 14px;
-    border-radius:6px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+  #viewBtn.show{opacity:1;pointer-events:auto} #viewBtn:hover{background:var(--gold-strong)}
+  #viewBtn::after{content:"Enter";margin-left:12px;font:600 11px/1 var(--ui);padding:4px 7px;border-radius:6px;
+    border:1px solid rgba(28,20,12,.35);vertical-align:1px}
+  #toast{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:var(--glass-strong);border:1px solid var(--line);
+    padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;
+    box-shadow:var(--shadow);max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
   #toast.show{opacity:1}
-  /* detail panel */
-  #panel{position:fixed;top:0;right:0;height:100%;width:min(420px,100vw);background:var(--panel);
-    border-left:1px solid rgba(217,178,95,.4);transform:translateX(100%);transition:transform .3s ease;
-    overflow-y:auto;padding:28px 24px 40px;z-index:5}
+
+  /* ---------- Details panel ---------- */
+  #panel{position:fixed;top:0;right:0;height:100%;width:min(440px,100vw);background:var(--panel);
+    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-left:1px solid var(--line);transform:translateX(100%);
+    transition:transform .35s var(--ease);overflow-y:auto;padding:34px 28px 40px;z-index:5;box-shadow:-20px 0 60px rgba(0,0,0,.4)}
   #panel.open{transform:none}
-  #closeBtn{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
-  .chip{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;
-    border-radius:10px;color:#fff;font-family:system-ui,sans-serif}
-  #panel h2{margin:12px 0 2px;font-size:26px;color:var(--gold)}
-  #panel .era{color:var(--muted);font-style:italic;margin-bottom:16px}
-  #panel p{line-height:1.6;font-size:15px}
-  #panel h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:22px 0 8px;
-    font-family:system-ui,sans-serif}
+  #closeBtn,.x,#authorClose{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:none;
+    color:var(--muted);font-size:24px;line-height:1;cursor:pointer;transition:background-color .16s}
+  #closeBtn:hover,.x:hover,#authorClose:hover{background:var(--hover);color:var(--ink)}
+  .chip{display:inline-block;font-size:12px;letter-spacing:.04em;padding:5px 11px;border-radius:999px;color:#fff}
+  #panel h2{margin:14px 0 6px;font:600 30px/1.25 var(--display);color:var(--ink)}
+  #panel .era{color:var(--muted);margin-bottom:18px;font-size:15px}
+  #panel p{line-height:1.7;font-size:15.5px;margin:0 0 12px}
+  #panel h3{font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--gold);margin:26px 0 10px}
   #panel ul{padding-left:18px;margin:0}
-  #panel li{margin-bottom:6px;line-height:1.5;font-size:14.5px}
+  #panel li{margin-bottom:7px;line-height:1.55;font-size:15px}
+  #panel a{color:var(--gold)}
+  .meta{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;margin:0;font-size:15px;line-height:1.5}
+  .meta{margin-bottom:20px} .meta dt{color:var(--muted)} .meta dd{margin:0}
   .note{border-left:3px solid var(--chip-leg);padding:8px 12px;background:rgba(165,88,59,.12);font-size:14px;margin-top:14px}
-  /* ---- Flip book in the middle of the screen ---- */
+  .ask{margin-top:24px;padding:14px 16px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:14px;line-height:1.5}
+  .ph{color:var(--muted);font-size:13px;font-style:italic}
+
+  /* ---------- Flip book in the middle of the screen ---------- */
   #stage{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:18px;background:rgba(8,6,4,.75);opacity:0;pointer-events:none;transition:opacity .3s,padding-right .35s ease}
+    gap:20px;background:rgba(8,6,4,.72);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);opacity:0;pointer-events:none;
+    transition:opacity .3s,padding-right .35s ease}
   #stage.show{opacity:1;pointer-events:auto}                 /* dark backdrop covers the whole screen; the details bar lies on top of it */
   .fbook{position:relative;width:calc(var(--pw) * 2);height:var(--ph);perspective:2000px;
     font-size:calc(var(--pw) / 15);transition:transform .9s cubic-bezier(.4,.1,.2,1)}
@@ -88,8 +138,7 @@
   .leaf.flipped{transform:rotateY(-180deg)}
   .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
   .face.back{transform:rotateY(180deg)}
-  .pg{background:#f7f0de;color:#2b2118;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
-    padding:1.6em 1.3em;text-align:center}
+  .pg{background:#f7f0de;color:#2b2118;font-family:var(--ui);padding:1.6em 1.3em;text-align:center}
   .pg.r{border-radius:0 6px 6px 0;box-shadow:inset 14px 0 18px -12px rgba(0,0,0,.45)}
   .pg.l{border-radius:6px 0 0 6px;box-shadow:inset -14px 0 18px -12px rgba(0,0,0,.45)}
   .base{background:#f7f0de;border-radius:0 6px 6px 0;
@@ -97,10 +146,10 @@
   .cover{background-size:100% 100%;border-radius:2px 6px 6px 2px;
     box-shadow:inset 6px 0 10px rgba(0,0,0,.45),inset -1px 0 0 rgba(255,255,255,.2)}
   .fbook.closed .leaf:first-child .cover{box-shadow:inset 6px 0 10px rgba(0,0,0,.45),10px 14px 30px rgba(0,0,0,.6)}
-  .seal{border:2px solid #b0362a;color:#b0362a;padding:.7em .5em;font-size:1.05em;line-height:1.3;display:inline-block;
+  .seal{border:2px solid #b0362a;color:#b0362a;padding:.7em .5em;font:1.05em/1.3 "KaiTi","STKaiti","Kaiti SC",serif;display:inline-block;
     writing-mode:vertical-rl;letter-spacing:.25em;transform:rotate(-4deg);margin-top:35%}
   .pg .pl{font-size:.7em;color:#8b7355;letter-spacing:.2em}
-  .pg .pt{font-size:1.35em;font-weight:bold;margin:1.6em 0 .8em;line-height:1.4;color:#5e1610}
+  .pg .pt{font:bold 1.5em/1.4 var(--display);margin:1.5em 0 .8em;color:#5e1610}
   .pg .pa{font-size:.95em;margin-bottom:.3em}
   .pg .py{font-size:.85em;color:#8b7355}
   .pg .pp{position:absolute;bottom:1.4em;left:0;right:0;font-size:.7em;color:#8b7355;padding:0 1em}
@@ -112,115 +161,118 @@
   .pg dl.hist{display:grid;grid-template-columns:auto 1fr;gap:.35em .7em;line-height:1.45}
   .pg dl.hist dt{margin:0;font-weight:bold;color:#8e2418;font-size:1em}
   .pg .num{position:absolute;bottom:.8em;left:0;right:0;font-size:.65em;color:#a8957a}
-  .bk-ctrl{display:flex;gap:10px;align-items:center;font-family:system-ui,sans-serif;font-size:13px;color:var(--muted)}
-  .bk-ctrl button{border:1px solid var(--gold);background:rgba(20,16,12,.85);color:var(--ink);border-radius:20px;
-    padding:8px 14px;font:inherit;cursor:pointer}
-  .bk-ctrl button:disabled{opacity:.35;cursor:default}
-  #pgInfo{min-width:84px;text-align:center}
-  .ask{margin-top:24px;padding:12px;border:1px dashed rgba(217,178,95,.5);border-radius:8px;color:var(--muted);font-size:14px}
-  /* tool buttons above the arrow buttons: guide, catalogue, class quiz, language */
-  #tools{position:fixed;right:20px;bottom:172px;z-index:3;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;
-    max-width:calc(100vw - 40px)}
-  .tool{padding:7px 14px;border-radius:18px;border:1px solid var(--gold);
-    background:rgba(20,16,12,.75);color:var(--ink);font:14px "Microsoft YaHei","PingFang SC",system-ui,sans-serif;cursor:pointer}
-  .tool:hover{background:rgba(217,178,95,.25)}
-  /* pop-up boxes: catalogue, welcome guide, class quiz */
-  .overlay{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(8,6,4,.7);
-    padding:16px;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
-  .overlay.show{display:flex}
-  .box{position:relative;width:min(720px,100%);max-height:88vh;overflow-y:auto;background:var(--panel);
-    border:1px solid rgba(217,178,95,.6);border-radius:12px;padding:26px 24px 22px}
-  .box h2{margin:0 0 6px;font-size:24px;color:var(--gold)}
-  .box .lead{color:var(--muted);font-size:14px;margin:0 0 16px;line-height:1.5}
-  .box .x{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
-  .btn{padding:10px 20px;border-radius:22px;border:1px solid var(--gold);background:var(--gold);color:#1a140d;
-    font:inherit;font-size:15px;font-weight:bold;cursor:pointer}
-  .btn.ghost{background:none;color:var(--ink);font-weight:normal}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .steps{list-style:none;margin:0 0 18px;padding:0;counter-reset:s}
-  .steps li{counter-increment:s;position:relative;padding:3px 0 12px 44px;font-size:15px;line-height:1.55}
-  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;
-    border:1px solid var(--gold);color:var(--gold);display:grid;place-items:center;font-weight:bold}
-  .steps b{color:var(--gold)}
-  /* catalogue */
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-  .chips button{padding:5px 12px;border-radius:14px;border:1px solid rgba(217,178,95,.5);background:none;color:var(--ink);
-    font:inherit;font-size:13px;cursor:pointer}
-  .chips button.on{background:var(--gold);color:#1a140d}
-  #catBody h3{font-size:13px;letter-spacing:.08em;color:var(--gold);margin:16px 0 6px}
-  #catBody ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 12px}
-  #catBody li{display:flex;gap:9px;align-items:baseline;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14.5px;line-height:1.35}
-  #catBody li:hover{background:rgba(217,178,95,.22)}
-  #catBody li i{flex:none;width:8px;height:8px;border-radius:50%}
-  #catBody li small{display:block;font-size:12px;color:var(--muted)}
-  /* class quiz: sized to be read from the back of a classroom */
-  .score{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 16px}
-  .team{border:2px solid transparent;border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.05);
-    display:flex;justify-content:space-between;align-items:center;font-size:17px}
-  .team b{font-size:30px} .team.red{color:#ff9d8f} .team.blue{color:#9cc4ff}
-  .team.turn{border-color:currentColor;background:rgba(255,255,255,.1)}
-  .qn{color:var(--muted);font-size:14px}
-  .qq{font-size:22px;line-height:1.45;margin:6px 0 16px}
-  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-  .opts button{text-align:left;padding:14px 16px;border-radius:10px;border:1px solid rgba(217,178,95,.5);
-    background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:18px;cursor:pointer}
-  .opts button:hover:not(:disabled){background:rgba(217,178,95,.22)}
-  .opts button.ok{background:#2f6b3f;border-color:#6fcf8a} .opts button.bad{background:#7a2a1f;border-color:#e0705e}
-  .opts button:disabled{cursor:default}
-  .fb{min-height:24px;font-size:15px;line-height:1.5;margin-bottom:12px}
-  /* clickable author name + author detail box */
-  .au{color:inherit;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+  .pg .ph{color:#8b7355}
+  /* page controls under the book: one grouped bar */
+  .bk-ctrl{display:flex;gap:4px;align-items:center;padding:5px;border-radius:999px;border:1px solid var(--line);background:var(--glass-strong);
+    box-shadow:var(--shadow);font-size:14px;color:var(--muted)}
+  .bk-ctrl button{height:40px;min-width:40px;border:0;background:none;color:var(--ink);border-radius:999px;padding:0 16px;font-size:14px;
+    cursor:pointer;display:grid;place-items:center;transition:background-color .16s}
+  .bk-ctrl button:hover:not(:disabled){background:var(--hover)}
+  .bk-ctrl button:disabled{opacity:.3;cursor:default}
+  #pgPrev,#pgNext,#bkClose{padding:0;color:var(--gold)} #bkClose{font-size:22px;color:var(--muted)}
+  #pgInfo{min-width:110px;text-align:center;font-size:13.5px}
+
+  /* ---------- Clickable author name ---------- */
+  .au{color:inherit;text-decoration:underline dotted;text-underline-offset:4px;cursor:pointer}
   .pg .au:hover{color:#b0362a} #panel .au:hover,#author .au:hover{color:var(--gold)}
-  #author{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;
-    background:rgba(8,6,4,.6);padding:16px}
-  #author.show{display:flex}
-  #authorBox{position:relative;width:min(440px,100%);max-height:80vh;overflow-y:auto;background:var(--panel);
-    border:1px solid rgba(217,178,95,.6);border-radius:10px;padding:24px 22px 20px;
-    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
-  #authorBox h2{margin:12px 0 10px;font-size:24px;color:var(--gold)}
-  #authorBox h3{font-size:13px;letter-spacing:.1em;color:var(--gold);margin:18px 0 8px}
-  #authorBox p{line-height:1.6;font-size:14.5px;margin:0 0 10px}
-  #authorBox ul{padding-left:18px;margin:0} #authorBox li{margin-bottom:6px;line-height:1.5;font-size:14px}
-  #authorClose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
-  .ph{color:var(--muted);font-size:12.5px;font-style:italic}
-  /* not enough room between the title and the help text: put the search bar on its own row */
-  @media (max-width:1100px){ #search{top:64px} #toast{top:114px} }
-  @media (max-width:600px){ .opts{grid-template-columns:1fr} .qq{font-size:19px} #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
-    .arrow{width:58px;height:58px} #toast{top:128px}
-    #search{top:78px;left:50%;transform:translateX(-50%);width:min(340px, calc(100vw - 32px))} }
+
+  /* ---------- Pop-up boxes: author, welcome guide, catalogue, class quiz ---------- */
+  #author,.overlay{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(8,6,4,.66);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:16px}
+  #author.show,.overlay.show{display:flex}
+  #authorBox,.box{position:relative;width:min(720px,100%);max-height:88vh;overflow-y:auto;background:var(--panel);
+    border:1px solid var(--line);border-radius:20px;padding:32px 30px 28px;box-shadow:0 30px 90px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06)}
+  #authorBox{width:min(460px,100%)}
+  #author.show #authorBox,.overlay.show .box{animation:boxIn .28s var(--ease)}
+  @keyframes boxIn{from{opacity:0;transform:translateY(10px) scale(.985)}}
+  #authorBox h2,.box h2{margin:0 0 8px;font:600 28px/1.25 var(--display);color:var(--ink)}
+  #authorBox h2{margin-top:14px}
+  #authorBox h3{font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--gold);margin:22px 0 10px}
+  #authorBox p{line-height:1.7;font-size:15px;margin:0 0 10px}
+  #authorBox ul{list-style:none;padding:0;margin:0} #authorBox li{margin-bottom:8px;line-height:1.5;font-size:14.5px}
+  .box .lead{color:var(--muted);font-size:15px;margin:0 0 20px;line-height:1.6;max-width:60ch}
+  .btn{height:46px;padding:0 24px;border-radius:999px;border:1px solid var(--gold);background:var(--gold);color:var(--on-gold);
+    font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background-color .16s,transform .16s var(--ease)}
+  .btn:hover{background:var(--gold-strong)} .btn:active{transform:scale(.97)}
+  .btn.ghost{background:none;color:var(--ink);font-weight:500;border-color:var(--line-strong)} .btn.ghost:hover{background:var(--hover)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .steps{list-style:none;margin:0 0 24px;padding:0;counter-reset:s;display:grid;gap:14px}
+  .steps li{counter-increment:s;position:relative;padding:4px 0 0 48px;font-size:15.5px;line-height:1.6;min-height:34px}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;
+    background:var(--hover);color:var(--gold-strong);display:grid;place-items:center;font:600 16px var(--display)}
+  .steps b{color:var(--gold-strong);font-weight:600}
+  /* catalogue */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .chips button{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:none;font-size:13.5px;cursor:pointer;
+    transition:background-color .16s,border-color .16s}
+  .chips button:hover{background:var(--hover)}
+  .chips button.on{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:600}
+  #catBody h3{font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--gold);margin:22px 0 8px}
+  #catBody ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 12px}
+  #catBody li{display:flex;gap:10px;align-items:baseline;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:15px;line-height:1.35;
+    transition:background-color .12s}
+  #catBody li:hover{background:var(--hover)}
+  #catBody li i{flex:none;width:8px;height:8px;border-radius:50%}
+  #catBody li small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  /* class quiz: sized to be read from the back of a classroom */
+  .score{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 22px}
+  .team{border:2px solid transparent;border-radius:16px;padding:12px 18px;background:rgba(255,255,255,.05);
+    display:flex;justify-content:space-between;align-items:center;font-size:17px;font-weight:600;transition:border-color .2s,background-color .2s}
+  .team b{font:600 36px/1 var(--display);font-variant-numeric:tabular-nums} .team.red{color:#ff9d8f} .team.blue{color:#9cc4ff}
+  .team.turn{border-color:currentColor;background:rgba(255,255,255,.09)}
+  .qn{color:var(--muted);font-size:14px}
+  .qq{font:600 26px/1.4 var(--display);margin:8px 0 20px}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .opts button{text-align:left;min-height:60px;padding:14px 18px;border-radius:16px;border:1px solid var(--line-strong);
+    background:rgba(255,255,255,.04);font-size:18px;line-height:1.35;cursor:pointer;transition:background-color .14s,transform .14s var(--ease)}
+  .opts button:hover:not(:disabled){background:var(--hover)} .opts button:active:not(:disabled){transform:scale(.985)}
+  .opts button.ok{background:#1f5f3a;border-color:#6fcf8a} .opts button.bad{background:#7a2a1f;border-color:#e0705e}
+  .opts button:disabled{cursor:default}
+  .fb{min-height:24px;font-size:15.5px;line-height:1.6;margin-bottom:16px}
+
+  /* ---------- Smaller screens ---------- */
+  @media (max-width:1180px){ #search{top:74px} #toast{top:130px} }          /* search gets its own row */
+  @media (max-width:760px){
+    .hud-title small{display:none} #search kbd,#viewBtn::after{display:none}
+    #tools{top:72px;left:16px;right:auto} .hud-title{left:16px} #search{top:126px} #toast{top:180px}
+    #viewBtn{bottom:158px;max-width:calc(100vw - 32px)}
+    #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
+    .arrow{width:54px;height:54px} .opts{grid-template-columns:1fr} .qq{font-size:21px}
+    #authorBox,.box{padding:26px 20px 22px} }
+  @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
 </style>
 </head>
 <body>
 <canvas id="scene"></canvas>
-<div class="hud-title">Cultural Explorer<small id="sub"></small></div>
+<div class="hud-title"><span class="seal-mark" aria-hidden="true">馆</span><div><b>Cultural Explorer</b><small id="sub"></small></div></div>
 <div id="tools">
-  <button class="tool" id="helpBtn">?</button>
   <button class="tool" id="catBtn"></button>
-  <button class="tool" id="quizBtn"></button>
+  <button class="tool primary" id="quizBtn"></button>
   <button class="tool" id="langBtn" aria-label="Switch language"></button>
+  <button class="tool" id="helpBtn">?</button>
 </div>
 <div id="search" role="search">
-  <input id="q" type="text" autocomplete="off" spellcheck="false" aria-label="Search books">
+  <input id="q" type="text" autocomplete="off" spellcheck="false" aria-label="Search books"><kbd>/</kbd>
   <ul id="results"></ul>
 </div>
 <canvas id="map" width="384" height="680"></canvas>
 <div id="mapTip"></div>
 <div class="controls">
-  <button class="arrow" id="fwd" aria-label="Walk forward">▲</button>
-  <button class="arrow" id="left" aria-label="Turn left">◀</button>
-  <button class="arrow" id="back" aria-label="Walk back">▼</button>
-  <button class="arrow" id="right" aria-label="Turn right">▶</button>
+  <button class="arrow" id="fwd" aria-label="Walk forward"><i class="chev up"></i></button>
+  <button class="arrow" id="left" aria-label="Turn left"><i class="chev left"></i></button>
+  <button class="arrow" id="back" aria-label="Walk back"><i class="chev down"></i></button>
+  <button class="arrow" id="right" aria-label="Turn right"><i class="chev right"></i></button>
 </div>
 <button id="viewBtn"></button>
 <div id="toast"></div>
 <div id="stage" aria-hidden="true">
   <div class="fbook closed" id="fbook"></div>
   <div class="bk-ctrl">
-    <button id="pgPrev" aria-label="Previous page">◀</button>
+    <button id="pgPrev" aria-label="Previous page"><i class="chev left"></i></button>
     <span id="pgInfo"></span>
-    <button id="pgNext" aria-label="Next page">▶</button>
+    <button id="pgNext" aria-label="Next page"><i class="chev right"></i></button>
     <button id="bkDetails">书籍资料</button>
-    <button id="bkClose" aria-label="Close book">✕</button>
+    <button id="bkClose" aria-label="Close book">×</button>
   </div>
 </div>
 <aside id="panel" aria-hidden="true">
@@ -339,13 +391,13 @@ const TEXT = {
     qText:{author:t => `《${t}》的作者是谁？`, year:t => `《${t}》是哪一年出版的？`, genre:t => `《${t}》属于哪一类作品？`,
       book:a => `以下哪一本书是${a}的作品？`},
     qRight:t => `✓ 答对了！${t}得 1 分。`, qWrong:'✗ 答错了，正确答案已标出。', qNext:'下一题', qFinish:'看结果',
-    qWin:t => `🏆 ${t}获胜！`, qTie:'平手！两队一样棒。', qAgain:'再玩一次', qClose:'回到文学馆',
-    welcome:'按 ▲ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学馆简介…', view:'查看：',
+    qWin:t => `${t}获胜！`, qTie:'平手！两队一样棒。', qAgain:'再玩一次', qClose:'回到文学馆',
+    welcome:'按 ↑ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学馆简介…', view:'查看：',
     centreName:'马华文学馆简介与历史', centreWhere:'走廊尽头',
     details:'书籍资料', summary:'内容简介', author:'作者', genre:'类别', publisher:'出版社', year:'出版年份', series:'书系',
     by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', end:'完',
-    bookPages:['封面', '扉页', '简介 · 资料', '完'], centrePages:['封面', '简介 · 缘起', '馆藏 · 馆舍', '历史 1997–2014', '历史 2015–2025'],
-    chat:'💬 <em>即将推出：</em>向 AI 提问关于这本书的问题。',
+    bookPages:['封面', '扉页', '简介 · 资料', '完'], centrePages:['封面', '简介 · 缘起', '馆藏 · 馆舍', '历史 1997-2014', '历史 2015-2025'],
+    chat:'<em>即将推出：</em>向 AI 提问关于这本书的问题。',
     authorTitle:'作者简介', authorNote:'（示例文字，作者资料待补充）', authorWorks:'馆藏作品',
     phNote:'', cAbout:'文学馆简介', cOrigin:'缘起', cMission:'宗旨', cCollection:'重点馆藏', cRooms:'馆舍与专题作家展',
     cWriters:'历届专题作家展', cHistory:'回顾历史', cFounded:'成立于 1998年4月26日', cNote:''
@@ -366,13 +418,13 @@ const TEXT = {
     qText:{author:t => `Who wrote 《${t}》?`, year:t => `In which year was 《${t}》 published?`, genre:t => `What kind of work is 《${t}》?`,
       book:a => `Which of these books is by ${a}?`},
     qRight:t => `✓ Correct! 1 point to the ${t}.`, qWrong:'✗ Not quite. The correct answer is marked.', qNext:'Next question', qFinish:'See the result',
-    qWin:t => `🏆 The ${t} wins!`, qTie:'It\'s a tie! Well played, both teams.', qAgain:'Play again', qClose:'Back to the Centre',
-    welcome:'Press ▲ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the Centre…', view:'View: ',
+    qWin:t => `The ${t} wins!`, qTie:'It\'s a tie! Well played, both teams.', qAgain:'Play again', qClose:'Back to the Centre',
+    welcome:'Press ↑ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the Centre…', view:'View: ',
     centreName:'About the Centre and its history', centreWhere:'end of the corridor',
     details:'Book details', summary:'Summary', author:'Author', genre:'Genre', publisher:'Publisher', year:'Year', series:'Series',
     by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', end:'The end',
-    bookPages:['Cover', 'Title page', 'Summary · Details', 'The end'], centrePages:['Cover', 'About · Origin', 'Collection · Facilities', 'History 1997–2014', 'History 2015–2025'],
-    chat:'💬 <em>Coming next:</em> ask a question about this book (AI chat).',
+    bookPages:['Cover', 'Title page', 'Summary · Details', 'The end'], centrePages:['Cover', 'About · Origin', 'Collection · Facilities', 'History 1997-2014', 'History 2015-2025'],
+    chat:'<em>Coming next:</em> ask a question about this book (AI chat).',
     authorTitle:'About the author', authorNote:'(Placeholder text. Author details to be added.)', authorWorks:'Works in this collection',
     phNote:'(English summary placeholder)', cAbout:'About the Centre', cOrigin:'Origin', cMission:'Mission', cCollection:'Collection',
     cRooms:'Facilities & featured writers', cWriters:'Featured writers', cHistory:'History', cFounded:'Founded 26 April 1998',
@@ -409,17 +461,27 @@ const OLD_ITEMS = [
 ];
 
 /* ---------------- Scene setup ---------------- */
+if (!window.THREE) {   // three.js comes from the internet: say so when it cannot be loaded
+  document.body.insertAdjacentHTML('beforeend', `<div style="position:fixed;inset:0;z-index:9;display:grid;place-items:center;
+    padding:24px;text-align:center;font:18px/1.7 system-ui,sans-serif;color:#f4ecdc;background:#0d0b09">
+    无法载入 3D 引擎，请检查网络连接后重新整理页面。<br>The 3D engine could not be loaded. Check the internet connection and reload the page.</div>`);
+  throw new Error('three.js not loaded');
+}
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// colour-managed output with filmic tone mapping: lights blend and roll off like a camera, not like a 1990s game
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0d0b09);
-scene.fog = new THREE.Fog(0x0d0b09, 8, 34);
-const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 100);
-const EYE = 1.6, Z_START = 10, HALF_W = 2.5, LEN_FRONT = 4;
+scene.background = new THREE.Color(0x070605);
+scene.fog = new THREE.Fog(0x070605, 10, 40);
+const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 130);
+const EYE = 1.6, Z_START = 10, HALF_W = 2.5, LEN_FRONT = 4, WALL_H = 3.6;
 // corridor grows with the collection, plus an empty stretch before the end-wall signboard
 const LAST_BOOK_Z = ITEMS[ITEMS.length - 1].z;
 const LEN_BACK = LAST_BOOK_Z - 12, Z_END = LEN_BACK + 3;
+const corridorLen = LEN_FRONT - LEN_BACK, midZ = (LEN_FRONT + LEN_BACK) / 2;
 camera.position.set(0, EYE, Z_START);
 
 function resize(){
@@ -429,99 +491,366 @@ function resize(){
 }
 addEventListener('resize', resize); resize();
 
-function canvasTex(w, h, draw){
+/* ---------------- Building blocks ---------------- */
+const MAX_ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+// A texture painted on a canvas; rx / ry > 0 make it repeat
+function canvasTex(w, h, draw, rx = 0, ry = 0){
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   draw(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+  const t = new THREE.CanvasTexture(c); t.anisotropy = MAX_ANISO; t.encoding = THREE.sRGBEncoding;
+  if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); }
+  return t;
+}
+const C = hex => new THREE.Color(hex).convertSRGBToLinear();          // colours are picked in sRGB, lit in linear
+function std(o){                                                       // standard (physically based) material
+  if (typeof o.color === 'number') o.color = C(o.color);
+  if (typeof o.emissive === 'number') o.emissive = C(o.emissive);
+  return new THREE.MeshStandardMaterial(o);
+}
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+function add(geo, mat, x, y, z, parent = scene){
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m;
+}
+// Many copies of one shape in a single draw call: list = [[x, y, z], ...]
+function copies(geo, mat, list){
+  const m = new THREE.InstancedMesh(geo, mat, list.length), o = new THREE.Object3D();
+  list.forEach(([x, y, z], i) => { o.position.set(x, y, z); o.updateMatrix(); m.setMatrixAt(i, o.matrix); });
+  m.frustumCulled = false; scene.add(m); return m;
+}
+// Fine random strokes (wood grain) and dots (plaster, stone) painted over a canvas
+function grain(g, w, h, n, color, len){
+  g.strokeStyle = color;
+  for (let i = 0; i < n; i++) {
+    const x = Math.random() * w, y = Math.random() * h;
+    g.globalAlpha = .04 + Math.random() * .1; g.lineWidth = .5 + Math.random() * 1.3;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + (Math.random() - .5) * 3, y + len * (.4 + Math.random())); g.stroke();
+  }
+  g.globalAlpha = 1;
+}
+function speckle(g, w, h, n, colors){
+  for (let i = 0; i < n; i++) {
+    g.globalAlpha = .03 + Math.random() * .07; g.fillStyle = colors[i % colors.length];
+    const s = 1 + Math.random() * 3; g.fillRect(Math.random() * w, Math.random() * h, s, s);
+  }
+  g.globalAlpha = 1;
+}
+// Soft round glow, used for lamp halos and fake contact shadows
+const glowTex = canvasTex(128, 128, (g, w, h) => {
+  const grd = g.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
+  grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(.35, 'rgba(255,255,255,.35)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
+});
+
+// Reflections: a small warm "room" that every shiny surface mirrors (brass, lacquer, polished floor, porcelain)
+{
+  const env = new THREE.Scene(), pm = new THREE.PMREMGenerator(renderer);
+  env.add(new THREE.Mesh(box(12, 6, 12), new THREE.MeshBasicMaterial({color:0x241710, side:THREE.BackSide})));
+  const lit = new THREE.MeshBasicMaterial({color:0xffdcaa});
+  [[0, 2.95, 0, 5, .05, 2], [0, 2.95, -4, 3, .05, 1], [0, 2.95, 4, 3, .05, 1], [-5.9, .6, 0, .05, 1.6, 4], [5.9, .6, 0, .05, 1.6, 4]]
+    .forEach(([x, y, z, w, h, d]) => add(box(w, h, d), lit, x, y, z, env));
+  scene.environment = pm.fromScene(env, .03).texture; pm.dispose();
 }
 
-// Floor: tiled stone
-const floorTex = canvasTex(256, 256, (g, w, h) => {
-  g.fillStyle = '#3a2f25'; g.fillRect(0, 0, w, h);
-  g.fillStyle = '#463829'; g.fillRect(0, 0, w/2, h/2); g.fillRect(w/2, h/2, w/2, h/2);
-  g.strokeStyle = '#211a13'; g.lineWidth = 4; g.strokeRect(0, 0, w, h); g.beginPath();
-  g.moveTo(w/2, 0); g.lineTo(w/2, h); g.moveTo(0, h/2); g.lineTo(w, h/2); g.stroke();
-});
-floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(2, (LEN_FRONT - LEN_BACK) / 2);
-const corridorLen = LEN_FRONT - LEN_BACK, midZ = (LEN_FRONT + LEN_BACK) / 2;
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2, corridorLen),
-  new THREE.MeshStandardMaterial({map:floorTex, roughness:.85}));
-floor.rotation.x = -Math.PI/2; floor.position.z = midZ; scene.add(floor);
+/* ---------------- Shared materials ---------------- */
+const timberTex = canvasTex(256, 512, (g, w, h) => {
+  g.fillStyle = '#3d2415'; g.fillRect(0, 0, w, h);
+  grain(g, w, h, 900, '#170b05', 130); grain(g, w, h, 500, '#7a4c2b', 90);
+}, 1, 1);
+const timber = std({map:timberTex, roughness:.46, envMapIntensity:.75});
+const brass = std({color:0xc9a04e, metalness:.9, roughness:.3});
+const lacquer = std({color:0x8e2418, roughness:.32, envMapIntensity:.9});
+const frameMat = brass;
 
-const ceil = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2, corridorLen),
-  new THREE.MeshStandardMaterial({color:0x1d1813, roughness:1}));
-ceil.rotation.x = Math.PI/2; ceil.position.set(0, 3.6, midZ); scene.add(ceil);
+/* ---------------- Corridor: floor, carpet, walls, ceiling ---------------- */
+// Timber floor: planks run down the corridor, joints wrap so the pattern repeats without a seam
+const floorTex = canvasTex(512, 512, (g, w, h) => {
+  const tones = ['#573620', '#4c2e19', '#5f4025', '#452914', '#52331d'], pw = w / 8;
+  for (let c = 0; c < 8; c++) {
+    const cuts = [Math.random() * h, Math.random() * h].sort((a, b) => a - b);
+    cuts.forEach((y0, k) => {
+      const y1 = cuts[(k + 1) % 2]; g.fillStyle = tones[(Math.random() * tones.length) | 0];
+      if (y1 > y0) g.fillRect(c * pw, y0, pw, y1 - y0); else { g.fillRect(c * pw, y0, pw, h - y0); g.fillRect(c * pw, 0, pw, y1); }
+    });
+    g.fillStyle = 'rgba(18,9,3,.85)'; cuts.forEach(y => g.fillRect(c * pw, y, pw, 2)); g.fillRect(c * pw, 0, 1.5, h);
+  }
+  grain(g, w, h, 2600, '#241206', 70); grain(g, w, h, 1200, '#a47444', 50);
+}, 2, corridorLen / 2.5);
+const floor = add(new THREE.PlaneGeometry(HALF_W * 2, corridorLen),
+  std({map:floorTex, bumpMap:floorTex, bumpScale:.006, roughness:.34, envMapIntensity:.95}), 0, 0, midZ);
+floor.rotation.x = -Math.PI / 2;
 
-// Walls
-const wallTex = canvasTex(256, 256, (g, w, h) => {
-  g.fillStyle = '#6b5a45'; g.fillRect(0, 0, w, h);
-  g.fillStyle = '#4a3c2d'; g.fillRect(0, h*0.72, w, h*0.28);   // wainscot
-  g.fillStyle = '#c9a45a'; g.fillRect(0, h*0.70, w, 5);         // gold rail
+// Red carpet runner with a gold border
+const CARPET_W = 1.7, carpetLen = corridorLen - 4.5;
+const carpetTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#5c100b'; g.fillRect(0, 0, w, h);
+  speckle(g, w, h, 5000, ['#2c0603', '#84201a']);
+  g.fillStyle = '#c9a04e'; [10, 22, w - 14, w - 26].forEach(x => g.fillRect(x, 0, 4, h));
+  g.strokeStyle = 'rgba(201,160,78,.45)'; g.lineWidth = 3;
+  [[w/2, 0], [w/2, h]].forEach(([x, y]) => { g.beginPath(); g.moveTo(x, y - 44); g.lineTo(x + 44, y); g.lineTo(x, y + 44); g.lineTo(x - 44, y); g.closePath(); g.stroke(); });
+  g.strokeRect(w/2 - 16, h/2 - 16, 32, 32);
+}, 1, carpetLen / CARPET_W);
+const carpet = add(new THREE.PlaneGeometry(CARPET_W, carpetLen),
+  std({map:carpetTex, roughness:.96, envMapIntensity:.1}), 0, .008, midZ - .6);
+carpet.rotation.x = -Math.PI / 2;
+
+// Plaster walls, shaded darker toward the ceiling so the room has depth without real-time shadows
+const wallTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#cdbd9a'; g.fillRect(0, 0, w, h);
+  speckle(g, w, h, 9000, ['#8f8163', '#efe4c8', '#a39472']);
+  let grd = g.createLinearGradient(0, 0, 0, h * .3);
+  grd.addColorStop(0, 'rgba(20,12,6,.6)'); grd.addColorStop(1, 'rgba(20,12,6,0)'); g.fillStyle = grd; g.fillRect(0, 0, w, h * .3);
+  grd = g.createLinearGradient(0, h * .58, 0, h * .76);
+  grd.addColorStop(0, 'rgba(20,12,6,0)'); grd.addColorStop(1, 'rgba(20,12,6,.35)'); g.fillStyle = grd; g.fillRect(0, h * .58, w, h * .2);
+}, corridorLen / WALL_H, 1);
+const wallMat = std({map:wallTex, roughness:.93, envMapIntensity:.25});
+// Timber wainscot panels below the dado rail
+const panelTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#3a2213'; g.fillRect(0, 0, w, h);
+  grain(g, w, h, 500, '#140904', 120); grain(g, w, h, 250, '#74482a', 80);
+  g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.6)'; g.strokeRect(22, 26, w - 44, h - 52);
+  g.strokeStyle = 'rgba(255,220,170,.16)'; g.strokeRect(26, 30, w - 52, h - 60);
+}, corridorLen / .9, 1);
+const panelMat = std({map:panelTex, roughness:.5, envMapIntensity:.6});
+const ceilMat = std({color:0x1c140e, roughness:1, envMapIntensity:.1});
+// dark strip where the floor meets the wall (stands in for ambient shadow)
+const edgeTex = canvasTex(64, 8, (g, w, h) => {
+  const grd = g.createLinearGradient(0, 0, w, 0); grd.addColorStop(0, 'rgba(0,0,0,.7)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
 });
-wallTex.wrapS = THREE.RepeatWrapping; wallTex.repeat.set(corridorLen / 3, 1);
-const wallMat = new THREE.MeshStandardMaterial({map:wallTex, roughness:.9});
+const edgeMat = new THREE.MeshBasicMaterial({map:edgeTex, transparent:true, depthWrite:false, side:THREE.DoubleSide});
 [-1, 1].forEach(s => {
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(corridorLen, 3.6), wallMat);
-  wall.rotation.y = -s * Math.PI/2; wall.position.set(s*HALF_W, 1.8, midZ); scene.add(wall);
+  const wall = add(new THREE.PlaneGeometry(corridorLen, WALL_H), wallMat, s * HALF_W, WALL_H / 2, midZ);
+  wall.rotation.y = -s * Math.PI / 2;
+  add(box(.04, .95, corridorLen), panelMat, s * (HALF_W - .02), .475, midZ);          // wainscot
+  add(box(.045, .05, corridorLen), timber, s * (HALF_W - .0225), .975, midZ);         // dado rail
+  add(box(.05, .14, corridorLen), timber, s * (HALF_W - .025), .07, midZ);            // skirting board
+  add(box(.2, .24, corridorLen), timber, s * (HALF_W - .1), WALL_H - .12, midZ);      // cornice beam
+  const edge = add(new THREE.PlaneGeometry(.7, corridorLen), edgeMat, s * (HALF_W - .35), .004, midZ);
+  edge.rotation.x = -Math.PI / 2; edge.scale.x = -s;
 });
-// End wall
-const endWall = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2, 3.6), wallMat);
-endWall.position.set(0, 1.8, LEN_BACK); scene.add(endWall);
+const ceil = add(new THREE.PlaneGeometry(HALF_W * 2, corridorLen), ceilMat, 0, WALL_H, midZ);
+ceil.rotation.x = Math.PI / 2;
 
-/* ---------------- Entrance: facade, double door, signboard ---------------- */
+// Bays: a ceiling beam every 1.4 m and a timber pilaster on the wall opposite each book
+const bays = [];
+for (let k = -5; -4 - k * SPACING > LEN_BACK + .6; k++) bays.push([k, -4 - k * SPACING]);
+copies(box(HALF_W * 2, .2, .16), timber, bays.map(([k, z]) => [0, WALL_H - .1, z]));
+const pilX = k => (k % 2 === 0 ? 1 : -1) * (HALF_W - .06);                              // books hang on the other side
+copies(box(.12, WALL_H, .26), timber, bays.map(([k, z]) => [pilX(k), WALL_H / 2, z]));
+copies(box(.16, .24, .32), timber, bays.map(([k, z]) => [pilX(k), .12, z]));            // base
+copies(box(.16, .16, .34), timber, bays.map(([k, z]) => [pilX(k), WALL_H - .32, z]));   // capital
+copies(box(.125, .03, .265), brass, bays.map(([k, z]) => [pilX(k), 2.2, z]));           // brass band
+
+/* ---------------- Lanterns and light ---------------- */
+const lanternTex = canvasTex(128, 128, (g, w, h) => {
+  const grd = g.createLinearGradient(0, 0, 0, h);
+  grd.addColorStop(0, '#ffb070'); grd.addColorStop(.5, '#ffe6b8'); grd.addColorStop(1, '#ff9c58');
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(120,34,12,.5)'; g.lineWidth = 2;
+  for (let x = 0; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+});
+const LANTERN_GEO = new THREE.SphereGeometry(.2, 24, 16), CAP_GEO = new THREE.CylinderGeometry(.085, .12, .06, 16);
+const TASSEL_GEO = new THREE.CylinderGeometry(.012, .028, .3, 8), CORD_GEO = new THREE.CylinderGeometry(.006, .006, 1, 6);
+const capMat = std({color:0x2a160c, roughness:.4}), tasselMat = std({color:0xb02a1c, roughness:.8});
+const lanterns = [];
+// A hanging lantern: (x, yTop, z) is where the cord meets the ceiling, drop is how far the lantern hangs below
+function makeLantern(x, yTop, z, drop, tint = 0xffffff, halo = 0xffb060){
+  const grp = new THREE.Group(); grp.position.set(x, yTop, z);
+  const cord = add(CORD_GEO, capMat, 0, -drop / 2, 0, grp); cord.scale.y = drop;
+  const body = add(LANTERN_GEO, new THREE.MeshBasicMaterial({map:lanternTex, color:tint}), 0, -drop - .22, 0, grp); body.scale.y = 1.15;
+  add(CAP_GEO, capMat, 0, -drop - .01, 0, grp);
+  const foot = add(CAP_GEO, capMat, 0, -drop - .43, 0, grp); foot.rotation.x = Math.PI;
+  add(TASSEL_GEO, tasselMat, 0, -drop - .61, 0, grp);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:halo, transparent:true, opacity:.55,
+    blending:THREE.AdditiveBlending, depthWrite:false}));
+  glow.position.y = -drop - .22; glow.scale.setScalar(1.5); grp.add(glow);
+  scene.add(grp); lanterns.push({grp, glow, phase:Math.random() * 6.3}); return grp;
+}
+scene.add(new THREE.HemisphereLight(0xffe9c4, 0x2a2018, 0.24));
+bays.filter(([k]) => (k + 2) % 5 === 0).forEach(([k, z]) => {        // one lantern and one light every 7 m
+  makeLantern(0, WALL_H - .2, z, .35);
+  const l = new THREE.PointLight(0xffd3a0, 1.0, 13); l.position.set(0, 2.75, z); scene.add(l);
+});
+
+// Dust drifting in the lamp light
+const dust = (() => {
+  const n = 420, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    pos[i*3] = (Math.random() - .5) * HALF_W * 1.8; pos[i*3+1] = .3 + Math.random() * 3; pos[i*3+2] = LEN_FRONT - Math.random() * corridorLen;
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(geo, new THREE.PointsMaterial({map:glowTex, color:0xffe2b0, size:.035, transparent:true, opacity:.5,
+    blending:THREE.AdditiveBlending, depthWrite:false}));
+  p.frustumCulled = false; scene.add(p); return p;
+})();
+// Small motions that keep the room alive: lanterns sway, their halos breathe, dust drifts
+function animateScene(time){
+  lanterns.forEach(l => {
+    l.grp.rotation.z = Math.sin(time * .8 + l.phase) * .025; l.grp.rotation.x = Math.sin(time * .6 + l.phase * 2) * .02;
+    l.glow.material.opacity = .5 + .08 * Math.sin(time * 2.3 + l.phase);
+  });
+  dust.position.set(Math.sin(time * .07) * .25, Math.sin(time * .11) * .15, Math.sin(time * .05) * .4);
+}
+
+/* ---------------- End wall: signboard, ink painting, couplets, console table ---------------- */
+add(new THREE.PlaneGeometry(HALF_W * 2, WALL_H), wallMat, 0, WALL_H / 2, LEN_BACK);
+add(box(HALF_W * 2 - .5, WALL_H - .5, .04), timber, 0, WALL_H / 2 + .05, LEN_BACK + .02);       // timber backdrop
+// Ink-wash mountains, painted by code
+const inkTex = canvasTex(640, 384, (g, w, h) => {
+  g.fillStyle = '#e9dfc8'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2500, ['#b9ab8a', '#fff8e6']);
+  g.fillStyle = 'rgba(176,54,42,.75)'; g.beginPath(); g.arc(w * .76, h * .26, 26, 0, Math.PI * 2); g.fill();   // sun
+  for (let l = 0; l < 4; l++) {
+    const base = h * (.42 + l * .13), amp = 70 - l * 9; let y = base;
+    g.beginPath(); g.moveTo(0, h);
+    for (let x = 0; x <= w; x += 16) { y += (Math.random() - .5) * amp * .5; y += (base - y) * .18; g.lineTo(x, y - Math.sin(x / w * Math.PI) * amp * .6); }
+    g.lineTo(w, h); g.closePath(); g.fillStyle = `rgba(38,44,50,${.16 + l * .15})`; g.fill();
+    const mist = g.createLinearGradient(0, base, 0, base + 60);
+    mist.addColorStop(0, 'rgba(233,223,200,0)'); mist.addColorStop(1, 'rgba(233,223,200,.75)'); g.fillStyle = mist; g.fillRect(0, base, w, 60);
+  }
+  g.fillStyle = '#b0362a'; g.fillRect(w - 46, h - 50, 26, 26);                                                  // seal
+});
+add(box(2.3, 1.42, .05), timber, 0, 1.5, LEN_BACK + .06);
+add(new THREE.PlaneGeometry(2.14, 1.28), std({map:inkTex, roughness:.9, envMapIntensity:.2}), 0, 1.5, LEN_BACK + .087);
+// Couplet banners either side of the painting
+[['薪火相传', -1], ['文脉长流', 1]].forEach(([text, s]) => {
+  const tex = canvasTex(128, 512, (g, w, h) => {
+    g.fillStyle = '#8a1c14'; g.fillRect(0, 0, w, h); speckle(g, w, h, 1500, ['#4a0c08', '#b2382a']);
+    g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(8, 8, w - 16, h - 16);
+    g.fillStyle = '#f1d38a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 76px "KaiTi","STKaiti","Microsoft YaHei",serif';
+    [...text].forEach((ch, i) => g.fillText(ch, w / 2, 86 + i * 113));
+  });
+  add(new THREE.PlaneGeometry(.42, 1.68), std({map:tex, roughness:.8, envMapIntensity:.2}), s * 1.62, 1.5, LEN_BACK + .045);
+});
+// Console table with two porcelain vases
+add(box(2.2, .06, .42), timber, 0, .72, LEN_BACK + .3);
+[[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([a, b]) => add(box(.06, .7, .06), timber, a * 1.02, .35, LEN_BACK + .3 + b * .15));
+add(box(2.0, .08, .04), timber, 0, .62, LEN_BACK + .46);
+const vaseGeo = new THREE.LatheGeometry([[.001, 0], [.07, 0], [.085, .03], [.12, .14], [.125, .2], [.1, .28], [.055, .34], [.045, .38], [.065, .42], [.06, .425]]
+  .map(([r, y]) => new THREE.Vector2(r, y)), 28);
+[[-.75, 0xe9eef0], [.75, 0x9fc4ad]].forEach(([x, color]) => {
+  const v = add(vaseGeo, std({color, roughness:.14, envMapIntensity:1.3, side:THREE.DoubleSide}), x, .75, LEN_BACK + .3);
+  const sh = add(new THREE.PlaneGeometry(.5, .5), new THREE.MeshBasicMaterial({map:glowTex, color:0x000000, transparent:true, opacity:.6, depthWrite:false}),
+    x, .752, LEN_BACK + .3); sh.rotation.x = -Math.PI / 2; v.renderOrder = 1;
+});
+
+/* ---------------- Entrance: sky, plaza, facade, canopy roof, double door, signboard ---------------- */
 const DOOR_W = 1.8, DOOR_H = 2.8, FACADE_W = 16, FACADE_H = 7, FZ = LEN_FRONT;
-// Plaza outside the museum
-const plazaTex = canvasTex(128, 128, (g, w, h) => {
-  g.fillStyle = '#5a5046'; g.fillRect(0, 0, w, h);
-  g.strokeStyle = '#3d352d'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+// Dusk sky with stars and a moon (the fog does not touch it)
+const sky = add(new THREE.SphereGeometry(110, 32, 16), new THREE.MeshBasicMaterial({side:THREE.BackSide, fog:false, depthWrite:false,
+  map:canvasTex(8, 512, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, 0, h);
+    [[0, '#060a1c'], [.3, '#111a44'], [.42, '#3a2a5a'], [.475, '#a8503a'], [.497, '#f2a65a'], [.503, '#3a2218'], [.56, '#0b0907'], [1, '#070605']]
+      .forEach(([p, col]) => grd.addColorStop(p, col));
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  })}), 0, 0, 0);
+sky.renderOrder = -2;
+{
+  const n = 500, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, e = .22 + Math.random() * 1.3;                 // elevation: above the sunset band
+    pos[i*3] = Math.cos(a) * Math.cos(e) * 100; pos[i*3+1] = Math.sin(e) * 100; pos[i*3+2] = Math.sin(a) * Math.cos(e) * 100;
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const stars = new THREE.Points(geo, new THREE.PointsMaterial({color:0xdfe6ff, size:1.6, sizeAttenuation:false, fog:false,
+    transparent:true, opacity:.8, depthWrite:false}));
+  stars.renderOrder = -1; scene.add(stars);
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xfff3d6, fog:false, depthWrite:false}));
+  moon.position.set(-52, 46, 62); moon.scale.setScalar(16); moon.renderOrder = -1; scene.add(moon);
+}
+// Ground: stone pavers in the plaza, dark earth beyond
+const ground = add(new THREE.PlaneGeometry(240, 240), std({color:0x14100c, roughness:1, envMapIntensity:0}), 0, -.02, FZ + 20);
+ground.rotation.x = -Math.PI / 2;
+const plazaTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#5b5148'; g.fillRect(0, 0, w, h);
+  [['#655a50', 0, 0], ['#544a41', w/2, 0], ['#4f463e', 0, h/2], ['#60564c', w/2, h/2]].forEach(([c, x, y]) => { g.fillStyle = c; g.fillRect(x, y, w/2, h/2); });
+  speckle(g, w, h, 6000, ['#2e2822', '#8a7e70']);
+  g.strokeStyle = '#2a241f'; g.lineWidth = 4; g.strokeRect(0, 0, w/2, h/2); g.strokeRect(w/2, 0, w/2, h/2); g.strokeRect(0, h/2, w/2, h/2); g.strokeRect(w/2, h/2, w/2, h/2);
+}, 10, 5);
+const plaza = add(new THREE.PlaneGeometry(30, 14), std({map:plazaTex, bumpMap:plazaTex, bumpScale:.01, roughness:.82, envMapIntensity:.3}), 0, -.001, FZ + 7);
+plaza.rotation.x = -Math.PI / 2;
+add(box(DOOR_W + .5, .04, .9), std({color:0x7a7064, roughness:.7}), 0, .012, FZ + .1);            // stone threshold
+// Tree line on the horizon, so the plaza does not end in a hard black edge
+const treeTex = canvasTex(1024, 128, (g, w, h) => {
+  g.fillStyle = '#070605'; g.beginPath(); g.moveTo(0, h);
+  let y = h * .5;
+  for (let x = 0; x <= w; x += 6) { y += (Math.random() - .5) * 22; y = Math.max(h * .12, Math.min(h * .75, y));
+    const edge = Math.min(x, w - x) / 80; if (edge < 1) y += (h * .5 - y) * (1 - edge);   // both ends meet, so the ring has no step
+    g.lineTo(x, y - Math.random() * 6); }
+  g.lineTo(w, h); g.closePath(); g.fill();
+}, 6, 1);
+treeTex.wrapT = THREE.ClampToEdgeWrapping;
+const trees = add(new THREE.CylinderGeometry(95, 95, 13, 48, 1, true),
+  new THREE.MeshBasicMaterial({map:treeTex, transparent:true, side:THREE.BackSide, fog:false, depthWrite:false}), 0, 5.5, 0);
+trees.renderOrder = -1;
+// Stone lamp posts around the plaza
+const postMat = std({color:0x5d5348, roughness:.85}), lampGlass = new THREE.MeshBasicMaterial({color:0xffc980});
+const capGeo = new THREE.ConeGeometry(.32, .22, 4); capGeo.rotateY(Math.PI / 4);
+[[-6, 3], [6, 3], [-6, 9.5], [6, 9.5]].forEach(([x, dz]) => {
+  add(box(.4, .2, .4), postMat, x, .1, FZ + dz); add(box(.18, 1.7, .18), postMat, x, 1.05, FZ + dz);
+  add(box(.42, .06, .42), postMat, x, 1.93, FZ + dz); add(box(.3, .38, .3), lampGlass, x, 2.15, FZ + dz);
+  add(capGeo, postMat, x, 2.45, FZ + dz);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xffa850, transparent:true, opacity:.6,
+    blending:THREE.AdditiveBlending, depthWrite:false}));
+  halo.position.set(x, 2.15, FZ + dz); halo.scale.setScalar(1.8); scene.add(halo);
 });
-plazaTex.wrapS = plazaTex.wrapT = THREE.RepeatWrapping; plazaTex.repeat.set(12, 6);
-const plaza = new THREE.Mesh(new THREE.PlaneGeometry(30, 14), new THREE.MeshStandardMaterial({map:plazaTex, roughness:.95}));
-plaza.rotation.x = -Math.PI/2; plaza.position.set(0, -0.001, FZ + 7); scene.add(plaza);
+[-1, 1].forEach(s => { const l = new THREE.PointLight(0xffb060, .6, 9); l.position.set(s * 6, 2.3, FZ + 6); scene.add(l); });
 
-// Facade wall with a doorway (built from three blocks)
-const facadeMat = new THREE.MeshStandardMaterial({color:0xcbb999, roughness:.9});
+// Facade wall with a doorway (built from three blocks), stone base and top cornice
+const facadeTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#d6c8ae'; g.fillRect(0, 0, w, h); speckle(g, w, h, 5000, ['#9c8f76', '#f3e9d2']);
+}, 3, 3);
+const facadeMat = std({map:facadeTex, roughness:.9, envMapIntensity:.25});
+const stoneMat = std({color:0x6e6253, roughness:.8, envMapIntensity:.3});
 const sideW = (FACADE_W - DOOR_W) / 2;
 [-1, 1].forEach(s => {
-  const b = new THREE.Mesh(new THREE.BoxGeometry(sideW, FACADE_H, .4), facadeMat);
-  b.position.set(s * (DOOR_W/2 + sideW/2), FACADE_H/2, FZ); scene.add(b);
+  add(box(sideW, FACADE_H, .4), facadeMat, s * (DOOR_W / 2 + sideW / 2), FACADE_H / 2, FZ);
+  add(box(sideW, .5, .5), stoneMat, s * (DOOR_W / 2 + sideW / 2), .25, FZ + .1);
 });
-const lintel = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W, FACADE_H - DOOR_H, .4), facadeMat);
-lintel.position.set(0, DOOR_H + (FACADE_H - DOOR_H)/2, FZ); scene.add(lintel);
-// Roof cornice and base band
-const trimMat = new THREE.MeshStandardMaterial({color:0x7a2a1f, roughness:.6});
-const cornice = new THREE.Mesh(new THREE.BoxGeometry(FACADE_W + .6, .4, 1), trimMat);
-cornice.position.set(0, FACADE_H, FZ + .2); scene.add(cornice);
-const base = new THREE.Mesh(new THREE.BoxGeometry(FACADE_W, .25, .5), new THREE.MeshStandardMaterial({color:0x6e6253}));
-base.position.set(0, .125, FZ + .1); [-1, 1].forEach(s => {
-  const b = base.clone(); b.scale.x = sideW / FACADE_W; b.position.x = s * (DOOR_W/2 + sideW/2); scene.add(b);
-});
+add(box(DOOR_W, FACADE_H - DOOR_H, .4), facadeMat, 0, DOOR_H + (FACADE_H - DOOR_H) / 2, FZ);
+add(box(FACADE_W + .6, .4, 1), lacquer, 0, FACADE_H, FZ + .2);
 // Door frame
-const frameMat = new THREE.MeshStandardMaterial({color:0xc9a45a, metalness:.6, roughness:.35});
+[-1, 1].forEach(s => add(box(.12, DOOR_H, .5), frameMat, s * (DOOR_W / 2 + .06), DOOR_H / 2, FZ));
+add(box(DOOR_W + .24, .12, .5), frameMat, 0, DOOR_H + .06, FZ);
+// Red pillars on stone drums, carrying a lacquered beam
 [-1, 1].forEach(s => {
-  const j = new THREE.Mesh(new THREE.BoxGeometry(.12, DOOR_H, .5), frameMat);
-  j.position.set(s * (DOOR_W/2 + .06), DOOR_H/2, FZ); scene.add(j);
+  add(new THREE.CylinderGeometry(.2, .22, 4.36, 28), lacquer, s * 2.45, 2.18, FZ + .45);
+  add(new THREE.CylinderGeometry(.3, .34, .3, 28), stoneMat, s * 2.45, .15, FZ + .45);
 });
-const head = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + .24, .12, .5), frameMat);
-head.position.set(0, DOOR_H + .06, FZ); scene.add(head);
-// Red pillars
-const pillarMat = new THREE.MeshStandardMaterial({color:0x9b2a1e, roughness:.5});
-[-1, 1].forEach(s => {
-  const p = new THREE.Mesh(new THREE.CylinderGeometry(.2, .22, 4.2, 20), pillarMat);
-  p.position.set(s * 2.45, 2.1, FZ + .45); scene.add(p);
+add(box(5.5, .26, .22), lacquer, 0, 4.48, FZ + .45);
+add(box(5.5, .05, .23), brass, 0, 4.48, FZ + .45);
+// Canopy roof over the entrance: curved, glazed tiles, with rafter tails and round tile ends along the eave
+const roofShape = new THREE.Shape();
+roofShape.moveTo(0, 5.42); roofShape.quadraticCurveTo(1.3, 4.56, 2.45, 4.62); roofShape.lineTo(2.45, 4.47);
+roofShape.quadraticCurveTo(1.3, 4.4, 0, 5.2); roofShape.closePath();
+const tileMat = std({color:0x2c4640, roughness:.3, envMapIntensity:1});
+const roof = add(new THREE.ExtrudeGeometry(roofShape, {depth:7.8, bevelEnabled:false, curveSegments:16}), tileMat, 3.9, 0, FZ + .2);
+roof.rotation.y = -Math.PI / 2;
+copies(box(.07, .08, .7), lacquer, Array.from({length:25}, (_, i) => [-3.6 + i * .3, 4.4, FZ + 2.22]));
+const tileEnd = new THREE.CylinderGeometry(.06, .06, .05, 16); tileEnd.rotateX(Math.PI / 2);
+copies(tileEnd, brass, Array.from({length:39}, (_, i) => [-3.8 + i * .2, 4.545, FZ + 2.66]));
+// Lattice windows glowing from inside
+const latticeTex = canvasTex(256, 256, (g, w, h) => {
+  const grd = g.createRadialGradient(w/2, h/2, 10, w/2, h/2, w * .75);
+  grd.addColorStop(0, '#ffd898'); grd.addColorStop(1, '#d9772c'); g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#2a160c'; g.lineWidth = 7;
+  for (let p = 0; p <= w; p += 42.6) { g.beginPath(); g.moveTo(p, 0); g.lineTo(p, h); g.moveTo(0, p); g.lineTo(w, p); g.stroke(); }
+  g.lineWidth = 6; g.beginPath(); g.moveTo(w/2, 22); g.lineTo(w - 22, h/2); g.lineTo(w/2, h - 22); g.lineTo(22, h/2); g.closePath(); g.stroke();
+  g.lineWidth = 16; g.strokeRect(0, 0, w, h);
 });
-// Hanging red lanterns
+const latticeMat = new THREE.MeshBasicMaterial({map:latticeTex});
 [-1, 1].forEach(s => {
-  const l = new THREE.Mesh(new THREE.SphereGeometry(.28, 20, 14),
-    new THREE.MeshStandardMaterial({color:0xc0281c, emissive:0xff3a1a, emissiveIntensity:.6}));
-  l.scale.y = .8; l.position.set(s * 1.5, 2.55, FZ + .5); scene.add(l);
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, .08, 12), frameMat);
-  cap.position.set(s * 1.5, 2.8, FZ + .5); scene.add(cap);
-  const glow = new THREE.PointLight(0xff6a3a, .5, 4); glow.position.set(s * 1.5, 2.55, FZ + .9); scene.add(glow);
+  add(box(2.1, 2.1, .08), timber, s * 4.15, 2.35, FZ + .2);
+  add(new THREE.PlaneGeometry(1.9, 1.9), latticeMat, s * 4.15, 2.35, FZ + .245);
+  const l = new THREE.PointLight(0xffb060, .45, 5); l.position.set(s * 4.15, 2.3, FZ + 1.2); scene.add(l);
+});
+// Red lanterns hanging from the canopy, either side of the door
+[-1, 1].forEach(s => {
+  makeLantern(s * 1.5, 4.36, FZ + .55, 1.2, 0xff6a4a, 0xff5a30);
+  const glow = new THREE.PointLight(0xff6a3a, .7, 5); glow.position.set(s * 1.5, 2.75, FZ + 1); scene.add(glow);
 });
 // Signboard above the door
 const signTex = canvasTex(1024, 256, (g, w, h) => {
-  g.fillStyle = '#5e1610'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#5e1610'; g.fillRect(0, 0, w, h); speckle(g, w, h, 4000, ['#2c0906', '#7d231a']);
   g.strokeStyle = '#d9b25f'; g.lineWidth = 12; g.strokeRect(10, 10, w - 20, h - 20);
   g.lineWidth = 3; g.strokeRect(28, 28, w - 56, h - 56);
   g.fillStyle = '#f1d38a'; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -530,46 +859,36 @@ const signTex = canvasTex(1024, 256, (g, w, h) => {
   g.font = '30px "Microsoft YaHei", "Noto Sans SC", sans-serif'; g.fillStyle = '#d9b25f';
   g.fillText('马 华 文 学 馆', w/2, 212);
 });
-const signBoard = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, .12), [
-  frameMat, frameMat, frameMat, frameMat, new THREE.MeshStandardMaterial({map:signTex, roughness:.5,
-    emissive:0xffffff, emissiveMap:signTex, emissiveIntensity:.25}), frameMat]);
+const signBoard = new THREE.Mesh(box(4.2, 1.1, .12), [
+  frameMat, frameMat, frameMat, frameMat, std({map:signTex, roughness:.45, emissive:0xffffff, emissiveMap:signTex, emissiveIntensity:.25}), frameMat]);
 signBoard.position.set(0, 3.75, FZ + .28); scene.add(signBoard);
-const signLight = new THREE.PointLight(0xffe0a8, 1, 6); signLight.position.set(0, 4.6, FZ + 1.8); scene.add(signLight);
+const signLight = new THREE.PointLight(0xffe0a8, 1.1, 7); signLight.position.set(0, 4.1, FZ + 1.6); scene.add(signLight);
 // Same signboard on the end wall of the corridor, with its own light
-const endSign = signBoard.clone(); endSign.position.set(0, 2.2, LEN_BACK + .07); scene.add(endSign);
+const endSign = signBoard.clone(); endSign.position.set(0, 2.82, LEN_BACK + .12); endSign.scale.setScalar(.82); scene.add(endSign);
 endSign.material = signBoard.material.map(m => m.clone());     // own materials so it can glow on its own
 const endSignFace = endSign.material[4];
-const endSignLight = new THREE.PointLight(0xffe0a8, .9, 5); endSignLight.position.set(0, 3.2, LEN_BACK + 1.6); scene.add(endSignLight);
+const endSignLight = new THREE.PointLight(0xffe0a8, 1.1, 6); endSignLight.position.set(0, 2.6, LEN_BACK + 1.8); scene.add(endSignLight);
 
 // Double door that swings inward (pivots at the door jambs)
-const doorTex = canvasTex(128, 400, (g, w, h) => {
-  g.fillStyle = '#8e2418'; g.fillRect(0, 0, w, h);
-  g.strokeStyle = '#5a140c'; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16);
-  g.fillStyle = '#e0b960';
-  for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) {           // gold door studs
-    g.beginPath(); g.arc(30 + c * 34, 50 + r * 50, 6, 0, Math.PI * 2); g.fill();
+const doorTex = canvasTex(256, 800, (g, w, h) => {
+  g.fillStyle = '#8e2418'; g.fillRect(0, 0, w, h); grain(g, w, h, 700, '#4a0e08', 160); grain(g, w, h, 300, '#c04a36', 100);
+  g.strokeStyle = '#5a140c'; g.lineWidth = 12; g.strokeRect(16, 16, w - 32, h - 32);
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) {           // gold door studs with a highlight
+    const x = 60 + c * 68, y = 100 + r * 100, grd = g.createRadialGradient(x - 4, y - 4, 1, x, y, 13);
+    grd.addColorStop(0, '#fff0b8'); grd.addColorStop(.5, '#e0b960'); grd.addColorStop(1, '#7a5a1c');
+    g.fillStyle = grd; g.beginPath(); g.arc(x, y, 13, 0, Math.PI * 2); g.fill();
   }
 });
-const doorMat = new THREE.MeshStandardMaterial({map:doorTex, roughness:.55});
+const doorMat = std({map:doorTex, roughness:.4, envMapIntensity:.8});
 const leaves = [-1, 1].map(s => {
-  const pivot = new THREE.Group(); pivot.position.set(s * DOOR_W/2, 0, FZ);
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W/2, DOOR_H, .08), doorMat);
-  leaf.position.set(-s * DOOR_W/4, DOOR_H/2, 0); pivot.add(leaf);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(.07, .015, 8, 20), frameMat);   // door knocker
-  ring.position.set(-s * (DOOR_W/2 - .12), 1.25, .06); pivot.add(ring);
+  const pivot = new THREE.Group(); pivot.position.set(s * DOOR_W / 2, 0, FZ);
+  add(box(DOOR_W / 2, DOOR_H, .08), doorMat, -s * DOOR_W / 4, DOOR_H / 2, 0, pivot);
+  add(new THREE.TorusGeometry(.07, .015, 10, 24), frameMat, -s * (DOOR_W / 2 - .12), 1.25, .06, pivot);   // door knocker
   scene.add(pivot); return {pivot, s};
 });
 let doorOpen = 0;
 
-// Lights
-scene.add(new THREE.HemisphereLight(0xffe9c4, 0x2a2018, 0.55));
-for (let z = 0; z > LEN_BACK; z -= 8) {
-  const l = new THREE.PointLight(0xffd9a0, 0.6, 10); l.position.set(0, 3.3, z); scene.add(l);
-  const lamp = new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, .05, 20),
-    new THREE.MeshBasicMaterial({color:0xffe3b0})); lamp.position.set(0, 3.57, z); scene.add(lamp);
-}
-
-/* ---------------- Exhibit frames ("icons") ---------------- */
+/* ---------------- Exhibits: a real book on a lit display shelf ---------------- */
 const CJK = '"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
 // Split text into lines that fit maxW (character by character, works for Chinese)
 function wrapText(g, text, maxW){
@@ -579,12 +898,14 @@ function wrapText(g, text, maxW){
   }
   if (line) lines.push(line); return lines;
 }
-// Book cover drawn in the series colour: series name, title, author, year
+// Book cover drawn in the series colour: series name, title, author, year (laid out at 320×400, drawn at 512×640)
 function portraitTex(item){
   const t = TYPES[item.type];
-  return canvasTex(320, 400, (g, w, h) => {
+  return canvasTex(512, 640, g => {
+    const w = 320, h = 400; g.scale(1.6, 1.6);
     const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, t.color); grd.addColorStop(1, '#14100c');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    speckle(g, w, h, 2500, ['#000', '#fff']);                                     // cloth texture
     g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, h);                    // book spine shade
     g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, w - 50, h - 32);
     g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = (34 + w - 16) / 2;
@@ -607,55 +928,71 @@ function portraitTex(item){
     g.font = '18px Georgia'; g.fillStyle = '#d9b25f'; g.fillText(String(item.year), cx, 360);
   });
 }
-
-// Picture light above each book: brass lamp, glowing bulb strip, and the light it throws on the wall
-const BRASS = new THREE.MeshStandardMaterial({color:0xc9a04e, metalness:.85, roughness:.3});
-const LAMP_GEO = new THREE.CylinderGeometry(.03, .03, .7, 14), ARM_GEO = new THREE.CylinderGeometry(.012, .012, .2, 6);
-const BULB_GEO = new THREE.BoxGeometry(.62, .012, .03), BULB_MAT = new THREE.MeshBasicMaterial({color:0xfff0c8});
-const WASH_GEO = new THREE.PlaneGeometry(2.0, 2.4);
-const WASH_MAT = new THREE.MeshBasicMaterial({transparent:true, depthWrite:false, opacity:1, blending:THREE.AdditiveBlending,
+const pagesMat = std({roughness:.9, envMapIntensity:.2, map:canvasTex(64, 64, (g, w, h) => {      // page edges
+  g.fillStyle = '#efe6d0'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(120,100,70,.35)';
+  for (let x = 0; x < w; x += 3) g.fillRect(x, 0, 1, h);
+})});
+const BOOK_GEO = box(.78, 1.0, .09), BOARD_GEO = box(1.5, 2.4, .05), CLOTH_GEO = new THREE.PlaneGeometry(1.26, 1.9);
+const SHELF_GEO = box(1.0, .045, .34), LIP_GEO = box(1.0, .03, .02), PLATE_GEO = new THREE.PlaneGeometry(.66, .1);
+const RAIL_H = box(1.3, .02, .012), RAIL_V = box(.02, 1.94, .012);
+const LAMP_GEO = new THREE.CylinderGeometry(.03, .03, .7, 14), ARM_GEO = new THREE.CylinderGeometry(.012, .012, .3, 6);
+const BULB_GEO = box(.62, .012, .03), BULB_MAT = new THREE.MeshBasicMaterial({color:0xfff0c8});
+const WASH_GEO = new THREE.PlaneGeometry(1.5, 2.3), HALO_GEO = new THREE.PlaneGeometry(1.9, 2.2);
+const WASH_MAT = new THREE.MeshBasicMaterial({transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
   map:canvasTex(256, 256, (g, w, h) => {                   // soft cone of light falling from the picture lamp
-    // round glow that reaches zero before the edges (no visible rectangle) ...
-    const grd = g.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
-    grd.addColorStop(0, 'rgba(255,214,150,.6)'); grd.addColorStop(.55, 'rgba(255,200,130,.22)'); grd.addColorStop(1, 'rgba(255,200,130,0)');
+    const grd = g.createRadialGradient(w/2, h * .3, 0, w/2, h * .3, w * .62);
+    grd.addColorStop(0, 'rgba(255,214,150,.32)'); grd.addColorStop(.55, 'rgba(255,200,130,.1)'); grd.addColorStop(1, 'rgba(255,200,130,0)');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
-    // ... brighter at the top near the lamp, fading downward
-    g.globalCompositeOperation = 'destination-in';
-    const fade = g.createLinearGradient(0, 0, 0, h);
-    fade.addColorStop(0, 'rgba(0,0,0,1)'); fade.addColorStop(.6, 'rgba(0,0,0,.6)'); fade.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = fade; g.fillRect(0, 0, w, h);
   })});
+// one cloth and one book-binding material per series
+const clothMat = {}, bindMat = {};
+Object.entries(TYPES).forEach(([k, t]) => {
+  clothMat[k] = new THREE.MeshStandardMaterial({color:C(t.color).multiplyScalar(.3), roughness:1, envMapIntensity:.1});
+  bindMat[k] = new THREE.MeshStandardMaterial({color:C(t.color).multiplyScalar(.75), roughness:.6, envMapIntensity:.4});
+});
 
 const exhibits = [];
 ITEMS.forEach((item, i) => {
-  const grp = new THREE.Group();
-  const x = item.side * (HALF_W - 0.06);
-  grp.position.set(x, 1.75, item.z);
-  grp.rotation.y = -item.side * Math.PI/2;
+  const grp = new THREE.Group();                            // origin: on the wall, at floor level; +z points into the corridor
+  grp.position.set(item.side * HALF_W, 0, item.z);
+  grp.rotation.y = -item.side * Math.PI / 2;
 
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.36, 1.68, .08),
-    new THREE.MeshStandardMaterial({color:0x8a6a2e, metalness:.6, roughness:.4}));
+  // Display board: timber, with a cloth inset in the series colour and a thin brass frame
+  add(BOARD_GEO, timber, 0, 1.5, .025, grp);
+  add(CLOTH_GEO, clothMat[item.type], 0, 1.6, .052, grp);
+  [-1, 1].forEach(s => { add(RAIL_H, brass, 0, 1.6 + s * .96, .056, grp); add(RAIL_V, brass, s * .64, 1.6, .056, grp); });
+  add(WASH_GEO, WASH_MAT, 0, 1.62, .06, grp);
+  // Halo behind the book, lit when this is the nearest exhibit
+  const glow = add(HALO_GEO, new THREE.MeshBasicMaterial({map:glowTex, color:0xffd27a, transparent:true, opacity:0,
+    depthWrite:false, blending:THREE.AdditiveBlending}), 0, 1.6, .068, grp);
+  // Shelf, and the book leaning back on it
+  add(SHELF_GEO, timber, 0, 1.02, .2, grp); add(LIP_GEO, timber, 0, 1.058, .36, grp);
   const cover = portraitTex(item);
-  const art = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.5),   // cover glows softly so it is readable everywhere
-    new THREE.MeshStandardMaterial({map:cover, roughness:.7, emissive:0xffffff, emissiveMap:cover, emissiveIntensity:.3}));
-  art.position.z = .045; art.userData.index = i;
-  // Picture light above the frame
-  const lampBar = new THREE.Mesh(LAMP_GEO, BRASS); lampBar.rotation.z = Math.PI / 2; lampBar.position.set(0, .97, .2);
-  const lampArm = new THREE.Mesh(ARM_GEO, BRASS); lampArm.rotation.x = Math.PI / 2; lampArm.position.set(0, .95, .1);
-  const bulb = new THREE.Mesh(BULB_GEO, BULB_MAT); bulb.position.set(0, .94, .21);
-  const wash = new THREE.Mesh(WASH_GEO, WASH_MAT); wash.position.set(0, -.15, .004);
-  // Glow halo shown on the nearest exhibit
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 2.0),
-    new THREE.MeshBasicMaterial({color:0xffd27a, transparent:true, opacity:0}));
-  glow.position.z = .02;
-  // Floating marker above the frame
-  const marker = new THREE.Mesh(new THREE.OctahedronGeometry(.11),
-    new THREE.MeshBasicMaterial({color:0xffd27a, transparent:true, opacity:0}));
-  marker.position.set(0, 1.18, .45);
-  grp.add(wash, glow, frame, art, lampBar, lampArm, bulb, marker);
+  const coverMat = std({map:cover, roughness:.75, envMapIntensity:.12, emissive:0xffffff, emissiveMap:cover, emissiveIntensity:.3});
+  const lean = new THREE.Group(); lean.position.set(0, 1.045, .24); lean.rotation.x = -.13; grp.add(lean);
+  // box faces: +x fore-edge, -x spine, +y / -y page edges, +z front cover, -z back cover
+  const book = add(BOOK_GEO, [pagesMat, bindMat[item.type], pagesMat, pagesMat, coverMat, bindMat[item.type]], 0, .5, .045, lean);
+  book.userData.index = i;
+  // Brass caption plate under the shelf
+  const plate = canvasTex(512, 78, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#e2c276'); grd.addColorStop(1, '#a8823a');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(60,40,10,.6)'; g.lineWidth = 3; g.strokeRect(4, 4, w - 8, h - 8);
+    g.fillStyle = '#2a1a08'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `26px ${CJK}`;
+    let text = `${item.author} · ${item.year} · ${item.genre}`;
+    while (g.measureText(text).width > w - 40 && text.length > 4) text = text.slice(0, -2) + '…';
+    g.fillText(text, w / 2, h / 2 + 2);
+  });
+  add(PLATE_GEO, std({map:plate, metalness:.5, roughness:.4}), 0, .84, .053, grp);
+  // Picture light above the board
+  const lampBar = add(LAMP_GEO, brass, 0, 2.62, .34, grp); lampBar.rotation.z = Math.PI / 2;
+  const lampArm = add(ARM_GEO, brass, 0, 2.64, .19, grp); lampArm.rotation.x = Math.PI / 2;
+  add(BULB_GEO, BULB_MAT, 0, 2.6, .35, grp);
+  // Floating marker above the book (the loop moves it around y = 1.12 inside this holder)
+  const holder = new THREE.Group(); holder.position.y = 1.2; grp.add(holder);
+  const marker = add(new THREE.OctahedronGeometry(.1), new THREE.MeshBasicMaterial({color:0xd89a2c, transparent:true, opacity:0}), 0, 1.12, .42, holder);
   scene.add(grp);
 
-  exhibits.push({item, grp, art, glow, marker});
+  exhibits.push({item, grp, art:book, cover, coverMat, glow, marker});
 });
 // One spotlight that follows the active book (cheaper than a light per book)
 const highlight = new THREE.PointLight(0xffe0a8, 0, 3.5); scene.add(highlight);
@@ -884,12 +1221,12 @@ function openPanel(i){
     <span class="chip" style="background:${t.color}">${typeLabel(t)}</span>
     <h2>《${esc(it.title)}》</h2><div class="era">${authorLinks(it.author)} · ${it.year}</div>
     ${summary}
-    <h3>${L('details')}</h3><ul>
-      <li>${L('author')}：${authorLinks(it.author)}</li>
-      <li>${L('genre')}：${esc(genreOf(it))}</li>
-      <li>${L('publisher')}：${esc(typePub(it, t))}</li>
-      <li>${L('year')}：${it.year}</li>
-      <li>${L('series')}：${esc(typeLabel(t))}</li></ul>
+    <h3>${L('details')}</h3><dl class="meta">
+      <dt>${L('author')}</dt><dd>${authorLinks(it.author)}</dd>
+      <dt>${L('genre')}</dt><dd>${esc(genreOf(it))}</dd>
+      <dt>${L('publisher')}</dt><dd>${esc(typePub(it, t))}</dd>
+      <dt>${L('year')}</dt><dd>${it.year}</dd>
+      <dt>${L('series')}</dt><dd>${esc(typeLabel(t))}</dd></dl>
     <p style="font-size:13px;color:var(--muted)">${L('source')}：<a href="${SOURCE_URL}" target="_blank" rel="noopener"
       style="color:var(--gold)">${L('sourceName')}</a></p>
     <div class="ask">${L('chat')}</div>`;
@@ -928,7 +1265,7 @@ addEventListener('resize', sizeBook);
 
 function openBook(i){
   const it = ITEMS[i], t = TYPES[it.type];
-  const coverURL = exhibits[i].art.material.map.image.toDataURL();   // same cover as on the wall
+  const coverURL = exhibits[i].cover.image.toDataURL();   // same cover as on the wall
   const pub = esc(typePub(it, t)), label = esc(typeLabel(t));
   const summary = LANG === 'en' ? `<span class="ph">${L('phNote')}</span> ${LOREM.split('. ')[0]}.` : esc(it.summary);
   // each leaf has a front (right-hand page) and a back (left-hand page once turned)
@@ -937,11 +1274,11 @@ function openBook(i){
      `<div class="face back pg l"><div class="seal">马华文学馆<br>藏书</div></div>`],
     [`<div class="face pg r"><div class="pl">${label}</div><div class="pt">${esc(it.title)}</div>
         <div class="pa">${L('by')(authorLinks(it.author))}</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
-     `<div class="face back pg l"><h4>${L('summary')}</h4><div class="txt">${summary}</div><div class="num">— 2 —</div></div>`],
+     `<div class="face back pg l"><h4>${L('summary')}</h4><div class="txt">${summary}</div><div class="num">2</div></div>`],
     [`<div class="face pg r"><h4>${L('details')}</h4><dl class="hist">
         <dt>${L('author')}</dt><dd>${authorLinks(it.author)}</dd><dt>${L('genre')}</dt><dd>${esc(genreOf(it))}</dd>
         <dt>${L('publisher')}</dt><dd>${pub}</dd><dt>${L('year')}</dt><dd>${it.year}</dd><dt>${L('series')}</dt><dd>${label}</dd></dl>
-        <div class="num">— 3 —</div></div>`,
+        <div class="num">3</div></div>`,
      `<div class="face back pg l"><div class="seal" style="margin-top:45%">马华文学馆</div></div>`]
   ];
   showBook(pages, `${L('source')}：${L('sourceName')}`, L('bookPages'));
@@ -949,7 +1286,7 @@ function openBook(i){
 // Build any flip book: pages = [[right-page HTML, left-page HTML (back of the leaf)], ...]
 function showBook(pages, sourceNote, names){
   PAGE_NAMES = names;
-  fbook.innerHTML = `<div class="base"><div class="face pg r"><div class="pt" style="margin-top:40%">— ${L('end')} —</div>
+  fbook.innerHTML = `<div class="base"><div class="face pg r"><div class="pt" style="margin-top:40%">${L('end')}</div>
       <div class="py">${sourceNote}</div></div></div>` +
     pages.map(([f, b]) => `<div class="leaf">${f}${b}</div>`).join('');
   pageLeaves = [...fbook.querySelectorAll('.leaf')];
@@ -1013,14 +1350,14 @@ function openCentre(){
   showBook([
     [`<div class="face cover" style="background-image:url(${centreCoverURL()})"></div>`,
      `<div class="face back pg l"><h4>${L('cAbout')}</h4><div class="txt sm">${C.intro}</div>
-        <div class="txt sm" style="margin-top:.8em">${C.mission}</div><div class="num">— 1 —</div></div>`],
-    [`<div class="face pg r"><h4>${L('cOrigin')}</h4><div class="txt sm">${C.origin}</div><div class="num">— 2 —</div></div>`,
-     `<div class="face back pg l"><h4>${L('cCollection')}</h4><dl class="sm hist">${C.collection.map(row).join('')}</dl><div class="num">— 3 —</div></div>`],
+        <div class="txt sm" style="margin-top:.8em">${C.mission}</div><div class="num">1</div></div>`],
+    [`<div class="face pg r"><h4>${L('cOrigin')}</h4><div class="txt sm">${C.origin}</div><div class="num">2</div></div>`,
+     `<div class="face back pg l"><h4>${L('cCollection')}</h4><dl class="sm hist">${C.collection.map(row).join('')}</dl><div class="num">3</div></div>`],
     [`<div class="face pg r"><h4>${L('cRooms')}</h4><div class="txt sm">${C.rooms}</div>
-        <div class="txt sm" style="margin-top:.8em">${L('cWriters')}：${C.writers}。</div><div class="num">— 4 —</div></div>`,
-     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h1.map(row).join('')}</dl><div class="num">— 5 —</div></div>`],
-    [`<div class="face pg r"><h4>${L('cHistory')}</h4><dl class="sm hist">${h2.map(row).join('')}</dl><div class="num">— 6 —</div></div>`,
-     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h3.map(row).join('')}</dl><div class="num">— 7 —</div></div>`]
+        <div class="txt sm" style="margin-top:.8em">${L('cWriters')}：${C.writers}。</div><div class="num">4</div></div>`,
+     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h1.map(row).join('')}</dl><div class="num">5</div></div>`],
+    [`<div class="face pg r"><h4>${L('cHistory')}</h4><dl class="sm hist">${h2.map(row).join('')}</dl><div class="num">6</div></div>`,
+     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h3.map(row).join('')}</dl><div class="num">7</div></div>`]
   ], `${L('source')}：southern.edu.my/mclc`, L('centrePages'));
 
   document.getElementById('panelBody').innerHTML = `
@@ -1318,7 +1655,7 @@ function tick(){
     ex.glow.material.opacity += ((on ? .35 + .25 * pulse : 0) - ex.glow.material.opacity) * .15;
     ex.marker.material.opacity += ((on ? 1 : 0) - ex.marker.material.opacity) * .15;
     ex.marker.rotation.y = time * 2; ex.marker.position.y = 1.12 + Math.sin(time * 3) * .05;
-    ex.art.material.emissiveIntensity = on ? .45 + .1 * pulse : .3;
+    ex.coverMat.emissiveIntensity = on ? .45 + .1 * pulse : .3;
   });
   // the signboard becomes active in the empty stretch after the last book
   signActive = nearest < 0 && camera.position.z < LAST_BOOK_Z - 2;
@@ -1333,6 +1670,7 @@ function tick(){
     viewBtn.classList.add('show'); highlight.intensity = 0;
   } else { viewBtn.classList.remove('show'); highlight.intensity = 0; }
 
+  animateScene(time);
   drawMap();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);

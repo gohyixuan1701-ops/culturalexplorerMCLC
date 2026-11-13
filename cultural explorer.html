@@ -16,8 +16,33 @@
   .hud-title{position:fixed;top:14px;left:16px;font-size:20px;letter-spacing:.08em;color:var(--gold);
     text-shadow:0 2px 8px #000;pointer-events:none}
   .hud-title small{display:block;font-size:12px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
-  #map{position:fixed;left:16px;bottom:16px;width:96px;height:170px;border:1px solid rgba(217,178,95,.5);
-    background:rgba(0,0,0,.45);border-radius:6px;cursor:pointer}
+  #map{--mh:170px;position:fixed;left:16px;bottom:16px;height:var(--mh);width:calc(var(--mh) * 96 / 170);
+    border:1px solid rgba(217,178,95,.5);background:rgba(0,0,0,.45);border-radius:6px;cursor:pointer;z-index:3;
+    touch-action:none;transition:height .25s ease,width .25s ease,background .25s}
+  #map.big{--mh:min(440px, calc(100vh - 110px));background:rgba(0,0,0,.72)}   /* expands under the cursor */
+  #mapTip{position:fixed;z-index:3;pointer-events:none;background:rgba(20,16,12,.9);border:1px solid rgba(217,178,95,.6);
+    border-radius:6px;padding:6px 10px;font-size:14px;color:var(--ink);white-space:nowrap;opacity:0;transition:opacity .12s;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+  #mapTip.show{opacity:1}
+  #mapTip small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+  /* search bar: top middle, half transparent */
+  #search{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(340px, calc(100vw - 32px));z-index:3;
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  #q{width:100%;height:38px;padding:0 14px 0 38px;border-radius:19px;border:1px solid rgba(217,178,95,.45);
+    background:rgba(20,16,12,.42) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d9b25f' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.5 16.5L21 21'/%3E%3C/svg%3E") 13px 50%/16px no-repeat;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:var(--ink);font:inherit;font-size:14px;outline:none;
+    -webkit-user-select:text;user-select:text;transition:background-color .2s,border-color .2s}
+  #q::placeholder{color:rgba(244,236,220,.6)}
+  #q:focus{background-color:rgba(20,16,12,.6);border-color:var(--gold)}
+  #results{list-style:none;margin:6px 0 0;padding:4px;border-radius:12px;border:1px solid rgba(217,178,95,.35);
+    background:rgba(20,16,12,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    max-height:min(52vh,360px);overflow-y:auto;display:none}
+  #results.show{display:block}
+  #results li{display:flex;gap:9px;align-items:baseline;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1.35}
+  #results li.on,#results li:hover{background:rgba(217,178,95,.22)}
+  #results li i{flex:none;width:8px;height:8px;border-radius:50%;transform:translateY(-1px)}
+  #results li small{display:block;font-size:11.5px;color:var(--muted)}
+  #results li.none{cursor:default;color:var(--muted);background:none}
   .controls{position:fixed;right:20px;bottom:20px;display:grid;grid-template-columns:repeat(3,auto);gap:8px}
   .controls #fwd{grid-column:2;grid-row:1} .controls #left{grid-column:1;grid-row:2}
   .controls #back{grid-column:2;grid-row:2} .controls #right{grid-column:3;grid-row:2}
@@ -52,9 +77,8 @@
   .note{border-left:3px solid var(--chip-leg);padding:8px 12px;background:rgba(165,88,59,.12);font-size:14px;margin-top:14px}
   /* ---- Flip book in the middle of the screen ---- */
   #stage{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:18px;background:rgba(8,6,4,.75);opacity:0;pointer-events:none;transition:opacity .3s}
-  #stage.show{opacity:1;pointer-events:auto}
-  @media (min-width:900px){ #stage{right:420px} }            /* leave room for the details bar */
+    gap:18px;background:rgba(8,6,4,.75);opacity:0;pointer-events:none;transition:opacity .3s,padding-right .35s ease}
+  #stage.show{opacity:1;pointer-events:auto}                 /* dark backdrop covers the whole screen; the details bar lies on top of it */
   .fbook{position:relative;width:calc(var(--pw) * 2);height:var(--ph);perspective:2000px;
     font-size:calc(var(--pw) / 15);transition:transform .9s cubic-bezier(.4,.1,.2,1)}
   .fbook.closed{transform:translateX(calc(var(--pw) * -.5))}   /* closed: centre the cover */
@@ -96,14 +120,24 @@
   .bk-ctrl button:disabled{opacity:.35;cursor:default}
   #pgInfo{min-width:84px;text-align:center}
   .ask{margin-top:24px;padding:12px;border:1px dashed rgba(217,178,95,.5);border-radius:8px;color:var(--muted);font-size:14px}
-  @media (max-width:600px){ .help{display:none} #map{width:72px;height:128px} .arrow{width:58px;height:58px} }
+  /* not enough room between the title and the help text: put the search bar on its own row */
+  @media (max-width:1100px){ #search{top:64px} #toast{top:114px} }
+  @media (max-width:860px){ #search{left:16px;transform:none;width:min(340px, calc(100vw - 290px))} }   /* clear of the help text */
+  @media (max-width:600px){ .help{display:none} #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
+    .arrow{width:58px;height:58px} #toast{top:128px}
+    #search{top:78px;left:50%;transform:translateX(-50%);width:min(340px, calc(100vw - 32px))} }
 </style>
 </head>
 <body>
 <canvas id="scene"></canvas>
 <div class="hud-title">Cultural Explorer<small>马华文学馆出版品 · Malaysian Chinese Literature Centre book collection</small></div>
-<div class="help">↑ / W &nbsp;walk forward<br>↓ / S &nbsp;walk back<br>← → / A D or drag mouse &nbsp;look around<br>Click any book (or the minimap) to go there<br>Click glowing book or Enter to view</div>
-<canvas id="map" width="96" height="170"></canvas>
+<div class="help">↑ / W &nbsp;walk forward<br>↓ / S &nbsp;walk back<br>← → / A D or drag mouse &nbsp;look around<br>Click any book (or the minimap) to go there<br>Click glowing book or Enter to view<br>/ &nbsp;search books</div>
+<div id="search" role="search">
+  <input id="q" type="text" placeholder="搜索书名、作者… Search books" autocomplete="off" spellcheck="false" aria-label="Search books">
+  <ul id="results"></ul>
+</div>
+<canvas id="map" width="384" height="680"></canvas>
+<div id="mapTip"></div>
 <div class="controls">
   <button class="arrow" id="fwd" aria-label="Walk forward">▲</button>
   <button class="arrow" id="left" aria-label="Turn left">◀</button>
@@ -486,6 +520,8 @@ let yaw = 0, yawTarget = 0, turnDir = 0;
 camera.rotation.order = 'YXZ';
 const keys = {};
 addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;                  // typing in the search bar
+  if ((e.key === '/' || e.code === 'Slash') && !panelOpen) { qInput.focus(); e.preventDefault(); return; }
   // while the book is open, ← → turn its pages instead of the camera
   if (stage.classList.contains('show') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
     turn(e.code === 'ArrowRight' ? 1 : -1); e.preventDefault(); return;
@@ -526,6 +562,7 @@ const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
 let downPos = null;
 let lastX = 0;
 canvas.addEventListener('pointerdown', e => {
+  qInput.blur(); map.classList.remove('big'); setMapHover(-1);
   downPos = [e.clientX, e.clientY]; lastX = e.clientX; canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', e => {
@@ -562,14 +599,97 @@ function travelToSign(){
   toast('前往马华文学馆简介 Going to the Centre…');
 }
 function cancelTravel(){ travel = -1; travelSign = false; }
-// Click on the minimap to go to a book too
-document.getElementById('map').addEventListener('click', e => {
-  const r = e.currentTarget.getBoundingClientRect(), H = e.currentTarget.height, pad = 10;
-  const z = LEN_BACK + ((e.clientY - r.top) / r.height * H - pad) / (H - pad * 2) * (Z_START - LEN_BACK);
-  let best = 0; ITEMS.forEach((it, i) => { if (Math.abs(it.z - z) < Math.abs(ITEMS[best].z - z)) best = i; });
-  if (z < LAST_BOOK_Z - 3) travelToSign();                  // clicked the empty end of the corridor
-  else if (Math.abs(ITEMS[best].z - z) < 2) travelTo(best);
+/* ---------------- Minimap: expand on hover, book names, click to go ---------------- */
+const map = document.getElementById('map'), mapTip = document.getElementById('mapTip');
+const MAP_W = 96, MAP_H = 170, MAP_PAD = 10;   // the map is drawn in these units, whatever its size on screen
+let mapHover = -1;                             // book under the cursor on the map
+// where the pointer is on the map: corridor z, and the book icon under it (if any)
+function mapPick(e){
+  const r = map.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * MAP_W, y = (e.clientY - r.top) / r.height * MAP_H;
+  const z = LEN_BACK + (y - MAP_PAD) / (MAP_H - MAP_PAD * 2) * (Z_START - LEN_BACK);
+  const side = x < MAP_W * .3 + 3 ? -1 : x > MAP_W * .7 - 3 ? 1 : 0;   // over the left / right row of icons
+  let idx = -1, bestD = (Z_START - LEN_BACK) / (MAP_H - MAP_PAD * 2) * 3.4;   // within ~3 map units of an icon
+  if (side) ITEMS.forEach((it, i) => {
+    const d = Math.abs(it.z - z); if (it.side === side && d < bestD) { bestD = d; idx = i; }
+  });
+  return {z, idx};
+}
+function setMapHover(idx, e){
+  mapHover = idx;
+  if (idx < 0) { mapTip.classList.remove('show'); return; }
+  const it = ITEMS[idx];
+  mapTip.innerHTML = `《${it.title}》<small>${it.author} · ${it.year} · ${it.genre}</small>`;
+  const r = map.getBoundingClientRect();
+  mapTip.style.left = Math.min(r.right + 10, innerWidth - mapTip.offsetWidth - 8) + 'px';
+  mapTip.style.top = Math.max(8, e.clientY - mapTip.offsetHeight / 2) + 'px';
+  mapTip.classList.add('show');
+}
+let mapJustOpened = false;
+map.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') map.classList.add('big'); });
+map.addEventListener('pointermove', e => { if (map.classList.contains('big')) setMapHover(mapPick(e).idx, e); });
+map.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { map.classList.remove('big'); setMapHover(-1); } });
+map.addEventListener('pointerdown', e => {      // touch: first tap enlarges the map, the next tap chooses
+  mapJustOpened = e.pointerType !== 'mouse' && !map.classList.contains('big');
+  if (mapJustOpened) map.classList.add('big');
 });
+map.addEventListener('click', e => {
+  if (mapJustOpened) { mapJustOpened = false; return; }
+  const {z, idx} = mapPick(e);
+  let best = idx;
+  if (best < 0) { best = 0; ITEMS.forEach((it, i) => { if (Math.abs(it.z - z) < Math.abs(ITEMS[best].z - z)) best = i; }); }
+  if (idx < 0 && z < LAST_BOOK_Z - 3) travelToSign();       // clicked the empty end of the corridor
+  else if (idx >= 0 || Math.abs(ITEMS[best].z - z) < 2) travelTo(best);
+  else return;
+  map.classList.remove('big'); setMapHover(-1);
+});
+
+/* ---------------- Search bar ---------------- */
+const qInput = document.getElementById('q'), resultsEl = document.getElementById('results');
+const CENTRE_WORDS = '马华文学馆 文学馆 简介 历史 缘起 馆藏 mclc centre center about history malaysian chinese literature';
+let results = [], resultOn = 0;
+function runSearch(){
+  const q = qInput.value.trim().toLowerCase();
+  results = [];
+  if (q) {
+    ITEMS.forEach((it, i) => {
+      const hay = [it.title, it.author, it.genre, it.year, TYPES[it.type].label].join(' ').toLowerCase();
+      if (hay.includes(q)) results.push(i);
+    });
+    if (CENTRE_WORDS.includes(q)) results.push(-1);          // -1: the Centre's own introduction (end signboard)
+  }
+  resultOn = 0;
+  resultsEl.innerHTML = !q ? '' : !results.length ? '<li class="none">找不到相关书籍 No matching books</li>' :
+    results.map((i, k) => i < 0
+      ? `<li data-k="${k}"><i style="background:#d9b25f"></i><span>马华文学馆简介与历史<small>About the Centre · 走廊尽头 end of the corridor</small></span></li>`
+      : `<li data-k="${k}"><i style="background:${TYPES[ITEMS[i].type].color}"></i><span>《${ITEMS[i].title}》<small>${ITEMS[i].author} · ${ITEMS[i].year} · ${ITEMS[i].genre}</small></span></li>`).join('');
+  resultsEl.classList.toggle('show', !!q);
+  markResult();
+}
+function markResult(){
+  [...resultsEl.children].forEach((li, k) => li.classList.toggle('on', results.length > 0 && k === resultOn));
+  const li = resultsEl.children[resultOn]; if (li && results.length) li.scrollIntoView({block:'nearest'});
+}
+function pickResult(k){
+  if (!results.length) return;
+  const i = results[k];
+  resultsEl.classList.remove('show'); qInput.blur();
+  if (i < 0) travelToSign(); else travelTo(i);              // glide there; it opens on arrival
+}
+qInput.addEventListener('input', runSearch);
+qInput.addEventListener('focus', () => {                  // old search text is selected, so typing replaces it
+  setTimeout(() => qInput.select(), 0); if (qInput.value.trim()) runSearch();
+});
+qInput.addEventListener('blur', () => resultsEl.classList.remove('show'));
+qInput.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (results.length) { resultOn = (resultOn + (e.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length; markResult(); }
+    e.preventDefault();
+  } else if (e.key === 'Enter') { if (!e.isComposing) pickResult(resultOn); }
+  else if (e.key === 'Escape') { qInput.value = ''; runSearch(); qInput.blur(); }
+});
+resultsEl.addEventListener('pointerdown', e => e.preventDefault());      // keep the input focused while choosing
+resultsEl.addEventListener('click', e => { const li = e.target.closest('li[data-k]'); if (li) pickResult(+li.dataset.k); });
 
 let toastTimer;
 function toast(msg, ms = 1600){
@@ -604,7 +724,7 @@ function openPanel(i){
   syncOpen();
 }
 function showDetails(on){
-  panel.classList.toggle('open', on); panel.setAttribute('aria-hidden', String(!on)); syncOpen();
+  panel.classList.toggle('open', on); panel.setAttribute('aria-hidden', String(!on)); syncOpen(); sizeBook();
 }
 function syncOpen(){ panelOpen = panel.classList.contains('open') || stage.classList.contains('show'); }
 function closePanel(){ showDetails(false); closeBook(); }
@@ -616,8 +736,16 @@ let PAGE_NAMES = [];
 let pageLeaves = [], flipped = 0;
 
 function sizeBook(){
-  const areaW = innerWidth >= 900 ? innerWidth - 420 : innerWidth;
-  const pw = Math.max(130, Math.min(300, (areaW - 40) / 2, (innerHeight - 150) / 1.25));
+  // the book sits in the middle of the whole screen
+  let pw = Math.max(130, Math.min(300, (innerWidth - 40) / 2, (innerHeight - 150) / 1.25)), pad = 0;
+  // only when the details bar is open and the screen is too narrow for both, the book moves aside just enough
+  if (innerWidth >= 900 && panel.classList.contains('open')) {
+    const free = innerWidth - panel.offsetWidth;             // room left of the details bar
+    pw = Math.max(130, Math.min(pw, (free - 40) / 2));
+    const over = innerWidth / 2 + pw + 20 - free;            // how far a centred open book would run under the bar
+    if (over > 0) pad = over * 2;
+  }
+  stage.style.paddingRight = pad + 'px';
   fbook.style.setProperty('--pw', pw + 'px'); fbook.style.setProperty('--ph', pw * 1.25 + 'px');
 }
 addEventListener('resize', sizeBook);
@@ -633,7 +761,7 @@ function openBook(i){
     [`<div class="face pg r"><div class="pl">${esc(t.label)}</div><div class="pt">${esc(it.title)}</div>
         <div class="pa">${esc(it.author)} 著</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
      `<div class="face back pg l"><h4>内容简介</h4><div class="txt">${esc(it.summary)}</div><div class="num">— 2 —</div></div>`],
-    [`<div class="face pg r"><h4>书籍资料</h4><dl>
+    [`<div class="face pg r"><h4>书籍资料</h4><dl class="hist">
         <dt>作者</dt><dd>${esc(it.author)}</dd><dt>类别</dt><dd>${esc(it.genre)}</dd>
         <dt>出版社</dt><dd>${pub}</dd><dt>出版年份</dt><dd>${it.year}</dd><dt>书系</dt><dd>${esc(t.label)}</dd></dl>
         <div class="num">— 3 —</div></div>`,
@@ -759,9 +887,10 @@ document.getElementById('bkDetails').addEventListener('click', () => showDetails
 stage.addEventListener('click', e => { if (e.target === stage) closePanel(); });   // click outside the book
 
 /* ---------------- Minimap (matches the sketch) ---------------- */
-const map = document.getElementById('map'), mg = map.getContext('2d');
+const mg = map.getContext('2d');
 function drawMap(){
-  const W = map.width, H = map.height, pad = 10;
+  const W = MAP_W, H = MAP_H, pad = MAP_PAD;
+  mg.setTransform(map.width / W, 0, 0, map.height / H, 0, 0);   // canvas is 4× the drawing units, so it stays sharp when enlarged
   // start (entrance) at the bottom, far end at the top
   const zToY = z => pad + (z - LEN_BACK) / (Z_START - LEN_BACK) * (H - pad*2);
   mg.clearRect(0, 0, W, H);
@@ -773,7 +902,7 @@ function drawMap(){
   mg.stroke();
   exhibits.forEach((ex, i) => {
     const y = zToY(ex.item.z), x = ex.item.side < 0 ? lx - 12 : rx;
-    mg.fillStyle = i === nearest ? '#ffd27a' : 'rgba(217,178,95,.35)';
+    mg.fillStyle = i === mapHover ? '#fff' : i === nearest ? '#ffd27a' : 'rgba(217,178,95,.35)';
     mg.fillRect(x, y - 2, 12, 4);
   });
   const py = zToY(camera.position.z);

@@ -10,6 +10,7 @@ Written 14 November 2026 against `cultural explorer.html`. Every number marked *
 - A walk-through corridor with 28 books published by the Malaysian Chinese Literature Centre, plus the Centre's own introduction and history on the end wall.
 - Each book opens as a flip book with a details panel.
 - Search bar, minimap with click-to-go, keyboard, mouse and touch controls.
+- Book catalogue, welcome guide and a two-team class quiz (new).
 - Chinese / English switch (new).
 - Clickable author names that open an author box (new, placeholder text).
 
@@ -25,6 +26,16 @@ Written 14 November 2026 against `cultural explorer.html`. Every number marked *
 | Bilingual display | 中文 / English button above the arrow buttons. It switches the interface, series names and genres. The choice is remembered on that device. | Switched to English and back; labels, page names and search results followed |
 | (found while testing) 3D view was cropped on high-DPI screens | The canvas was drawn at 2× the window size on a screen with device pixel ratio 2, so only the top-left quarter showed and clicks on books missed. One CSS line now makes it fill the window. | Canvas was 1482×1452 in a 741×726 window before, 741×726 after |
 
+### Second round: finding books, learning the controls, class interaction
+
+| Need | Change | Checked in the browser |
+|---|---|---|
+| Users cannot tell which books exist | 书目 / Catalogue button lists all 28 books grouped by series, with genre filters. Clicking a book walks you to it. | 28 rows listed; the 小说集 filter showed 3 books; clicking one from the plaza walked through the door and opened it |
+| Users do not know how to use it | A welcome guide with four steps opens on the first visit and reopens with the "?" button. It has its own language button. It replaces the small help text in the corner. | Opened on a fresh load; switched language inside the guide; closed with the start button |
+| Nothing engaging for a class | 课堂问答 / Class quiz: red team against blue team, taking turns, 6 or 10 multiple-choice questions, live scoreboard and a winner screen. Questions (author, year, genre, "which book is by…") are generated from the book data, so no answers are hand-written. After each answer the book's summary is shown (Chinese mode). | Played a full 6-question game: score ended 3–0 and the winner screen showed. 3,000 generated questions were checked against the data: each had 4 different options and exactly one correct answer |
+
+Limits of the quiz: questions test facts about the books (who, when, what kind), not understanding of the texts, because the app holds no book content yet. Scores are not saved.
+
 Not done on purpose: English summaries, English text for the Centre's history, and author biographies are placeholders (lorem), as agreed for the hackathon.
 
 ## 3. Evaluation
@@ -37,7 +48,7 @@ Not done on purpose: English summaries, English text for the Centre's history, a
 ### Gaps against the pitch
 | Gap | Why it matters | Severity |
 |---|---|---|
-| No teaching features (quiz, worksheet, lesson view, teacher controls) | The business case is "teaching material used in class", but nothing in the app is built for a lesson yet | Major |
+| Teaching features are thin: a team quiz exists, but no worksheet, lesson view or saved results | The business case is "teaching material used in class". The quiz covers facts about the books only | Major |
 | Content is 28 books from one publisher's list | The title says "culture museum"; the content is one bookshelf. Judges may ask where the culture is | Major |
 | No book excerpts or real covers | Students can read about a book but not read any of it. Needs permission from the Centre and the authors | Major |
 | English and author text are placeholders | Fine for the demo, must be replaced before any school sees it | Minor for the hackathon |
@@ -49,7 +60,7 @@ Not done on purpose: English summaries, English text for the Centre's history, a
 
 ## 4. Suggested next steps (most valuable first)
 
-1. **Classroom mode.** One "lesson" per book: 3 quiz questions, a discussion prompt and a printable worksheet. This is what turns the demo into the product you are pitching.
+1. **Deeper classroom content.** The team quiz is in. Next: one "lesson" per book with a short excerpt, comprehension questions, a discussion prompt and a printable worksheet. This is what turns the demo into the product you are pitching.
 2. **Deploy a public link.** Rename the file to `index.html` and publish it (GitHub Pages or Vercel).
 3. **Bundle three.js locally** so the app works offline.
 4. **Replace the placeholders** with real author introductions and English summaries.

@@ -57,8 +57,6 @@
   #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:8px 14px;
     border-radius:6px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
   #toast.show{opacity:1}
-  .help{position:fixed;top:16px;right:16px;font-size:12px;color:var(--muted);text-align:right;line-height:1.5;
-    pointer-events:none;text-shadow:0 1px 4px #000}
   /* detail panel */
   #panel{position:fixed;top:0;right:0;height:100%;width:min(420px,100vw);background:var(--panel);
     border-left:1px solid rgba(217,178,95,.4);transform:translateX(100%);transition:transform .3s ease;
@@ -120,9 +118,56 @@
   .bk-ctrl button:disabled{opacity:.35;cursor:default}
   #pgInfo{min-width:84px;text-align:center}
   .ask{margin-top:24px;padding:12px;border:1px dashed rgba(217,178,95,.5);border-radius:8px;color:var(--muted);font-size:14px}
-  /* language switch, above the arrow buttons */
-  #langBtn{position:fixed;right:20px;bottom:172px;z-index:3;padding:7px 14px;border-radius:18px;border:1px solid var(--gold);
+  /* tool buttons above the arrow buttons: guide, catalogue, class quiz, language */
+  #tools{position:fixed;right:20px;bottom:172px;z-index:3;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;
+    max-width:calc(100vw - 40px)}
+  .tool{padding:7px 14px;border-radius:18px;border:1px solid var(--gold);
     background:rgba(20,16,12,.75);color:var(--ink);font:14px "Microsoft YaHei","PingFang SC",system-ui,sans-serif;cursor:pointer}
+  .tool:hover{background:rgba(217,178,95,.25)}
+  /* pop-up boxes: catalogue, welcome guide, class quiz */
+  .overlay{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(8,6,4,.7);
+    padding:16px;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  .overlay.show{display:flex}
+  .box{position:relative;width:min(720px,100%);max-height:88vh;overflow-y:auto;background:var(--panel);
+    border:1px solid rgba(217,178,95,.6);border-radius:12px;padding:26px 24px 22px}
+  .box h2{margin:0 0 6px;font-size:24px;color:var(--gold)}
+  .box .lead{color:var(--muted);font-size:14px;margin:0 0 16px;line-height:1.5}
+  .box .x{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
+  .btn{padding:10px 20px;border-radius:22px;border:1px solid var(--gold);background:var(--gold);color:#1a140d;
+    font:inherit;font-size:15px;font-weight:bold;cursor:pointer}
+  .btn.ghost{background:none;color:var(--ink);font-weight:normal}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .steps{list-style:none;margin:0 0 18px;padding:0;counter-reset:s}
+  .steps li{counter-increment:s;position:relative;padding:3px 0 12px 44px;font-size:15px;line-height:1.55}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;
+    border:1px solid var(--gold);color:var(--gold);display:grid;place-items:center;font-weight:bold}
+  .steps b{color:var(--gold)}
+  /* catalogue */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .chips button{padding:5px 12px;border-radius:14px;border:1px solid rgba(217,178,95,.5);background:none;color:var(--ink);
+    font:inherit;font-size:13px;cursor:pointer}
+  .chips button.on{background:var(--gold);color:#1a140d}
+  #catBody h3{font-size:13px;letter-spacing:.08em;color:var(--gold);margin:16px 0 6px}
+  #catBody ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 12px}
+  #catBody li{display:flex;gap:9px;align-items:baseline;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14.5px;line-height:1.35}
+  #catBody li:hover{background:rgba(217,178,95,.22)}
+  #catBody li i{flex:none;width:8px;height:8px;border-radius:50%}
+  #catBody li small{display:block;font-size:12px;color:var(--muted)}
+  /* class quiz: sized to be read from the back of a classroom */
+  .score{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 16px}
+  .team{border:2px solid transparent;border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.05);
+    display:flex;justify-content:space-between;align-items:center;font-size:17px}
+  .team b{font-size:30px} .team.red{color:#ff9d8f} .team.blue{color:#9cc4ff}
+  .team.turn{border-color:currentColor;background:rgba(255,255,255,.1)}
+  .qn{color:var(--muted);font-size:14px}
+  .qq{font-size:22px;line-height:1.45;margin:6px 0 16px}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .opts button{text-align:left;padding:14px 16px;border-radius:10px;border:1px solid rgba(217,178,95,.5);
+    background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:18px;cursor:pointer}
+  .opts button:hover:not(:disabled){background:rgba(217,178,95,.22)}
+  .opts button.ok{background:#2f6b3f;border-color:#6fcf8a} .opts button.bad{background:#7a2a1f;border-color:#e0705e}
+  .opts button:disabled{cursor:default}
+  .fb{min-height:24px;font-size:15px;line-height:1.5;margin-bottom:12px}
   /* clickable author name + author detail box */
   .au{color:inherit;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
   .pg .au:hover{color:#b0362a} #panel .au:hover,#author .au:hover{color:var(--gold)}
@@ -140,8 +185,7 @@
   .ph{color:var(--muted);font-size:12.5px;font-style:italic}
   /* not enough room between the title and the help text: put the search bar on its own row */
   @media (max-width:1100px){ #search{top:64px} #toast{top:114px} }
-  @media (max-width:860px){ #search{left:16px;transform:none;width:min(340px, calc(100vw - 290px))} }   /* clear of the help text */
-  @media (max-width:600px){ .help{display:none} #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
+  @media (max-width:600px){ .opts{grid-template-columns:1fr} .qq{font-size:19px} #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
     .arrow{width:58px;height:58px} #toast{top:128px}
     #search{top:78px;left:50%;transform:translateX(-50%);width:min(340px, calc(100vw - 32px))} }
 </style>
@@ -149,8 +193,12 @@
 <body>
 <canvas id="scene"></canvas>
 <div class="hud-title">Cultural Explorer<small id="sub"></small></div>
-<div class="help" id="help"></div>
-<button id="langBtn" aria-label="Switch language"></button>
+<div id="tools">
+  <button class="tool" id="helpBtn">?</button>
+  <button class="tool" id="catBtn"></button>
+  <button class="tool" id="quizBtn"></button>
+  <button class="tool" id="langBtn" aria-label="Switch language"></button>
+</div>
 <div id="search" role="search">
   <input id="q" type="text" autocomplete="off" spellcheck="false" aria-label="Search books">
   <ul id="results"></ul>
@@ -185,6 +233,12 @@
     <div id="authorBody"></div>
   </div>
 </div>
+<div class="overlay" id="guide"><div class="box" role="dialog" aria-modal="true">
+  <button class="x" data-close aria-label="Close">×</button><div id="guideBody"></div></div></div>
+<div class="overlay" id="cat"><div class="box" role="dialog" aria-modal="true">
+  <button class="x" data-close aria-label="Close">×</button><div id="catBody"></div></div></div>
+<div class="overlay" id="quiz"><div class="box" role="dialog" aria-modal="true">
+  <button class="x" data-close aria-label="Close">×</button><div id="quizBody"></div></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -271,7 +325,21 @@ const GENRE_EN = {'小说集':'Short stories', '诗集':'Poetry', '微型小说'
 const TEXT = {
   zh: {
     langBtn:'English', sub:'马华文学馆出版品', searchPh:'搜索书名、作者…', none:'找不到相关书籍',
-    help:'↑ / W &nbsp;向前走<br>↓ / S &nbsp;向后退<br>← → / A D 或拖动鼠标 &nbsp;转动视角<br>点击书本（或小地图）前往<br>点击发光的书本或按 Enter 查看<br>/ &nbsp;搜索书籍',
+    helpBtn:'使用说明', catBtn:'书目', quizBtn:'课堂问答',
+    gTitle:'欢迎来到马华文学馆', gLead:'这是一座可以走进去的线上文学馆，馆内展出马华文学馆出版的 28 本书。',
+    gSteps:['<b>走动</b>：按 ↑ ↓（或 W S）前进后退，按 ← →（或拖动鼠标）转动视角。手机和平板请用右下角的按钮。',
+      '<b>看书</b>：点击墙上的书本走过去，再点一次（或按 Enter）翻开。点击作者名字可以看作者简介。',
+      '<b>找书</b>：用上方的搜索栏、左下角的小地图，或打开「书目」查看全部藏书。',
+      '<b>上课</b>：老师可以打开「课堂问答」，让全班分成两队比赛。'],
+    gStart:'开始参观',
+    catTitle:'馆藏书目', catLead:n => `共 ${n} 本。点击任何一本书，就会走到它面前。`, all:'全部',
+    qTitle:'课堂问答', qLead:'全班分成红、蓝两队，题目来自馆内的藏书。',
+    qRules:['两队轮流作答，每题四个选项。', '队伍讨论后说出答案，由老师点击选项。', '答对得 1 分，分数高的一队获胜。'],
+    qStart:n => `开始（${n} 题）`, teams:['红队', '蓝队'], qNum:(k, n) => `第 ${k} / ${n} 题`, qTurn:t => `${t}作答`,
+    qText:{author:t => `《${t}》的作者是谁？`, year:t => `《${t}》是哪一年出版的？`, genre:t => `《${t}》属于哪一类作品？`,
+      book:a => `以下哪一本书是${a}的作品？`},
+    qRight:t => `✓ 答对了！${t}得 1 分。`, qWrong:'✗ 答错了，正确答案已标出。', qNext:'下一题', qFinish:'看结果',
+    qWin:t => `🏆 ${t}获胜！`, qTie:'平手！两队一样棒。', qAgain:'再玩一次', qClose:'回到文学馆',
     welcome:'按 ▲ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学馆简介…', view:'查看：',
     centreName:'马华文学馆简介与历史', centreWhere:'走廊尽头',
     details:'书籍资料', summary:'内容简介', author:'作者', genre:'类别', publisher:'出版社', year:'出版年份', series:'书系',
@@ -284,7 +352,21 @@ const TEXT = {
   },
   en: {
     langBtn:'中文', sub:'Malaysian Chinese Literature Centre book collection', searchPh:'Search title, author…', none:'No matching books',
-    help:'↑ / W &nbsp;walk forward<br>↓ / S &nbsp;walk back<br>← → / A D or drag mouse &nbsp;look around<br>Click any book (or the minimap) to go there<br>Click glowing book or Enter to view<br>/ &nbsp;search books',
+    helpBtn:'How to use', catBtn:'Catalogue', quizBtn:'Class quiz',
+    gTitle:'Welcome to the Literature Centre', gLead:'This is an online literature centre you can walk through. It shows 28 books published by the Malaysian Chinese Literature Centre.',
+    gSteps:['<b>Walk</b>: press ↑ ↓ (or W S) to move and ← → (or drag the mouse) to look around. On a phone or tablet, use the buttons at the bottom right.',
+      '<b>Read</b>: click a book on the wall to walk to it, then click again (or press Enter) to open it. Click the author\'s name to read about the author.',
+      '<b>Find</b>: use the search bar at the top, the minimap at the bottom left, or open the Catalogue to see every book.',
+      '<b>Teach</b>: teachers can open the Class quiz and let the class compete in two teams.'],
+    gStart:'Start exploring',
+    catTitle:'Book catalogue', catLead:n => `${n} books. Click any book to walk to it.`, all:'All',
+    qTitle:'Class quiz', qLead:'Split the class into a red team and a blue team. The questions come from the books in the Centre.',
+    qRules:['Teams take turns. Each question has four options.', 'The team agrees on an answer and the teacher clicks it.', 'A correct answer scores 1 point. The higher score wins.'],
+    qStart:n => `Start (${n} questions)`, teams:['Red team', 'Blue team'], qNum:(k, n) => `Question ${k} of ${n}`, qTurn:t => `${t} to answer`,
+    qText:{author:t => `Who wrote 《${t}》?`, year:t => `In which year was 《${t}》 published?`, genre:t => `What kind of work is 《${t}》?`,
+      book:a => `Which of these books is by ${a}?`},
+    qRight:t => `✓ Correct! 1 point to the ${t}.`, qWrong:'✗ Not quite. The correct answer is marked.', qNext:'Next question', qFinish:'See the result',
+    qWin:t => `🏆 The ${t} wins!`, qTie:'It\'s a tie! Well played, both teams.', qAgain:'Play again', qClose:'Back to the Centre',
     welcome:'Press ▲ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the Centre…', view:'View: ',
     centreName:'About the Centre and its history', centreWhere:'end of the corridor',
     details:'Book details', summary:'Summary', author:'Author', genre:'Genre', publisher:'Publisher', year:'Year', series:'Series',
@@ -591,6 +673,7 @@ const keys = {};
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;                  // typing in the search bar
   if (authorEl.classList.contains('show')) { if (e.code === 'Escape') closeAuthor(); return; }   // author box is on top
+  if (overlayOpen()) { if (e.code === 'Escape') closeOverlays(); return; }                       // guide / catalogue / quiz
   if ((e.key === '/' || e.code === 'Slash') && !panelOpen) { qInput.focus(); e.preventDefault(); return; }
   // while the book is open, ← → turn its pages instead of the camera
   if (stage.classList.contains('show') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
@@ -782,7 +865,6 @@ function toast(msg, ms = 1600){
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
-toast(L('welcome'), 4000);
 
 /* ---------------- Detail panel ---------------- */
 const panel = document.getElementById('panel'); let panelOpen = false;
@@ -1004,23 +1086,154 @@ document.addEventListener('click', e => {
 document.getElementById('authorClose').addEventListener('click', closeAuthor);
 authorEl.addEventListener('click', e => { if (e.target === authorEl) closeAuthor(); });   // click outside the box
 
+/* ---------------- Pop-up boxes: welcome guide, catalogue, class quiz ---------------- */
+const overlays = [...document.querySelectorAll('.overlay')];
+const overlayOpen = () => overlays.some(o => o.classList.contains('show'));
+function openOverlay(id){
+  overlays.forEach(o => o.classList.toggle('show', o.id === id));
+  cancelTravel(); qInput.blur(); for (const k in keys) keys[k] = false;      // stop walking while a box is open
+}
+function closeOverlays(){
+  if (document.getElementById('guide').classList.contains('show')) {          // first visit is over: do not show the guide again
+    try { localStorage.setItem('ce-guide', '1'); } catch (e) {}
+    toast(L('welcome'), 4000);
+  }
+  overlays.forEach(o => o.classList.remove('show'));
+}
+overlays.forEach(o => o.addEventListener('click', e => {
+  if (e.target === o || e.target.closest('[data-close]')) closeOverlays();    // ×, a close button, or a click outside the box
+}));
+
+// Welcome guide: shown on the first visit, reopened with the ? button
+const guideBody = document.getElementById('guideBody');
+function renderGuide(){
+  guideBody.innerHTML = `<h2>${L('gTitle')}</h2><p class="lead">${L('gLead')}</p>
+    <ol class="steps">${L('gSteps').map(s => `<li>${s}</li>`).join('')}</ol>
+    <div class="row"><button class="btn" data-close>${L('gStart')}</button>
+      <button class="btn ghost" id="gLang">${L('langBtn')}</button></div>`;
+}
+guideBody.addEventListener('click', e => { if (e.target.id === 'gLang') switchLang(); });
+document.getElementById('helpBtn').addEventListener('click', () => openOverlay('guide'));
+
+// Catalogue: every book, grouped by series, filtered by genre; click one to walk to it
+const catBody = document.getElementById('catBody');
+let catGenre = '';
+function renderCat(){
+  const list = ITEMS.map((it, i) => [it, i]).filter(([it]) => !catGenre || it.genre === catGenre);
+  const chip = (g, label) => `<button data-g="${esc(g)}" class="${g === catGenre ? 'on' : ''}">${esc(label)}</button>`;
+  catBody.innerHTML = `<h2>${L('catTitle')}</h2><p class="lead">${L('catLead')(list.length)}</p>
+    <div class="chips">${chip('', L('all'))}${[...new Set(ITEMS.map(it => it.genre))].map(g => chip(g, LANG === 'en' ? GENRE_EN[g] : g)).join('')}</div>` +
+    Object.entries(TYPES).map(([k, t]) => {
+      const rows = list.filter(([it]) => it.type === k);
+      return !rows.length ? '' : `<h3>${esc(typeLabel(t))}（${rows.length}）</h3><ul>${rows.map(([it, i]) =>
+        `<li data-i="${i}"><i style="background:${t.color}"></i><span>《${esc(it.title)}》<small>${esc(it.author)} · ${it.year} · ${esc(genreOf(it))}</small></span></li>`).join('')}</ul>`;
+    }).join('');
+}
+catBody.addEventListener('click', e => {
+  const g = e.target.closest('[data-g]'), li = e.target.closest('li[data-i]');
+  if (g) { catGenre = g.dataset.g; renderCat(); }
+  else if (li) { closeOverlays(); travelTo(+li.dataset.i); }
+});
+document.getElementById('catBtn').addEventListener('click', () => { renderCat(); openOverlay('cat'); });
+
+// Class quiz: two teams take turns; questions are generated from the book data, so they are always correct
+const quizBody = document.getElementById('quizBody'), TEAM_CLASS = ['red', 'blue'];
+let quiz = null;                                   // {qs, k: question number, score: [red, blue], picked: option chosen}
+const mainTitle = it => it.title.split('：')[0];   // subtitles often name the author or genre, which would give the answer away
+function shuffle(a){
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+// the right answer plus up to three different wrong ones
+const options = (right, pool) => shuffle([right, ...shuffle([...new Set(pool)].filter(v => v !== right)).slice(0, 3)]);
+function buildQuestions(n){
+  const qs = [];
+  ITEMS.forEach((it, i) => {
+    const title = mainTitle(it), authors = it.author.split('、'), giveaway = authors.some(a => it.title.includes(a));
+    if (!giveaway) qs.push({i, kind:'author', ask:title, right:it.author, opts:options(it.author, ITEMS.map(x => x.author))});
+    qs.push({i, kind:'year', ask:title, right:it.year, opts:options(it.year, ITEMS.map(x => x.year)).sort((a, b) => a - b)});
+    if (!/诗|小说|散文|文集|论/.test(title))
+      qs.push({i, kind:'genre', ask:title, right:it.genre, opts:options(it.genre, ITEMS.map(x => x.genre))});
+    if (!giveaway && authors.length === 1)
+      qs.push({i, kind:'book', ask:it.author, right:title,
+        opts:options(title, ITEMS.filter(x => !x.author.split('、').includes(it.author)).map(mainTitle))});
+  });
+  const used = new Set();                          // one question per book
+  return shuffle(qs).filter(q => !used.has(q.i) && used.add(q.i)).slice(0, n);
+}
+function scoreHTML(turn){
+  return `<div class="score">${TEAM_CLASS.map((c, j) => `<div class="team ${c} ${j === turn ? 'turn' : ''}">
+    <span>${L('teams')[j]}${j === turn ? ' ◀' : ''}</span><b>${quiz.score[j]}</b></div>`).join('')}</div>`;
+}
+function quizSetup(){
+  quiz = null;
+  quizBody.innerHTML = `<h2>${L('qTitle')}</h2><p class="lead">${L('qLead')}</p>
+    <ol class="steps">${L('qRules').map(s => `<li>${s}</li>`).join('')}</ol>
+    <div class="row"><button class="btn" data-n="6">${L('qStart')(6)}</button>
+      <button class="btn ghost" data-n="10">${L('qStart')(10)}</button></div>`;
+}
+function quizShow(){
+  const q = quiz.qs[quiz.k], turn = quiz.k % 2, done = quiz.picked !== null, team = L('teams')[turn];
+  const show = v => q.kind === 'genre' && LANG === 'en' ? GENRE_EN[v] : String(v);
+  const mark = (v, j) => !done ? '' : v === q.right ? 'ok' : j === quiz.picked ? 'bad' : '';
+  const book = ITEMS[q.i];
+  quizBody.innerHTML = `<h2>${L('qTitle')}</h2>${scoreHTML(done ? -1 : turn)}
+    <div class="qn">${L('qNum')(quiz.k + 1, quiz.qs.length)} · ${L('qTurn')(team)}</div>
+    <div class="qq">${esc(L('qText')[q.kind](q.ask))}</div>
+    <div class="opts">${q.opts.map((v, j) => `<button data-o="${j}" class="${mark(v, j)}" ${done ? 'disabled' : ''}>${'ABCD'[j]}. ${esc(show(v))}${
+      mark(v, j) === 'ok' ? ' ✓' : mark(v, j) === 'bad' ? ' ✗' : ''}</button>`).join('')}</div>
+    <div class="fb">${!done ? '' : (q.opts[quiz.picked] === q.right ? L('qRight')(team) : L('qWrong')) +
+      (LANG === 'zh' ? `<br><span class="ph">《${esc(book.title)}》：${esc(book.summary)}</span>` : '')}</div>
+    ${done ? `<div class="row"><button class="btn" id="qNext">${quiz.k + 1 < quiz.qs.length ? L('qNext') : L('qFinish')}</button></div>` : ''}`;
+}
+function quizEnd(){
+  const [a, b] = quiz.score;
+  quizBody.innerHTML = `<h2>${L('qTitle')}</h2>${scoreHTML(-1)}
+    <div class="qq">${a === b ? L('qTie') : L('qWin')(L('teams')[a > b ? 0 : 1])}</div>
+    <div class="row"><button class="btn" id="qAgain">${L('qAgain')}</button>
+      <button class="btn ghost" data-close>${L('qClose')}</button></div>`;
+  quiz = null;
+}
+quizBody.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.n) { quiz = {qs:buildQuestions(+b.dataset.n), k:0, score:[0, 0], picked:null}; quizShow(); }
+  else if (b.dataset.o && quiz && quiz.picked === null) {
+    quiz.picked = +b.dataset.o;
+    if (quiz.qs[quiz.k].opts[quiz.picked] === quiz.qs[quiz.k].right) quiz.score[quiz.k % 2]++;
+    quizShow();
+  }
+  else if (b.id === 'qNext') { quiz.k++; quiz.picked = null; quiz.k < quiz.qs.length ? quizShow() : quizEnd(); }
+  else if (b.id === 'qAgain') quizSetup();
+});
+document.getElementById('quizBtn').addEventListener('click', () => { if (!quiz) quizSetup(); openOverlay('quiz'); });   // a quiz in progress resumes
+
 /* ---------------- Language switch ---------------- */
 const langBtn = document.getElementById('langBtn');
 function applyLang(){
   document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-Hans';
   langBtn.textContent = L('langBtn');
   document.getElementById('sub').textContent = L('sub');
-  document.getElementById('help').innerHTML = L('help');
   document.getElementById('bkDetails').textContent = L('details');
+  document.getElementById('catBtn').textContent = L('catBtn');
+  document.getElementById('quizBtn').textContent = L('quizBtn');
+  document.getElementById('helpBtn').setAttribute('aria-label', L('helpBtn'));
+  document.getElementById('helpBtn').title = L('helpBtn');
   qInput.placeholder = L('searchPh');
+  renderGuide();
 }
-langBtn.addEventListener('click', () => {
+function switchLang(){
   LANG = LANG === 'en' ? 'zh' : 'en';
   try { localStorage.setItem('ce-lang', LANG); } catch (e) {}
   applyLang();
   if (current !== null) current < 0 ? openCentre() : openPanel(current);   // redraw what is open
-});
+}
+langBtn.addEventListener('click', switchLang);
 applyLang();
+// first visit: show the welcome guide; later visits: just the hint
+let guideSeen = false;
+try { guideSeen = localStorage.getItem('ce-guide') === '1'; } catch (e) {}
+if (guideSeen) toast(L('welcome'), 4000); else openOverlay('guide');
 pgPrev.addEventListener('click', () => turn(-1));
 pgNext.addEventListener('click', () => turn(1));
 document.getElementById('bkClose').addEventListener('click', closePanel);
@@ -1070,8 +1283,8 @@ function tick(){
   const gliding = (travel >= 0 || travelSign) && !panelOpen;
   if (gliding) {
     const dz = (travelSign ? Z_END : ITEMS[travel].z) - camera.position.z, far = Math.abs(dz) > 1.5;
-    camera.position.z += Math.sign(dz) * Math.min(Math.abs(dz), Math.min(5, Math.abs(dz) * 2.5 + .6) * dt);
     camera.position.x += -camera.position.x * Math.min(1, dt * 4);   // back to the middle of the corridor
+    move(0, Math.sign(dz) * Math.min(Math.abs(dz), Math.min(5, Math.abs(dz) * 2.5 + .6) * dt));   // waits at the facade until lined up with the door
     camera.position.y = EYE;
     if (travel >= 0)   // long trip: face the way you walk, turn to the wall only when you are nearly there
       yawTarget = nearYaw(travelFar && far ? (dz < 0 ? 0 : Math.PI) : -ITEMS[travel].side * Math.PI / 2);

@@ -12,7 +12,7 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#0d0b09;color:var(--ink);
     font-family:Georgia,"Times New Roman",serif;overflow:hidden;-webkit-user-select:none;user-select:none}
-  #scene{position:fixed;inset:0;display:block;touch-action:none}
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}   /* fill the window on high-DPI screens too */
   .hud-title{position:fixed;top:14px;left:16px;font-size:20px;letter-spacing:.08em;color:var(--gold);
     text-shadow:0 2px 8px #000;pointer-events:none}
   .hud-title small{display:block;font-size:12px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
@@ -120,6 +120,24 @@
   .bk-ctrl button:disabled{opacity:.35;cursor:default}
   #pgInfo{min-width:84px;text-align:center}
   .ask{margin-top:24px;padding:12px;border:1px dashed rgba(217,178,95,.5);border-radius:8px;color:var(--muted);font-size:14px}
+  /* language switch, above the arrow buttons */
+  #langBtn{position:fixed;right:20px;bottom:172px;z-index:3;padding:7px 14px;border-radius:18px;border:1px solid var(--gold);
+    background:rgba(20,16,12,.75);color:var(--ink);font:14px "Microsoft YaHei","PingFang SC",system-ui,sans-serif;cursor:pointer}
+  /* clickable author name + author detail box */
+  .au{color:inherit;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+  .pg .au:hover{color:#b0362a} #panel .au:hover,#author .au:hover{color:var(--gold)}
+  #author{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;
+    background:rgba(8,6,4,.6);padding:16px}
+  #author.show{display:flex}
+  #authorBox{position:relative;width:min(440px,100%);max-height:80vh;overflow-y:auto;background:var(--panel);
+    border:1px solid rgba(217,178,95,.6);border-radius:10px;padding:24px 22px 20px;
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  #authorBox h2{margin:12px 0 10px;font-size:24px;color:var(--gold)}
+  #authorBox h3{font-size:13px;letter-spacing:.1em;color:var(--gold);margin:18px 0 8px}
+  #authorBox p{line-height:1.6;font-size:14.5px;margin:0 0 10px}
+  #authorBox ul{padding-left:18px;margin:0} #authorBox li{margin-bottom:6px;line-height:1.5;font-size:14px}
+  #authorClose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
+  .ph{color:var(--muted);font-size:12.5px;font-style:italic}
   /* not enough room between the title and the help text: put the search bar on its own row */
   @media (max-width:1100px){ #search{top:64px} #toast{top:114px} }
   @media (max-width:860px){ #search{left:16px;transform:none;width:min(340px, calc(100vw - 290px))} }   /* clear of the help text */
@@ -130,10 +148,11 @@
 </head>
 <body>
 <canvas id="scene"></canvas>
-<div class="hud-title">Cultural Explorer<small>马华文学馆出版品 · Malaysian Chinese Literature Centre book collection</small></div>
-<div class="help">↑ / W &nbsp;walk forward<br>↓ / S &nbsp;walk back<br>← → / A D or drag mouse &nbsp;look around<br>Click any book (or the minimap) to go there<br>Click glowing book or Enter to view<br>/ &nbsp;search books</div>
+<div class="hud-title">Cultural Explorer<small id="sub"></small></div>
+<div class="help" id="help"></div>
+<button id="langBtn" aria-label="Switch language"></button>
 <div id="search" role="search">
-  <input id="q" type="text" placeholder="搜索书名、作者… Search books" autocomplete="off" spellcheck="false" aria-label="Search books">
+  <input id="q" type="text" autocomplete="off" spellcheck="false" aria-label="Search books">
   <ul id="results"></ul>
 </div>
 <canvas id="map" width="384" height="680"></canvas>
@@ -160,6 +179,12 @@
   <button id="closeBtn" aria-label="Close">×</button>
   <div id="panelBody"></div>
 </aside>
+<div id="author" aria-hidden="true">
+  <div id="authorBox" role="dialog" aria-modal="true">
+    <button id="authorClose" aria-label="Close">×</button>
+    <div id="authorBody"></div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -168,9 +193,12 @@
 // Titles, authors, years and series follow that page; summaries are short paraphrases.
 const SOURCE_URL = 'https://www.southern.edu.my/mclc/chuban.php';
 const TYPES = {
-  mclc:     {label:'马华文学馆出版品', color:'#8e2418', pub:'南方学院马华文学馆'},
-  wenchuang:{label:'文创书系',         color:'#2f6b5a', pub:'南方大学学院、马华文学馆'},
-  academic: {label:'马华文学馆学术丛书', color:'#2f4f86', pub:'南方大学学院、马华文学馆'}
+  mclc:     {label:'马华文学馆出版品', en:'MCLC Publications', color:'#8e2418', pub:'南方学院马华文学馆',
+             pubEn:'Malaysian Chinese Literature Centre, Southern College'},
+  wenchuang:{label:'文创书系', en:'Creative Writing Series', color:'#2f6b5a', pub:'南方大学学院、马华文学馆',
+             pubEn:'Southern University College & Malaysian Chinese Literature Centre'},
+  academic: {label:'马华文学馆学术丛书', en:'MCLC Academic Series', color:'#2f4f86', pub:'南方大学学院、马华文学馆',
+             pubEn:'Southern University College & Malaysian Chinese Literature Centre'}
 };
 const ITEMS = [
   {type:'mclc', title:'跳蚤', author:'商晚筠', year:2003, genre:'小说集',
@@ -234,6 +262,47 @@ const ITEMS = [
 // Place books automatically: alternate left / right, evenly spaced down the corridor
 const SPACING = 1.4;
 ITEMS.forEach((it, i) => { it.side = i % 2 ? 1 : -1; it.z = -4 - i * SPACING; });
+
+/* ---------------- Language: 中文 / English ---------------- */
+// Placeholder text (hackathon): author introductions and English summaries are not written yet.
+const LOREM = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
+const GENRE_EN = {'小说集':'Short stories', '诗集':'Poetry', '微型小说':'Flash fiction', '散文集':'Essays',
+  '散文与小说':'Essays & fiction', '诗文集':'Poetry & prose', '论文集':'Research papers', '散文、诗与论述':'Essays, poetry & criticism'};
+const TEXT = {
+  zh: {
+    langBtn:'English', sub:'马华文学馆出版品', searchPh:'搜索书名、作者…', none:'找不到相关书籍',
+    help:'↑ / W &nbsp;向前走<br>↓ / S &nbsp;向后退<br>← → / A D 或拖动鼠标 &nbsp;转动视角<br>点击书本（或小地图）前往<br>点击发光的书本或按 Enter 查看<br>/ &nbsp;搜索书籍',
+    welcome:'按 ▲ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学馆简介…', view:'查看：',
+    centreName:'马华文学馆简介与历史', centreWhere:'走廊尽头',
+    details:'书籍资料', summary:'内容简介', author:'作者', genre:'类别', publisher:'出版社', year:'出版年份', series:'书系',
+    by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', end:'完',
+    bookPages:['封面', '扉页', '简介 · 资料', '完'], centrePages:['封面', '简介 · 缘起', '馆藏 · 馆舍', '历史 1997–2014', '历史 2015–2025'],
+    chat:'💬 <em>即将推出：</em>向 AI 提问关于这本书的问题。',
+    authorTitle:'作者简介', authorNote:'（示例文字，作者资料待补充）', authorWorks:'馆藏作品',
+    phNote:'', cAbout:'文学馆简介', cOrigin:'缘起', cMission:'宗旨', cCollection:'重点馆藏', cRooms:'馆舍与专题作家展',
+    cWriters:'历届专题作家展', cHistory:'回顾历史', cFounded:'成立于 1998年4月26日', cNote:''
+  },
+  en: {
+    langBtn:'中文', sub:'Malaysian Chinese Literature Centre book collection', searchPh:'Search title, author…', none:'No matching books',
+    help:'↑ / W &nbsp;walk forward<br>↓ / S &nbsp;walk back<br>← → / A D or drag mouse &nbsp;look around<br>Click any book (or the minimap) to go there<br>Click glowing book or Enter to view<br>/ &nbsp;search books',
+    welcome:'Press ▲ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the Centre…', view:'View: ',
+    centreName:'About the Centre and its history', centreWhere:'end of the corridor',
+    details:'Book details', summary:'Summary', author:'Author', genre:'Genre', publisher:'Publisher', year:'Year', series:'Series',
+    by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', end:'The end',
+    bookPages:['Cover', 'Title page', 'Summary · Details', 'The end'], centrePages:['Cover', 'About · Origin', 'Collection · Facilities', 'History 1997–2014', 'History 2015–2025'],
+    chat:'💬 <em>Coming next:</em> ask a question about this book (AI chat).',
+    authorTitle:'About the author', authorNote:'(Placeholder text. Author details to be added.)', authorWorks:'Works in this collection',
+    phNote:'(English summary placeholder)', cAbout:'About the Centre', cOrigin:'Origin', cMission:'Mission', cCollection:'Collection',
+    cRooms:'Facilities & featured writers', cWriters:'Featured writers', cHistory:'History', cFounded:'Founded 26 April 1998',
+    cNote:'(English text to be added. Original Chinese shown.)'
+  }
+};
+let LANG = 'zh';
+try { if (localStorage.getItem('ce-lang') === 'en') LANG = 'en'; } catch (e) {}
+const L = k => TEXT[LANG][k];
+const typeLabel = t => LANG === 'en' ? t.en : t.label;
+const typePub = (it, t) => LANG === 'en' ? t.pubEn : (it.pub || t.pub);
+const genreOf = it => LANG === 'en' ? (GENRE_EN[it.genre] || it.genre) : it.genre;
 // Previous Melaka history exhibits — kept for reference, not shown in the corridor
 const OLD_ITEMS = [
   { side:-1, z:-6,  type:'figure', mono:'P',  title:'Parameswara', era:'c. 1344 – c. 1414',
@@ -521,6 +590,7 @@ camera.rotation.order = 'YXZ';
 const keys = {};
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;                  // typing in the search bar
+  if (authorEl.classList.contains('show')) { if (e.code === 'Escape') closeAuthor(); return; }   // author box is on top
   if ((e.key === '/' || e.code === 'Slash') && !panelOpen) { qInput.focus(); e.preventDefault(); return; }
   // while the book is open, ← → turn its pages instead of the camera
   if (stage.classList.contains('show') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
@@ -586,17 +656,26 @@ canvas.addEventListener('pointerup', e => {
 
 /* ---------------- Click a far book: glide over to it ---------------- */
 let travel = -1, focus = -1;   // travel: book we are gliding to; focus: book we arrived at
+const nearYaw = a => a + Math.PI * 2 * Math.round((yaw - a) / (Math.PI * 2));   // same angle, shortest turn from now
+let travelFar = false;         // long trip: look where you walk first, turn to the book on arrival (less motion sickness)
 function travelTo(idx){
-  travel = idx; focus = -1;
-  const face = -ITEMS[idx].side * Math.PI / 2;                 // look straight at the wall it hangs on
-  yawTarget = face + Math.PI * 2 * Math.round((yaw - face) / (Math.PI * 2));   // shortest turn
-  toast(`前往《${ITEMS[idx].title}》 Going to book…`);
+  travel = idx; focus = -1; travelSign = false;
+  travelFar = Math.abs(ITEMS[idx].z - camera.position.z) > 4;
+  toast(`${L('going')}《${ITEMS[idx].title}》…`);
 }
 let travelSign = false;    // gliding to the end-wall signboard
 function travelToSign(){
   travel = -1; focus = -1; travelSign = true;
-  yawTarget = Math.PI * 2 * Math.round(yaw / (Math.PI * 2));   // face straight down the corridor
-  toast('前往马华文学馆简介 Going to the Centre…');
+  yawTarget = nearYaw(0);                                      // face straight down the corridor
+  toast(L('goingCentre'));
+}
+// Walk in the direction the camera faces; walls and the doorway stop you
+const xLimit = z => z > FZ + .5 ? 6 : z > FZ - .5 ? .6 : HALF_W - .9;   // plaza / doorway / corridor
+function move(dx, dz){
+  const p = camera.position;
+  const nz = THREE.MathUtils.clamp(p.z + dz, Z_END, Z_START);
+  if (Math.abs(p.x) <= xLimit(nz) + 1e-6) p.z = nz;            // cannot walk through the facade beside the door
+  const lim = xLimit(p.z); p.x = THREE.MathUtils.clamp(p.x + dx, -lim, lim);
 }
 function cancelTravel(){ travel = -1; travelSign = false; }
 /* ---------------- Minimap: expand on hover, book names, click to go ---------------- */
@@ -619,7 +698,7 @@ function setMapHover(idx, e){
   mapHover = idx;
   if (idx < 0) { mapTip.classList.remove('show'); return; }
   const it = ITEMS[idx];
-  mapTip.innerHTML = `《${it.title}》<small>${it.author} · ${it.year} · ${it.genre}</small>`;
+  mapTip.innerHTML = `《${it.title}》<small>${it.author} · ${it.year} · ${genreOf(it)}</small>`;
   const r = map.getBoundingClientRect();
   mapTip.style.left = Math.min(r.right + 10, innerWidth - mapTip.offsetWidth - 8) + 'px';
   mapTip.style.top = Math.max(8, e.clientY - mapTip.offsetHeight / 2) + 'px';
@@ -648,21 +727,28 @@ map.addEventListener('click', e => {
 const qInput = document.getElementById('q'), resultsEl = document.getElementById('results');
 const CENTRE_WORDS = '马华文学馆 文学馆 简介 历史 缘起 馆藏 mclc centre center about history malaysian chinese literature';
 let results = [], resultOn = 0;
+// Matching ignores case, full-width / half-width forms, spaces and punctuation, so 《跳蚤》, "声声慢:" or "2013 2023" all work.
+// A query made only of symbols (e.g. "·") is matched as typed.
+const norm = s => String(s).normalize('NFKC').toLowerCase();
+const strip = s => s.replace(/[\s\p{P}\p{S}]/gu, '');
+const HAY = ITEMS.map(it => { const t = TYPES[it.type];
+  return norm([it.title, it.author, it.genre, GENRE_EN[it.genre], it.year, t.label, t.en].join(' ')); });
+const HAY_KEY = HAY.map(strip), CENTRE_KEYS = CENTRE_WORDS.split(' ');
+const HAY_NAME = ITEMS.map(it => strip(norm(it.title + it.author)));   // one Latin letter or digit: titles and authors only
 function runSearch(){
-  const q = qInput.value.trim().toLowerCase();
+  const q = norm(qInput.value.trim()), key = strip(q);
   results = [];
   if (q) {
-    ITEMS.forEach((it, i) => {
-      const hay = [it.title, it.author, it.genre, it.year, TYPES[it.type].label].join(' ').toLowerCase();
-      if (hay.includes(q)) results.push(i);
-    });
-    if (CENTRE_WORDS.includes(q)) results.push(-1);          // -1: the Centre's own introduction (end signboard)
+    const hay = /^[a-z0-9]$/.test(key) ? HAY_NAME : key ? HAY_KEY : HAY;
+    ITEMS.forEach((it, i) => { if (hay[i].includes(key || q)) results.push(i); });
+    // -1: the Centre's own introduction (end signboard); one Latin letter alone is too vague to match it
+    if (key && (key.length > 1 || /[^\x00-\x7f]/.test(key)) && CENTRE_KEYS.some(w => w.includes(key))) results.push(-1);
   }
   resultOn = 0;
-  resultsEl.innerHTML = !q ? '' : !results.length ? '<li class="none">找不到相关书籍 No matching books</li>' :
+  resultsEl.innerHTML = !q ? '' : !results.length ? `<li class="none">${L('none')}</li>` :
     results.map((i, k) => i < 0
-      ? `<li data-k="${k}"><i style="background:#d9b25f"></i><span>马华文学馆简介与历史<small>About the Centre · 走廊尽头 end of the corridor</small></span></li>`
-      : `<li data-k="${k}"><i style="background:${TYPES[ITEMS[i].type].color}"></i><span>《${ITEMS[i].title}》<small>${ITEMS[i].author} · ${ITEMS[i].year} · ${ITEMS[i].genre}</small></span></li>`).join('');
+      ? `<li data-k="${k}"><i style="background:#d9b25f"></i><span>${L('centreName')}<small>${L('centreWhere')}</small></span></li>`
+      : `<li data-k="${k}"><i style="background:${TYPES[ITEMS[i].type].color}"></i><span>《${esc(ITEMS[i].title)}》<small>${esc(ITEMS[i].author)} · ${ITEMS[i].year} · ${esc(genreOf(ITEMS[i]))}</small></span></li>`).join('');
   resultsEl.classList.toggle('show', !!q);
   markResult();
 }
@@ -696,27 +782,35 @@ function toast(msg, ms = 1600){
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
-toast('Press ▲ or W to walk in through the door', 4000);
+toast(L('welcome'), 4000);
 
 /* ---------------- Detail panel ---------------- */
 const panel = document.getElementById('panel'); let panelOpen = false;
 document.getElementById('closeBtn').addEventListener('click', () => showDetails(false));
 function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let current = null;   // what is open: book index, -1 for the Centre's introduction, null for nothing
+// Author names are links that open the author detail box (several authors are separated by 、)
+function authorLinks(s){
+  return s.split('、').map(a => `<a class="au" data-au="${esc(a)}">${esc(a)}</a>`).join(LANG === 'en' ? ', ' : '、');
+}
 function openPanel(i){
-  const it = ITEMS[i], t = TYPES[it.type];
+  const it = ITEMS[i], t = TYPES[it.type]; current = i;
+  const summary = LANG === 'en'
+    ? `<p><span class="ph">${L('phNote')}</span> ${LOREM}</p><p style="color:var(--muted)">${esc(it.summary)}</p>`
+    : `<p>${esc(it.summary)}</p>`;
   document.getElementById('panelBody').innerHTML = `
-    <span class="chip" style="background:${t.color}">${t.label}</span>
-    <h2>《${esc(it.title)}》</h2><div class="era">${esc(it.author)} · ${it.year}</div>
-    <p>${esc(it.summary)}</p>
-    <h3>书籍资料 Book details</h3><ul>
-      <li>作者：${esc(it.author)}</li>
-      <li>类别：${esc(it.genre)}</li>
-      <li>出版社：${esc(it.pub || t.pub)}</li>
-      <li>出版年份：${it.year}</li>
-      <li>书系：${esc(t.label)}</li></ul>
-    <p style="font-size:13px;color:var(--muted)">资料来源 Source：<a href="${SOURCE_URL}" target="_blank" rel="noopener"
-      style="color:var(--gold)">马华文学馆出版品</a></p>
-    <div class="ask">💬 <em>Coming next:</em> ask a question about this book (AI chat).</div>`;
+    <span class="chip" style="background:${t.color}">${typeLabel(t)}</span>
+    <h2>《${esc(it.title)}》</h2><div class="era">${authorLinks(it.author)} · ${it.year}</div>
+    ${summary}
+    <h3>${L('details')}</h3><ul>
+      <li>${L('author')}：${authorLinks(it.author)}</li>
+      <li>${L('genre')}：${esc(genreOf(it))}</li>
+      <li>${L('publisher')}：${esc(typePub(it, t))}</li>
+      <li>${L('year')}：${it.year}</li>
+      <li>${L('series')}：${esc(typeLabel(t))}</li></ul>
+    <p style="font-size:13px;color:var(--muted)">${L('source')}：<a href="${SOURCE_URL}" target="_blank" rel="noopener"
+      style="color:var(--gold)">${L('sourceName')}</a></p>
+    <div class="ask">${L('chat')}</div>`;
   panel.scrollTop = 0;
   openBook(i);
   // wide screens: details bar beside the book; small screens: book first, details via button
@@ -753,30 +847,34 @@ addEventListener('resize', sizeBook);
 function openBook(i){
   const it = ITEMS[i], t = TYPES[it.type];
   const coverURL = exhibits[i].art.material.map.image.toDataURL();   // same cover as on the wall
-  const pub = esc(it.pub || t.pub);
+  const pub = esc(typePub(it, t)), label = esc(typeLabel(t));
+  const summary = LANG === 'en' ? `<span class="ph">${L('phNote')}</span> ${LOREM.split('. ')[0]}.` : esc(it.summary);
   // each leaf has a front (right-hand page) and a back (left-hand page once turned)
   const pages = [
     [`<div class="face cover" style="background-image:url(${coverURL})"></div>`,
      `<div class="face back pg l"><div class="seal">马华文学馆<br>藏书</div></div>`],
-    [`<div class="face pg r"><div class="pl">${esc(t.label)}</div><div class="pt">${esc(it.title)}</div>
-        <div class="pa">${esc(it.author)} 著</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
-     `<div class="face back pg l"><h4>内容简介</h4><div class="txt">${esc(it.summary)}</div><div class="num">— 2 —</div></div>`],
-    [`<div class="face pg r"><h4>书籍资料</h4><dl class="hist">
-        <dt>作者</dt><dd>${esc(it.author)}</dd><dt>类别</dt><dd>${esc(it.genre)}</dd>
-        <dt>出版社</dt><dd>${pub}</dd><dt>出版年份</dt><dd>${it.year}</dd><dt>书系</dt><dd>${esc(t.label)}</dd></dl>
+    [`<div class="face pg r"><div class="pl">${label}</div><div class="pt">${esc(it.title)}</div>
+        <div class="pa">${L('by')(authorLinks(it.author))}</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
+     `<div class="face back pg l"><h4>${L('summary')}</h4><div class="txt">${summary}</div><div class="num">— 2 —</div></div>`],
+    [`<div class="face pg r"><h4>${L('details')}</h4><dl class="hist">
+        <dt>${L('author')}</dt><dd>${authorLinks(it.author)}</dd><dt>${L('genre')}</dt><dd>${esc(genreOf(it))}</dd>
+        <dt>${L('publisher')}</dt><dd>${pub}</dd><dt>${L('year')}</dt><dd>${it.year}</dd><dt>${L('series')}</dt><dd>${label}</dd></dl>
         <div class="num">— 3 —</div></div>`,
      `<div class="face back pg l"><div class="seal" style="margin-top:45%">马华文学馆</div></div>`]
   ];
-  showBook(pages, '资料来源：马华文学馆出版品', ['封面 Cover', '扉页 Title page', '简介 · 资料 Details', '完 The end']);
+  showBook(pages, `${L('source')}：${L('sourceName')}`, L('bookPages'));
 }
 // Build any flip book: pages = [[right-page HTML, left-page HTML (back of the leaf)], ...]
 function showBook(pages, sourceNote, names){
   PAGE_NAMES = names;
-  fbook.innerHTML = `<div class="base"><div class="face pg r"><div class="pt" style="margin-top:40%">— 完 —</div>
+  fbook.innerHTML = `<div class="base"><div class="face pg r"><div class="pt" style="margin-top:40%">— ${L('end')} —</div>
       <div class="py">${sourceNote}</div></div></div>` +
     pages.map(([f, b]) => `<div class="leaf">${f}${b}</div>`).join('');
   pageLeaves = [...fbook.querySelectorAll('.leaf')];
-  pageLeaves.forEach((lf, k) => lf.addEventListener('click', () => (lf.classList.contains('flipped') ? turn(-1) : turn(1))));
+  pageLeaves.forEach((lf, k) => lf.addEventListener('click', e => {
+    if (e.target.closest('.au')) return;                               // author name: opens the author box, no page turn
+    lf.classList.contains('flipped') ? turn(-1) : turn(1);
+  }));
   flipped = 0; sizeBook(); layoutLeaves();
   stage.classList.remove('show'); void stage.offsetWidth;            // restart the entrance animation
   stage.classList.add('show'); stage.setAttribute('aria-hidden', 'false');
@@ -828,35 +926,35 @@ function centreCoverURL(){
   return c.toDataURL();
 }
 function openCentre(){
-  const C = CENTRE, row = ([y, t]) => `<dt>${y}</dt><dd>${t}</dd>`;
+  const C = CENTRE, row = ([y, t]) => `<dt>${y}</dt><dd>${t}</dd>`; current = -1;
   const h1 = C.history.slice(0, 5), h2 = C.history.slice(5, 10), h3 = C.history.slice(10);
   showBook([
     [`<div class="face cover" style="background-image:url(${centreCoverURL()})"></div>`,
-     `<div class="face back pg l"><h4>文学馆简介</h4><div class="txt sm">${C.intro}</div>
+     `<div class="face back pg l"><h4>${L('cAbout')}</h4><div class="txt sm">${C.intro}</div>
         <div class="txt sm" style="margin-top:.8em">${C.mission}</div><div class="num">— 1 —</div></div>`],
-    [`<div class="face pg r"><h4>缘起</h4><div class="txt sm">${C.origin}</div><div class="num">— 2 —</div></div>`,
-     `<div class="face back pg l"><h4>重点馆藏</h4><dl class="sm hist">${C.collection.map(row).join('')}</dl><div class="num">— 3 —</div></div>`],
-    [`<div class="face pg r"><h4>馆舍与专题作家展</h4><div class="txt sm">${C.rooms}</div>
-        <div class="txt sm" style="margin-top:.8em">历届专题作家展：${C.writers}。</div><div class="num">— 4 —</div></div>`,
-     `<div class="face back pg l"><h4>回顾历史</h4><dl class="sm hist">${h1.map(row).join('')}</dl><div class="num">— 5 —</div></div>`],
-    [`<div class="face pg r"><h4>回顾历史</h4><dl class="sm hist">${h2.map(row).join('')}</dl><div class="num">— 6 —</div></div>`,
-     `<div class="face back pg l"><h4>回顾历史</h4><dl class="sm hist">${h3.map(row).join('')}</dl><div class="num">— 7 —</div></div>`]
-  ], '资料来源：文学馆简介 · 回顾历史',
-  ['封面 Cover', '简介 · 缘起 About', '馆藏 · 馆舍 Collection', '历史 History 1997–2014', '历史 History 2015–2025']);
+    [`<div class="face pg r"><h4>${L('cOrigin')}</h4><div class="txt sm">${C.origin}</div><div class="num">— 2 —</div></div>`,
+     `<div class="face back pg l"><h4>${L('cCollection')}</h4><dl class="sm hist">${C.collection.map(row).join('')}</dl><div class="num">— 3 —</div></div>`],
+    [`<div class="face pg r"><h4>${L('cRooms')}</h4><div class="txt sm">${C.rooms}</div>
+        <div class="txt sm" style="margin-top:.8em">${L('cWriters')}：${C.writers}。</div><div class="num">— 4 —</div></div>`,
+     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h1.map(row).join('')}</dl><div class="num">— 5 —</div></div>`],
+    [`<div class="face pg r"><h4>${L('cHistory')}</h4><dl class="sm hist">${h2.map(row).join('')}</dl><div class="num">— 6 —</div></div>`,
+     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h3.map(row).join('')}</dl><div class="num">— 7 —</div></div>`]
+  ], `${L('source')}：southern.edu.my/mclc`, L('centrePages'));
 
   document.getElementById('panelBody').innerHTML = `
-    <span class="chip" style="background:#8e2418">马华文学馆 · Literature Centre</span>
-    <h2>马华文学馆</h2><div class="era">Malaysian Chinese Literature Centre · 成立于 1998年4月26日</div>
+    <span class="chip" style="background:#8e2418">${LANG === 'en' ? 'Literature Centre' : '马华文学馆'}</span>
+    <h2>${LANG === 'en' ? 'Malaysian Chinese Literature Centre' : '马华文学馆'}</h2><div class="era">${L('cFounded')}</div>
+    ${L('cNote') ? `<p class="ph">${L('cNote')}</p>` : ''}
     <p>${C.intro}</p>
-    <h3>缘起 Origin</h3><p>${C.origin}</p>
-    <h3>宗旨 Mission</h3><p>${C.mission}</p>
-    <h3>重点馆藏 Collection</h3><ul>${C.collection.map(([k, v]) => `<li>${k}：${v}</li>`).join('')}</ul>
-    <h3>馆舍 Facilities</h3><p>${C.rooms}</p>
-    <h3>专题作家展 Featured writers</h3><p>${C.writers}</p>
-    <h3>回顾历史 History</h3><ul>${C.history.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>
-    <p style="font-size:13px;color:var(--muted)">资料来源 Source：
-      <a href="${ABOUT_URL}" target="_blank" rel="noopener" style="color:var(--gold)">文学馆简介</a> ·
-      <a href="${HISTORY_URL}" target="_blank" rel="noopener" style="color:var(--gold)">回顾历史</a></p>`;
+    <h3>${L('cOrigin')}</h3><p>${C.origin}</p>
+    <h3>${L('cMission')}</h3><p>${C.mission}</p>
+    <h3>${L('cCollection')}</h3><ul>${C.collection.map(([k, v]) => `<li>${k}：${v}</li>`).join('')}</ul>
+    <h3>${L('cRooms')}</h3><p>${C.rooms}</p>
+    <h3>${L('cWriters')}</h3><p>${C.writers}</p>
+    <h3>${L('cHistory')}</h3><ul>${C.history.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>
+    <p style="font-size:13px;color:var(--muted)">${L('source')}：
+      <a href="${ABOUT_URL}" target="_blank" rel="noopener" style="color:var(--gold)">${L('cAbout')}</a> ·
+      <a href="${HISTORY_URL}" target="_blank" rel="noopener" style="color:var(--gold)">${L('cHistory')}</a></p>`;
   panel.scrollTop = 0;
   if (innerWidth >= 900) showDetails(true);
   syncOpen();
@@ -879,7 +977,50 @@ function turn(d){
   flipped = n; layoutLeaves(active);
   clearTimeout(settleTimer); settleTimer = setTimeout(() => layoutLeaves(), 1100);
 }
-function closeBook(){ stage.classList.remove('show'); stage.setAttribute('aria-hidden', 'true'); syncOpen(); }
+function closeBook(){ stage.classList.remove('show'); stage.setAttribute('aria-hidden', 'true'); current = null; syncOpen(); }
+
+/* ---------------- Author detail box (opens when an author name is clicked) ---------------- */
+const authorEl = document.getElementById('author');
+function openAuthor(name){
+  const works = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.author.split('、').includes(name));
+  document.getElementById('authorBody').innerHTML = `
+    <span class="chip" style="background:#8e2418">${L('authorTitle')}</span>
+    <h2>${esc(name)}</h2>
+    <p>${LOREM}</p><p class="ph">${L('authorNote')}</p>
+    <h3>${L('authorWorks')}</h3>
+    <ul>${works.map(([it, i]) => `<li><a class="au" data-book="${i}">《${esc(it.title)}》</a> · ${it.year} · ${esc(genreOf(it))}</li>`).join('')}</ul>`;
+  authorEl.classList.add('show'); authorEl.setAttribute('aria-hidden', 'false');
+}
+function closeAuthor(){ authorEl.classList.remove('show'); authorEl.setAttribute('aria-hidden', 'true'); }
+// one of the author's other books chosen in the box: stand in front of it and open it
+function jumpTo(i){
+  camera.position.set(0, EYE, ITEMS[i].z); yaw = yawTarget = -ITEMS[i].side * Math.PI / 2;
+  cancelTravel(); focus = i; openPanel(i);
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('.au'); if (!a) return;
+  if (a.dataset.book !== undefined) { closeAuthor(); jumpTo(+a.dataset.book); } else openAuthor(a.dataset.au);
+});
+document.getElementById('authorClose').addEventListener('click', closeAuthor);
+authorEl.addEventListener('click', e => { if (e.target === authorEl) closeAuthor(); });   // click outside the box
+
+/* ---------------- Language switch ---------------- */
+const langBtn = document.getElementById('langBtn');
+function applyLang(){
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-Hans';
+  langBtn.textContent = L('langBtn');
+  document.getElementById('sub').textContent = L('sub');
+  document.getElementById('help').innerHTML = L('help');
+  document.getElementById('bkDetails').textContent = L('details');
+  qInput.placeholder = L('searchPh');
+}
+langBtn.addEventListener('click', () => {
+  LANG = LANG === 'en' ? 'zh' : 'en';
+  try { localStorage.setItem('ce-lang', LANG); } catch (e) {}
+  applyLang();
+  if (current !== null) current < 0 ? openCentre() : openPanel(current);   // redraw what is open
+});
+applyLang();
 pgPrev.addEventListener('click', () => turn(-1));
 pgNext.addEventListener('click', () => turn(1));
 document.getElementById('bkClose').addEventListener('click', closePanel);
@@ -906,7 +1047,8 @@ function drawMap(){
     mg.fillRect(x, y - 2, 12, 4);
   });
   const py = zToY(camera.position.z);
-  mg.save(); mg.translate(W/2, py); mg.rotate(-yaw);   // arrow shows where you are looking
+  const px = THREE.MathUtils.clamp(W/2 + camera.position.x / HALF_W * (rx - lx) / 2, 6, W - 6);
+  mg.save(); mg.translate(px, py); mg.rotate(-yaw);   // arrow shows where you are and where you are looking
   mg.fillStyle = '#fff'; mg.beginPath();
   mg.moveTo(0, -7); mg.lineTo(-5, 5); mg.lineTo(5, 5); mg.closePath(); mg.fill(); mg.restore();
 }
@@ -920,28 +1062,28 @@ function tick(){
   if (dir || kTurn) cancelTravel();                         // any manual control stops the glide
   if (dir && !panelOpen) {
     focus = -1;
-    camera.position.z = THREE.MathUtils.clamp(camera.position.z + dir * SPEED * dt, Z_END, Z_START);
+    const step = -dir * SPEED * dt;                         // + = forward, along the direction you are looking
+    move(-Math.sin(yaw) * step, -Math.cos(yaw) * step);
     camera.position.y = EYE + Math.sin(time * 9) * 0.025;   // subtle head bob
   }
-  // glide to a clicked book: ease in/out, at most 7 m/s, then open its details
-  if (travel >= 0 && !panelOpen) {
-    const dz = ITEMS[travel].z - camera.position.z;
-    const step = Math.sign(dz) * Math.min(Math.abs(dz), Math.min(7, Math.abs(dz) * 2.5 + .6) * dt);
-    camera.position.z += step;
-    camera.position.y = EYE + Math.sin(time * 9) * 0.02;
-    if (Math.abs(dz) < .03 && Math.abs(yawTarget - yaw) < .05) { focus = travel; travel = -1; openPanel(focus); }
-  }
-  // glide to the end-wall signboard, then open the Centre's introduction
-  if (travelSign && !panelOpen) {
-    const dz = Z_END - camera.position.z;
-    camera.position.z += Math.sign(dz) * Math.min(Math.abs(dz), Math.min(7, Math.abs(dz) * 2.5 + .6) * dt);
-    camera.position.y = EYE + Math.sin(time * 9) * 0.02;
-    if (Math.abs(dz) < .03 && Math.abs(yawTarget - yaw) < .05) { travelSign = false; openCentre(); }
+  // glide to a clicked book: ease in/out, at most 5 m/s, no head bob, then open its details
+  const gliding = (travel >= 0 || travelSign) && !panelOpen;
+  if (gliding) {
+    const dz = (travelSign ? Z_END : ITEMS[travel].z) - camera.position.z, far = Math.abs(dz) > 1.5;
+    camera.position.z += Math.sign(dz) * Math.min(Math.abs(dz), Math.min(5, Math.abs(dz) * 2.5 + .6) * dt);
+    camera.position.x += -camera.position.x * Math.min(1, dt * 4);   // back to the middle of the corridor
+    camera.position.y = EYE;
+    if (travel >= 0)   // long trip: face the way you walk, turn to the wall only when you are nearly there
+      yawTarget = nearYaw(travelFar && far ? (dz < 0 ? 0 : Math.PI) : -ITEMS[travel].side * Math.PI / 2);
+    if (Math.abs(dz) < .03 && Math.abs(camera.position.x) < .05 && Math.abs(yawTarget - yaw) < .05) {
+      if (travelSign) { travelSign = false; openCentre(); }
+      else { focus = travel; travel = -1; openPanel(focus); }
+    }
   }
   // manual look: arrow keys / A D / on-screen buttons / mouse drag
   if (kTurn && !panelOpen)
     yawTarget = THREE.MathUtils.clamp(yawTarget + kTurn * TURN_SPEED * dt, -YAW_LIMIT, YAW_LIMIT);
-  yaw += (yawTarget - yaw) * Math.min(1, dt * 12);   // light smoothing, no auto-turn
+  yaw += (yawTarget - yaw) * Math.min(1, dt * (gliding ? 5 : 12));   // slower, gentler turns while gliding
   camera.rotation.set(-0.005, yaw, 0);
 
   // doors open automatically when you walk up to them, close when you walk away outside
@@ -971,10 +1113,10 @@ function tick(){
   if (nearest >= 0) {
     const it = ITEMS[nearest];
     highlight.position.set(it.side * (HALF_W - .8), 2.6, it.z); highlight.intensity = .9;
-    viewBtn.textContent = `查看 View：《${it.title}》`;
+    viewBtn.textContent = `${L('view')}《${it.title}》`;
     viewBtn.classList.add('show');
   } else if (signActive) {
-    viewBtn.textContent = '查看 View：马华文学馆简介与历史';
+    viewBtn.textContent = L('view') + L('centreName');
     viewBtn.classList.add('show'); highlight.intensity = 0;
   } else { viewBtn.classList.remove('show'); highlight.intensity = 0; }
 

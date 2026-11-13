@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Cultural Explorer</title>
+<style>
+  :root{
+    --gold:#d9b25f; --ink:#f4ecdc; --muted:#b9ad97; --panel:rgba(20,16,12,.94);
+    --chip-fig:#3b6ea5; --chip-book:#4c8b5a; --chip-leg:#a5583b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0d0b09;color:var(--ink);
+    font-family:Georgia,"Times New Roman",serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+  #scene{position:fixed;inset:0;display:block;touch-action:none}
+  .hud-title{position:fixed;top:14px;left:16px;font-size:20px;letter-spacing:.08em;color:var(--gold);
+    text-shadow:0 2px 8px #000;pointer-events:none}
+  .hud-title small{display:block;font-size:12px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
+  #map{position:fixed;left:16px;bottom:16px;width:96px;height:170px;border:1px solid rgba(217,178,95,.5);
+    background:rgba(0,0,0,.45);border-radius:6px;cursor:pointer}
+  .controls{position:fixed;right:20px;bottom:20px;display:grid;grid-template-columns:repeat(3,auto);gap:8px}
+  .controls #fwd{grid-column:2;grid-row:1} .controls #left{grid-column:1;grid-row:2}
+  .controls #back{grid-column:2;grid-row:2} .controls #right{grid-column:3;grid-row:2}
+  .arrow{width:64px;height:64px;border-radius:50%;border:2px solid var(--gold);background:rgba(20,16,12,.75);
+    color:var(--gold);font-size:28px;cursor:pointer;display:grid;place-items:center;touch-action:none}
+  .arrow:active,.arrow.held{background:var(--gold);color:#1a140d}
+  #viewBtn{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:12px 20px;border-radius:24px;
+    border:1px solid var(--gold);background:rgba(20,16,12,.85);color:var(--ink);font:inherit;font-size:15px;
+    cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100vw - 230px);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #viewBtn.show{opacity:1;pointer-events:auto}
+  #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:8px 14px;
+    border-radius:6px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+  #toast.show{opacity:1}
+  .help{position:fixed;top:16px;right:16px;font-size:12px;color:var(--muted);text-align:right;line-height:1.5;
+    pointer-events:none;text-shadow:0 1px 4px #000}
+  /* detail panel */
+  #panel{position:fixed;top:0;right:0;height:100%;width:min(420px,100vw);background:var(--panel);
+    border-left:1px solid rgba(217,178,95,.4);transform:translateX(100%);transition:transform .3s ease;
+    overflow-y:auto;padding:28px 24px 40px;z-index:5}
+  #panel.open{transform:none}
+  #closeBtn{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer}
+  .chip{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;
+    border-radius:10px;color:#fff;font-family:system-ui,sans-serif}
+  #panel h2{margin:12px 0 2px;font-size:26px;color:var(--gold)}
+  #panel .era{color:var(--muted);font-style:italic;margin-bottom:16px}
+  #panel p{line-height:1.6;font-size:15px}
+  #panel h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:22px 0 8px;
+    font-family:system-ui,sans-serif}
+  #panel ul{padding-left:18px;margin:0}
+  #panel li{margin-bottom:6px;line-height:1.5;font-size:14.5px}
+  .note{border-left:3px solid var(--chip-leg);padding:8px 12px;background:rgba(165,88,59,.12);font-size:14px;margin-top:14px}
+  /* ---- Flip book in the middle of the screen ---- */
+  #stage{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:18px;background:rgba(8,6,4,.75);opacity:0;pointer-events:none;transition:opacity .3s}
+  #stage.show{opacity:1;pointer-events:auto}
+  @media (min-width:900px){ #stage{right:420px} }            /* leave room for the details bar */
+  .fbook{position:relative;width:calc(var(--pw) * 2);height:var(--ph);perspective:2000px;
+    font-size:calc(var(--pw) / 15);transition:transform .9s cubic-bezier(.4,.1,.2,1)}
+  .fbook.closed{transform:translateX(calc(var(--pw) * -.5))}   /* closed: centre the cover */
+  #stage.show .fbook{animation:bookIn .7s cubic-bezier(.2,.8,.3,1)}
+  @keyframes bookIn{from{opacity:0;scale:.55;translate:0 60px}}
+  .leaf,.base{position:absolute;top:0;left:var(--pw);width:var(--pw);height:100%}
+  .leaf{transform-origin:left center;transform-style:preserve-3d;cursor:pointer;
+    transition:transform 1.1s cubic-bezier(.45,.05,.25,1)}
+  .leaf.flipped{transform:rotateY(-180deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+  .face.back{transform:rotateY(180deg)}
+  .pg{background:#f7f0de;color:#2b2118;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    padding:1.6em 1.3em;text-align:center}
+  .pg.r{border-radius:0 6px 6px 0;box-shadow:inset 14px 0 18px -12px rgba(0,0,0,.45)}
+  .pg.l{border-radius:6px 0 0 6px;box-shadow:inset -14px 0 18px -12px rgba(0,0,0,.45)}
+  .base{background:#f7f0de;border-radius:0 6px 6px 0;
+    box-shadow:2px 2px 0 #e6dbc2,4px 4px 0 #d9ccb0,6px 6px 0 #cbbd9f,10px 14px 30px rgba(0,0,0,.6)}
+  .cover{background-size:100% 100%;border-radius:2px 6px 6px 2px;
+    box-shadow:inset 6px 0 10px rgba(0,0,0,.45),inset -1px 0 0 rgba(255,255,255,.2)}
+  .fbook.closed .leaf:first-child .cover{box-shadow:inset 6px 0 10px rgba(0,0,0,.45),10px 14px 30px rgba(0,0,0,.6)}
+  .seal{border:2px solid #b0362a;color:#b0362a;padding:.7em .5em;font-size:1.05em;line-height:1.3;display:inline-block;
+    writing-mode:vertical-rl;letter-spacing:.25em;transform:rotate(-4deg);margin-top:35%}
+  .pg .pl{font-size:.7em;color:#8b7355;letter-spacing:.2em}
+  .pg .pt{font-size:1.35em;font-weight:bold;margin:1.6em 0 .8em;line-height:1.4;color:#5e1610}
+  .pg .pa{font-size:.95em;margin-bottom:.3em}
+  .pg .py{font-size:.85em;color:#8b7355}
+  .pg .pp{position:absolute;bottom:1.4em;left:0;right:0;font-size:.7em;color:#8b7355;padding:0 1em}
+  .pg h4{margin:0 0 .9em;font-size:1em;color:#5e1610;letter-spacing:.15em;border-bottom:1px solid #d9b25f;padding-bottom:.5em}
+  .pg .txt{text-align:justify;font-size:.88em;line-height:1.85}
+  .pg dl{text-align:left;font-size:.82em;line-height:1.5;margin:0}
+  .pg dt{color:#8b7355;font-size:.85em;margin-top:.7em} .pg dd{margin:0}
+  .pg .txt.sm,.pg dl.sm{font-size:.74em;line-height:1.7}
+  .pg dl.hist{display:grid;grid-template-columns:auto 1fr;gap:.35em .7em;line-height:1.45}
+  .pg dl.hist dt{margin:0;font-weight:bold;color:#8e2418;font-size:1em}
+  .pg .num{position:absolute;bottom:.8em;left:0;right:0;font-size:.65em;color:#a8957a}
+  .bk-ctrl{display:flex;gap:10px;align-items:center;font-family:system-ui,sans-serif;font-size:13px;color:var(--muted)}
+  .bk-ctrl button{border:1px solid var(--gold);background:rgba(20,16,12,.85);color:var(--ink);border-radius:20px;
+    padding:8px 14px;font:inherit;cursor:pointer}
+  .bk-ctrl button:disabled{opacity:.35;cursor:default}
+  #pgInfo{min-width:84px;text-align:center}
+  .ask{margin-top:24px;padding:12px;border:1px dashed rgba(217,178,95,.5);border-radius:8px;color:var(--muted);font-size:14px}
+  @media (max-width:600px){ .help{display:none} #map{width:72px;height:128px} .arrow{width:58px;height:58px} }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="hud-title">Cultural Explorer<small>马华文学馆出版品 · Malaysian Chinese Literature Centre book collection</small></div>
+<div class="help">↑ / W &nbsp;walk forward<br>↓ / S &nbsp;walk back<br>← → / A D or drag mouse &nbsp;look around<br>Click any book (or the minimap) to go there<br>Click glowing book or Enter to view</div>
+<canvas id="map" width="96" height="170"></canvas>
+<div class="controls">
+  <button class="arrow" id="fwd" aria-label="Walk forward">▲</button>
+  <button class="arrow" id="left" aria-label="Turn left">◀</button>
+  <button class="arrow" id="back" aria-label="Walk back">▼</button>
+  <button class="arrow" id="right" aria-label="Turn right">▶</button>
+</div>
+<button id="viewBtn"></button>
+<div id="toast"></div>
+<div id="stage" aria-hidden="true">
+  <div class="fbook closed" id="fbook"></div>
+  <div class="bk-ctrl">
+    <button id="pgPrev" aria-label="Previous page">◀</button>
+    <span id="pgInfo"></span>
+    <button id="pgNext" aria-label="Next page">▶</button>
+    <button id="bkDetails">书籍资料</button>
+    <button id="bkClose" aria-label="Close book">✕</button>
+  </div>
+</div>
+<aside id="panel" aria-hidden="true">
+  <button id="closeBtn" aria-label="Close">×</button>
+  <div id="panelBody"></div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ---------------- Content (edit here) ---------------- */
+// Book collection of 马华文学馆 (source: southern.edu.my/mclc/chuban.php).
+// Titles, authors, years and series follow that page; summaries are short paraphrases.
+const SOURCE_URL = 'https://www.southern.edu.my/mclc/chuban.php';
+const TYPES = {
+  mclc:     {label:'马华文学馆出版品', color:'#8e2418', pub:'南方学院马华文学馆'},
+  wenchuang:{label:'文创书系',         color:'#2f6b5a', pub:'南方大学学院、马华文学馆'},
+  academic: {label:'马华文学馆学术丛书', color:'#2f4f86', pub:'南方大学学院、马华文学馆'}
+};
+const ITEMS = [
+  {type:'mclc', title:'跳蚤', author:'商晚筠', year:2003, genre:'小说集',
+   summary:'商晚筠的小说集，收入两篇生前未发表的遗作，以及她在台湾与马华文坛引起关注的中、短篇代表作。'},
+  {type:'mclc', title:'等待一棵无花果树', author:'黄远雄', year:2007, genre:'诗集',
+   summary:'黄远雄继《致时间书》十二年后的诗集，共123首新诗，行吟于都市之间；附张锦忠、沙禽序文及张光达评论。'},
+  {type:'mclc', title:'诗图志', author:'辛金顺', year:2009, genre:'诗集',
+   summary:'辛金顺的第三本诗集，分三辑：童年书写、对消逝事物的追念，以及情诗。'},
+  {type:'mclc', title:'记忆书册', author:'辛金顺', year:2010, genre:'诗集',
+   summary:'辛金顺第四本诗集，共72首，从家族记忆写到吉兰丹地方志与北京，附陈大为的诗评。'},
+  {type:'mclc', title:'青天白日凉飕飕', author:'陈政欣', year:2010, genre:'小说集',
+   summary:'陈政欣参与“驻馆作家计划”后由文学馆出版，曾获双福文学奖；以黑色幽默与魔幻手法书写马华政治与商场。'},
+  {type:'mclc', title:'做脸', author:'陈政欣', year:2016, genre:'微型小说',
+   summary:'陈政欣以寓言式的微型小说探索科幻、魔幻与政治讽刺，并收入他对微型小说的翻译、评介与思考。'},
+  {type:'wenchuang', title:'重返诗钞', author:'王润华', year:2014, genre:'诗集',
+   summary:'王润华回望家国、故乡与热带雨林的诗集，被诗人称为最后一次“重返”。'},
+  {type:'wenchuang', title:'即将远行', author:'何启良', year:2014, genre:'诗集',
+   summary:'何启良继《渡海以后》的诗集，围绕告别、出走与归来，以向天地报恩为线索。'},
+  {type:'wenchuang', title:'养死一瓶乳酸菌', author:'许通元', year:2014, genre:'诗集',
+   summary:'许通元的第一本诗集，延续他小说中的魔幻与写实，风格荒诞、戏谑而富想象。'},
+  {type:'wenchuang', title:'黑光白影', author:'冼文光', year:2015, genre:'诗集',
+   summary:'艺术创作者冼文光的诗集，以跳跃的意识与文字趣味，写流离的身世与异域经验。'},
+  {type:'wenchuang', title:'聆听陌地声', author:'蔡志礼', year:2015, genre:'诗集',
+   summary:'蔡志礼中年重拾诗笔之作，部分写于法国波尔多，记录在熟悉与陌生之间的漫游与追问。'},
+  {type:'wenchuang', title:'小曼诗藏', author:'小曼', year:2015, genre:'诗集',
+   summary:'小曼停笔多年后的结集，诗风带古典婉约色彩，书写远游、异乡与内心体验。'},
+  {type:'wenchuang', title:'重返马来亚', author:'王润华', year:2017, genre:'诗集',
+   summary:'王润华回到历史中的马来亚与淡马锡，书写英殖民、日据战争与树木河流，唤起共同记忆。'},
+  {type:'wenchuang', title:'诗路', author:'淡莹', year:2017, genre:'诗集',
+   summary:'淡莹的诗集，主张以凝炼的语言与精确的意象写诗，呈现她的写诗历程与人生道路。'},
+  {type:'wenchuang', title:'一世情缘·美丽与哀愁', author:'黄郁兰', year:2017, genre:'诗集',
+   summary:'黄郁兰的诗集，关怀自然环境与人道精神，书写文明与自然之间的冲突与和谐。'},
+  {type:'wenchuang', title:'背景音乐', author:'邢诒旺', year:2017, genre:'诗集',
+   summary:'邢诒旺“诗画相生”的诗集，融合音乐、图像与散文元素，书中插图全以手机绘成。'},
+  {type:'wenchuang', title:'褪色', author:'黄琦旺', year:2017, genre:'散文集',
+   summary:'黄琦旺的散文集，三辑十五篇，追忆兄长与城市往昔，也有自我反思与人物空间的记录。'},
+  {type:'wenchuang', title:'相思难渡', author:'冯白羽', year:2019, genre:'诗集',
+   summary:'冯白羽的第一本诗集，收32首诗，每首各藏一则故事，由林建国、林幸谦作序。'},
+  {type:'wenchuang', title:'一座城市布置系统的陷阱来进行残酷的背叛', author:'胡清朝', year:2021, genre:'诗集',
+   summary:'胡清朝的首本诗集，收入九十年代至今的91首诗，从浪漫理想写到现实、生死与人生感悟。'},
+  {type:'wenchuang', title:'声声慢：黄荟如作品集 2013-2023', author:'黄荟如', year:2023, genre:'散文与小说',
+   summary:'黄荟如十年间的散文与小说合集，四辑以《声声慢》词句命名，书写寻觅、孤独与生命的荒芜。'},
+  {type:'wenchuang', title:'木麻黄摇摇：邢诒旺诗集', author:'邢诒旺', year:2023, genre:'诗集',
+   summary:'邢诒旺的新诗集，围绕家乡、政治与疾病三个主题，另附一组译诗。'},
+  {type:'wenchuang', title:'舌挑新山：许通元散文集', author:'许通元', year:2023, genre:'散文集',
+   summary:'许通元书写新山美食的散文集，借食物串起友情、家人、文人往来与地方记忆。'},
+  {type:'wenchuang', title:'琢：黄益启短篇小说集', author:'黄益启', year:2023, genre:'小说集',
+   summary:'黄益启的第一本小说集，收十篇短篇与一篇微型小说，具较强的实验性。'},
+  {type:'wenchuang', title:'南方文学之旅诗文集', author:'王润华、许通元、曾繁靖、蔡志礼', year:2024, genre:'诗文集',
+   pub:'南方大学学院中华语言文化学院、马华文学馆',
+   summary:'“南方文学之旅”朗诵活动的诗文选集，收入新马及多国作家作品，推动多语文学交流。'},
+  {type:'wenchuang', title:'夕惕斋诗稿', author:'覃勓温', year:2024, genre:'诗集',
+   summary:'覃勓温的首部诗集，上辑现代诗、下辑古典诗，写于2016至2023年间。'},
+  {type:'wenchuang', title:'女儿红', author:'余历雄、余正心', year:2025, genre:'诗集',
+   summary:'余历雄三十年诗作的结集，并附女儿余正心的诗选与父亲的评述。'},
+  {type:'academic', title:'从婆罗洲到世界华文文学：李永平的文学行旅', author:'王润华、许通元、锺怡慧', year:2020, genre:'论文集',
+   summary:'“李永平专题作家展”后编成的论文集，收入新马学者对李永平小说的研究，并附书目资料。'},
+  {type:'academic', title:'橡胶树寓言', author:'王润华', year:2024, genre:'散文、诗与论述',
+   summary:'王润华以橡胶树为母题的散文、诗与学术论述合集，连结南洋书写与后殖民论述。'}
+];
+// Place books automatically: alternate left / right, evenly spaced down the corridor
+const SPACING = 1.4;
+ITEMS.forEach((it, i) => { it.side = i % 2 ? 1 : -1; it.z = -4 - i * SPACING; });
+// Previous Melaka history exhibits — kept for reference, not shown in the corridor
+const OLD_ITEMS = [
+  { side:-1, z:-6,  type:'figure', mono:'P',  title:'Parameswara', era:'c. 1344 – c. 1414',
+    summary:'A prince from the Srivijaya–Palembang line who founded Melaka around 1400. Its strategic location on the Strait of Malacca turned a small settlement into one of the great trading ports of Southeast Asia.',
+    facts:['Founded Melaka around 1400','Built ties with Ming China and visited the emperor in 1411','Melaka grew into a key port for the spice trade between India and China'] },
+  { side:-1, z:-14, type:'book', mono:'SM', title:'Sejarah Melayu (Malay Annals)', era:'Compiled 15th–17th c.; best-known version 1612',
+    summary:'A literary history of the Melaka Sultanate, tracing the origins, rise and fall of its rulers. It mixes historical record with myth and is one of the most important works of classical Malay literature.',
+    facts:['The 1612 version is associated with Tun Sri Lanang','Describes court life, customs and the sultanate\'s relations with other kingdoms','Listed in UNESCO\'s Memory of the World Register (2001)'] },
+  { side:-1, z:-22, type:'legend', mono:'HT', title:'Hang Tuah', era:'Said to live in the 15th century',
+    summary:'The legendary laksamana (admiral) of Melaka, celebrated for loyalty to his sultan. His story is told in the Hikayat Hang Tuah and remains a powerful symbol in Malay culture.',
+    facts:['Hero of the Hikayat Hang Tuah','Famous for the story of his duel with his friend Hang Jebat','Associated with the saying "Takkan Melayu hilang di dunia"'],
+    note:'Historians debate whether Hang Tuah was a real person. Treat his story as legend and literature rather than documented history.' },
+  { side:1, z:-10, type:'figure', mono:'ZH', title:'Admiral Zheng He', era:'1371 – 1433',
+    summary:'A Ming dynasty admiral who led seven great sea voyages across Asia and to East Africa. Melaka served as an important base and stopover for his fleets.',
+    facts:['Led voyages between 1405 and 1433','Strengthened Melaka\'s diplomatic ties with China','Remembered in Melaka through sites and stories linked to his visits'] },
+  { side:1, z:-18, type:'book', mono:'HA', title:'Hikayat Abdullah', era:'Published 1849',
+    summary:'The autobiography of Munshi Abdullah (Abdullah bin Abdul Kadir), born in Melaka in 1796. It describes everyday life and events in the Straits Settlements in a realistic, personal style.',
+    facts:['Author is often called the father of modern Malay literature','Moved away from court tales toward real-life observation','A valuable eyewitness record of 19th-century Melaka and Singapore'] },
+  { side:1, z:-26, type:'figure', mono:'TAR', title:'Tunku Abdul Rahman', era:'1903 – 1990',
+    summary:'Known as Bapa Kemerdekaan (Father of Independence). He led negotiations with Britain and proclaimed the independence of the Federation of Malaya on 31 August 1957 at Stadium Merdeka.',
+    facts:['First Prime Minister (1957 – 1970)','Led the formation of Malaysia on 16 September 1963','Famous for his cries of "Merdeka!" at the 1957 proclamation'] }
+];
+
+/* ---------------- Scene setup ---------------- */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0b09);
+scene.fog = new THREE.Fog(0x0d0b09, 8, 34);
+const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 100);
+const EYE = 1.6, Z_START = 10, HALF_W = 2.5, LEN_FRONT = 4;
+// corridor grows with the collection, plus an empty stretch before the end-wall signboard
+const LAST_BOOK_Z = ITEMS[ITEMS.length - 1].z;
+const LEN_BACK = LAST_BOOK_Z - 12, Z_END = LEN_BACK + 3;
+camera.position.set(0, EYE, Z_START);
+
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.fov = w < h ? 85 : 70; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+function canvasTex(w, h, draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+}
+
+// Floor: tiled stone
+const floorTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#3a2f25'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#463829'; g.fillRect(0, 0, w/2, h/2); g.fillRect(w/2, h/2, w/2, h/2);
+  g.strokeStyle = '#211a13'; g.lineWidth = 4; g.strokeRect(0, 0, w, h); g.beginPath();
+  g.moveTo(w/2, 0); g.lineTo(w/2, h); g.moveTo(0, h/2); g.lineTo(w, h/2); g.stroke();
+});
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(2, (LEN_FRONT - LEN_BACK) / 2);
+const corridorLen = LEN_FRONT - LEN_BACK, midZ = (LEN_FRONT + LEN_BACK) / 2;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2, corridorLen),
+  new THREE.MeshStandardMaterial({map:floorTex, roughness:.85}));
+floor.rotation.x = -Math.PI/2; floor.position.z = midZ; scene.add(floor);
+
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2, corridorLen),
+  new THREE.MeshStandardMaterial({color:0x1d1813, roughness:1}));
+ceil.rotation.x = Math.PI/2; ceil.position.set(0, 3.6, midZ); scene.add(ceil);
+
+// Walls
+const wallTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#6b5a45'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#4a3c2d'; g.fillRect(0, h*0.72, w, h*0.28);   // wainscot
+  g.fillStyle = '#c9a45a'; g.fillRect(0, h*0.70, w, 5);         // gold rail
+});
+wallTex.wrapS = THREE.RepeatWrapping; wallTex.repeat.set(corridorLen / 3, 1);
+const wallMat = new THREE.MeshStandardMaterial({map:wallTex, roughness:.9});
+[-1, 1].forEach(s => {
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(corridorLen, 3.6), wallMat);
+  wall.rotation.y = -s * Math.PI/2; wall.position.set(s*HALF_W, 1.8, midZ); scene.add(wall);
+});
+// End wall
+const endWall = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2, 3.6), wallMat);
+endWall.position.set(0, 1.8, LEN_BACK); scene.add(endWall);
+
+/* ---------------- Entrance: facade, double door, signboard ---------------- */
+const DOOR_W = 1.8, DOOR_H = 2.8, FACADE_W = 16, FACADE_H = 7, FZ = LEN_FRONT;
+// Plaza outside the museum
+const plazaTex = canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#5a5046'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#3d352d'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+});
+plazaTex.wrapS = plazaTex.wrapT = THREE.RepeatWrapping; plazaTex.repeat.set(12, 6);
+const plaza = new THREE.Mesh(new THREE.PlaneGeometry(30, 14), new THREE.MeshStandardMaterial({map:plazaTex, roughness:.95}));
+plaza.rotation.x = -Math.PI/2; plaza.position.set(0, -0.001, FZ + 7); scene.add(plaza);
+
+// Facade wall with a doorway (built from three blocks)
+const facadeMat = new THREE.MeshStandardMaterial({color:0xcbb999, roughness:.9});
+const sideW = (FACADE_W - DOOR_W) / 2;
+[-1, 1].forEach(s => {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(sideW, FACADE_H, .4), facadeMat);
+  b.position.set(s * (DOOR_W/2 + sideW/2), FACADE_H/2, FZ); scene.add(b);
+});
+const lintel = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W, FACADE_H - DOOR_H, .4), facadeMat);
+lintel.position.set(0, DOOR_H + (FACADE_H - DOOR_H)/2, FZ); scene.add(lintel);
+// Roof cornice and base band
+const trimMat = new THREE.MeshStandardMaterial({color:0x7a2a1f, roughness:.6});
+const cornice = new THREE.Mesh(new THREE.BoxGeometry(FACADE_W + .6, .4, 1), trimMat);
+cornice.position.set(0, FACADE_H, FZ + .2); scene.add(cornice);
+const base = new THREE.Mesh(new THREE.BoxGeometry(FACADE_W, .25, .5), new THREE.MeshStandardMaterial({color:0x6e6253}));
+base.position.set(0, .125, FZ + .1); [-1, 1].forEach(s => {
+  const b = base.clone(); b.scale.x = sideW / FACADE_W; b.position.x = s * (DOOR_W/2 + sideW/2); scene.add(b);
+});
+// Door frame
+const frameMat = new THREE.MeshStandardMaterial({color:0xc9a45a, metalness:.6, roughness:.35});
+[-1, 1].forEach(s => {
+  const j = new THREE.Mesh(new THREE.BoxGeometry(.12, DOOR_H, .5), frameMat);
+  j.position.set(s * (DOOR_W/2 + .06), DOOR_H/2, FZ); scene.add(j);
+});
+const head = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + .24, .12, .5), frameMat);
+head.position.set(0, DOOR_H + .06, FZ); scene.add(head);
+// Red pillars
+const pillarMat = new THREE.MeshStandardMaterial({color:0x9b2a1e, roughness:.5});
+[-1, 1].forEach(s => {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(.2, .22, 4.2, 20), pillarMat);
+  p.position.set(s * 2.45, 2.1, FZ + .45); scene.add(p);
+});
+// Hanging red lanterns
+[-1, 1].forEach(s => {
+  const l = new THREE.Mesh(new THREE.SphereGeometry(.28, 20, 14),
+    new THREE.MeshStandardMaterial({color:0xc0281c, emissive:0xff3a1a, emissiveIntensity:.6}));
+  l.scale.y = .8; l.position.set(s * 1.5, 2.55, FZ + .5); scene.add(l);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, .08, 12), frameMat);
+  cap.position.set(s * 1.5, 2.8, FZ + .5); scene.add(cap);
+  const glow = new THREE.PointLight(0xff6a3a, .5, 4); glow.position.set(s * 1.5, 2.55, FZ + .9); scene.add(glow);
+});
+// Signboard above the door
+const signTex = canvasTex(1024, 256, (g, w, h) => {
+  g.fillStyle = '#5e1610'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#d9b25f'; g.lineWidth = 12; g.strokeRect(10, 10, w - 20, h - 20);
+  g.lineWidth = 3; g.strokeRect(28, 28, w - 56, h - 56);
+  g.fillStyle = '#f1d38a'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = 'bold 64px Georgia, serif'; g.fillText('Malaysian Chinese', w/2, 92);
+  g.font = 'bold 52px Georgia, serif'; g.fillText('Literature Centre', w/2, 160);
+  g.font = '30px "Microsoft YaHei", "Noto Sans SC", sans-serif'; g.fillStyle = '#d9b25f';
+  g.fillText('马 华 文 学 馆', w/2, 212);
+});
+const signBoard = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, .12), [
+  frameMat, frameMat, frameMat, frameMat, new THREE.MeshStandardMaterial({map:signTex, roughness:.5,
+    emissive:0xffffff, emissiveMap:signTex, emissiveIntensity:.25}), frameMat]);
+signBoard.position.set(0, 3.75, FZ + .28); scene.add(signBoard);
+const signLight = new THREE.PointLight(0xffe0a8, 1, 6); signLight.position.set(0, 4.6, FZ + 1.8); scene.add(signLight);
+// Same signboard on the end wall of the corridor, with its own light
+const endSign = signBoard.clone(); endSign.position.set(0, 2.2, LEN_BACK + .07); scene.add(endSign);
+endSign.material = signBoard.material.map(m => m.clone());     // own materials so it can glow on its own
+const endSignFace = endSign.material[4];
+const endSignLight = new THREE.PointLight(0xffe0a8, .9, 5); endSignLight.position.set(0, 3.2, LEN_BACK + 1.6); scene.add(endSignLight);
+
+// Double door that swings inward (pivots at the door jambs)
+const doorTex = canvasTex(128, 400, (g, w, h) => {
+  g.fillStyle = '#8e2418'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#5a140c'; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16);
+  g.fillStyle = '#e0b960';
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) {           // gold door studs
+    g.beginPath(); g.arc(30 + c * 34, 50 + r * 50, 6, 0, Math.PI * 2); g.fill();
+  }
+});
+const doorMat = new THREE.MeshStandardMaterial({map:doorTex, roughness:.55});
+const leaves = [-1, 1].map(s => {
+  const pivot = new THREE.Group(); pivot.position.set(s * DOOR_W/2, 0, FZ);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W/2, DOOR_H, .08), doorMat);
+  leaf.position.set(-s * DOOR_W/4, DOOR_H/2, 0); pivot.add(leaf);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.07, .015, 8, 20), frameMat);   // door knocker
+  ring.position.set(-s * (DOOR_W/2 - .12), 1.25, .06); pivot.add(ring);
+  scene.add(pivot); return {pivot, s};
+});
+let doorOpen = 0;
+
+// Lights
+scene.add(new THREE.HemisphereLight(0xffe9c4, 0x2a2018, 0.55));
+for (let z = 0; z > LEN_BACK; z -= 8) {
+  const l = new THREE.PointLight(0xffd9a0, 0.6, 10); l.position.set(0, 3.3, z); scene.add(l);
+  const lamp = new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, .05, 20),
+    new THREE.MeshBasicMaterial({color:0xffe3b0})); lamp.position.set(0, 3.57, z); scene.add(lamp);
+}
+
+/* ---------------- Exhibit frames ("icons") ---------------- */
+const CJK = '"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
+// Split text into lines that fit maxW (character by character, works for Chinese)
+function wrapText(g, text, maxW){
+  const lines = []; let line = '';
+  for (const ch of text) {
+    if (g.measureText(line + ch).width > maxW && line) { lines.push(line); line = ch; } else line += ch;
+  }
+  if (line) lines.push(line); return lines;
+}
+// Book cover drawn in the series colour: series name, title, author, year
+function portraitTex(item){
+  const t = TYPES[item.type];
+  return canvasTex(320, 400, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, t.color); grd.addColorStop(1, '#14100c');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, h);                    // book spine shade
+    g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, w - 50, h - 32);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = (34 + w - 16) / 2;
+    g.font = `16px ${CJK}`; g.fillStyle = '#e6cf98'; g.fillText(t.label, cx, 44);
+    // title (subtitle after "：" drawn smaller)
+    const [main, sub] = item.title.split('：');
+    let size = main.length > 12 ? 30 : main.length > 6 ? 36 : 46;
+    g.font = `bold ${size}px ${CJK}`;
+    let lines = wrapText(g, main, w - 90).slice(0, 5);
+    let y = 150 - (lines.length - 1) * size * 0.6;
+    g.fillStyle = '#fff8e8';
+    lines.forEach(l => { g.fillText(l, cx, y); y += size * 1.2; });
+    if (sub) {
+      g.font = `18px ${CJK}`; g.fillStyle = '#e6cf98';
+      wrapText(g, sub, w - 90).slice(0, 2).forEach(l => { g.fillText(l, cx, y + 4); y += 24; });
+    }
+    g.strokeStyle = '#d9b25f'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 40, 300); g.lineTo(cx + 40, 300); g.stroke();
+    g.font = `20px ${CJK}`; g.fillStyle = '#f4ecdc';
+    g.fillText(wrapText(g, item.author, w - 90)[0], cx, 330);
+    g.font = '18px Georgia'; g.fillStyle = '#d9b25f'; g.fillText(String(item.year), cx, 360);
+  });
+}
+
+// Picture light above each book: brass lamp, glowing bulb strip, and the light it throws on the wall
+const BRASS = new THREE.MeshStandardMaterial({color:0xc9a04e, metalness:.85, roughness:.3});
+const LAMP_GEO = new THREE.CylinderGeometry(.03, .03, .7, 14), ARM_GEO = new THREE.CylinderGeometry(.012, .012, .2, 6);
+const BULB_GEO = new THREE.BoxGeometry(.62, .012, .03), BULB_MAT = new THREE.MeshBasicMaterial({color:0xfff0c8});
+const WASH_GEO = new THREE.PlaneGeometry(2.0, 2.4);
+const WASH_MAT = new THREE.MeshBasicMaterial({transparent:true, depthWrite:false, opacity:1, blending:THREE.AdditiveBlending,
+  map:canvasTex(256, 256, (g, w, h) => {                   // soft cone of light falling from the picture lamp
+    // round glow that reaches zero before the edges (no visible rectangle) ...
+    const grd = g.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
+    grd.addColorStop(0, 'rgba(255,214,150,.6)'); grd.addColorStop(.55, 'rgba(255,200,130,.22)'); grd.addColorStop(1, 'rgba(255,200,130,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    // ... brighter at the top near the lamp, fading downward
+    g.globalCompositeOperation = 'destination-in';
+    const fade = g.createLinearGradient(0, 0, 0, h);
+    fade.addColorStop(0, 'rgba(0,0,0,1)'); fade.addColorStop(.6, 'rgba(0,0,0,.6)'); fade.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = fade; g.fillRect(0, 0, w, h);
+  })});
+
+const exhibits = [];
+ITEMS.forEach((item, i) => {
+  const grp = new THREE.Group();
+  const x = item.side * (HALF_W - 0.06);
+  grp.position.set(x, 1.75, item.z);
+  grp.rotation.y = -item.side * Math.PI/2;
+
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.36, 1.68, .08),
+    new THREE.MeshStandardMaterial({color:0x8a6a2e, metalness:.6, roughness:.4}));
+  const cover = portraitTex(item);
+  const art = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.5),   // cover glows softly so it is readable everywhere
+    new THREE.MeshStandardMaterial({map:cover, roughness:.7, emissive:0xffffff, emissiveMap:cover, emissiveIntensity:.3}));
+  art.position.z = .045; art.userData.index = i;
+  // Picture light above the frame
+  const lampBar = new THREE.Mesh(LAMP_GEO, BRASS); lampBar.rotation.z = Math.PI / 2; lampBar.position.set(0, .97, .2);
+  const lampArm = new THREE.Mesh(ARM_GEO, BRASS); lampArm.rotation.x = Math.PI / 2; lampArm.position.set(0, .95, .1);
+  const bulb = new THREE.Mesh(BULB_GEO, BULB_MAT); bulb.position.set(0, .94, .21);
+  const wash = new THREE.Mesh(WASH_GEO, WASH_MAT); wash.position.set(0, -.15, .004);
+  // Glow halo shown on the nearest exhibit
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 2.0),
+    new THREE.MeshBasicMaterial({color:0xffd27a, transparent:true, opacity:0}));
+  glow.position.z = .02;
+  // Floating marker above the frame
+  const marker = new THREE.Mesh(new THREE.OctahedronGeometry(.11),
+    new THREE.MeshBasicMaterial({color:0xffd27a, transparent:true, opacity:0}));
+  marker.position.set(0, 1.18, .45);
+  grp.add(wash, glow, frame, art, lampBar, lampArm, bulb, marker);
+  scene.add(grp);
+
+  exhibits.push({item, grp, art, glow, marker});
+});
+// One spotlight that follows the active book (cheaper than a light per book)
+const highlight = new THREE.PointLight(0xffe0a8, 0, 3.5); scene.add(highlight);
+
+/* ---------------- Movement ---------------- */
+let dir = 0; const SPEED = 3.2;
+// A frame can be viewed when it is up to 6 m ahead or just beside you (1 m behind).
+const AHEAD = 6, BEHIND = 1;
+const inRange = it => { const d = camera.position.z - it.z; return d > -BEHIND && d < AHEAD; };
+// Manual look: yaw is only changed by the user (arrow keys, buttons or mouse drag)
+const TURN_SPEED = 1.6, YAW_LIMIT = Infinity;   // no limit: full 360° turning
+let yaw = 0, yawTarget = 0, turnDir = 0;
+camera.rotation.order = 'YXZ';
+const keys = {};
+addEventListener('keydown', e => {
+  // while the book is open, ← → turn its pages instead of the camera
+  if (stage.classList.contains('show') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
+    turn(e.code === 'ArrowRight' ? 1 : -1); e.preventDefault(); return;
+  }
+  if (['ArrowUp','ArrowDown','KeyW','KeyS','ArrowLeft','ArrowRight','KeyA','KeyD'].includes(e.code)) { keys[e.code] = true; e.preventDefault(); }
+  if ((e.code === 'Enter' || e.code === 'KeyE') && !panelOpen) {
+    if (nearest >= 0) openPanel(nearest); else if (signActive) openCentre();
+  }
+  if (e.code === 'Escape') closePanel();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+function hold(btn, d){
+  const on = e => { e.preventDefault(); btnDir = d; btn.classList.add('held'); };
+  const off = () => { if (btnDir === d) btnDir = 0; btn.classList.remove('held'); };
+  btn.addEventListener('pointerdown', on);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => btn.addEventListener(ev, off));
+}
+let btnDir = 0;
+hold(document.getElementById('fwd'), -1);
+hold(document.getElementById('back'), 1);
+function holdTurn(btn, d){
+  const on = e => { e.preventDefault(); turnDir = d; btn.classList.add('held'); };
+  const off = () => { if (turnDir === d) turnDir = 0; btn.classList.remove('held'); };
+  btn.addEventListener('pointerdown', on);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => btn.addEventListener(ev, off));
+}
+holdTurn(document.getElementById('left'), 1);
+holdTurn(document.getElementById('right'), -1);
+
+/* ---------------- Nearest + click ---------------- */
+let nearest = -1;
+const viewBtn = document.getElementById('viewBtn');
+viewBtn.addEventListener('click', () => { if (nearest >= 0) openPanel(nearest); else if (signActive) openCentre(); });
+let signActive = false;   // true when standing at the end-wall signboard
+
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+let downPos = null;
+let lastX = 0;
+canvas.addEventListener('pointerdown', e => {
+  downPos = [e.clientX, e.clientY]; lastX = e.clientX; canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!downPos || panelOpen) return;
+  if (e.clientX !== lastX) cancelTravel();
+  yawTarget = THREE.MathUtils.clamp(yawTarget + (e.clientX - lastX) * 0.004, -YAW_LIMIT, YAW_LIMIT);
+  lastX = e.clientX;
+});
+canvas.addEventListener('pointerup', e => {
+  const start = downPos; downPos = null;
+  if (!start || Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 8) return;
+  ptr.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObjects([...exhibits.map(x => x.art), endSign])[0];
+  if (!hit) return;
+  if (hit.object === endSign) { signActive ? openCentre() : travelToSign(); return; }
+  const idx = hit.object.userData.index;
+  if (idx === nearest) openPanel(idx);
+  else travelTo(idx);
+});
+
+/* ---------------- Click a far book: glide over to it ---------------- */
+let travel = -1, focus = -1;   // travel: book we are gliding to; focus: book we arrived at
+function travelTo(idx){
+  travel = idx; focus = -1;
+  const face = -ITEMS[idx].side * Math.PI / 2;                 // look straight at the wall it hangs on
+  yawTarget = face + Math.PI * 2 * Math.round((yaw - face) / (Math.PI * 2));   // shortest turn
+  toast(`前往《${ITEMS[idx].title}》 Going to book…`);
+}
+let travelSign = false;    // gliding to the end-wall signboard
+function travelToSign(){
+  travel = -1; focus = -1; travelSign = true;
+  yawTarget = Math.PI * 2 * Math.round(yaw / (Math.PI * 2));   // face straight down the corridor
+  toast('前往马华文学馆简介 Going to the Centre…');
+}
+function cancelTravel(){ travel = -1; travelSign = false; }
+// Click on the minimap to go to a book too
+document.getElementById('map').addEventListener('click', e => {
+  const r = e.currentTarget.getBoundingClientRect(), H = e.currentTarget.height, pad = 10;
+  const z = LEN_BACK + ((e.clientY - r.top) / r.height * H - pad) / (H - pad * 2) * (Z_START - LEN_BACK);
+  let best = 0; ITEMS.forEach((it, i) => { if (Math.abs(it.z - z) < Math.abs(ITEMS[best].z - z)) best = i; });
+  if (z < LAST_BOOK_Z - 3) travelToSign();                  // clicked the empty end of the corridor
+  else if (Math.abs(ITEMS[best].z - z) < 2) travelTo(best);
+});
+
+let toastTimer;
+function toast(msg, ms = 1600){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+toast('Press ▲ or W to walk in through the door', 4000);
+
+/* ---------------- Detail panel ---------------- */
+const panel = document.getElementById('panel'); let panelOpen = false;
+document.getElementById('closeBtn').addEventListener('click', () => showDetails(false));
+function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function openPanel(i){
+  const it = ITEMS[i], t = TYPES[it.type];
+  document.getElementById('panelBody').innerHTML = `
+    <span class="chip" style="background:${t.color}">${t.label}</span>
+    <h2>《${esc(it.title)}》</h2><div class="era">${esc(it.author)} · ${it.year}</div>
+    <p>${esc(it.summary)}</p>
+    <h3>书籍资料 Book details</h3><ul>
+      <li>作者：${esc(it.author)}</li>
+      <li>类别：${esc(it.genre)}</li>
+      <li>出版社：${esc(it.pub || t.pub)}</li>
+      <li>出版年份：${it.year}</li>
+      <li>书系：${esc(t.label)}</li></ul>
+    <p style="font-size:13px;color:var(--muted)">资料来源 Source：<a href="${SOURCE_URL}" target="_blank" rel="noopener"
+      style="color:var(--gold)">马华文学馆出版品</a></p>
+    <div class="ask">💬 <em>Coming next:</em> ask a question about this book (AI chat).</div>`;
+  panel.scrollTop = 0;
+  openBook(i);
+  // wide screens: details bar beside the book; small screens: book first, details via button
+  if (innerWidth >= 900) showDetails(true);
+  syncOpen();
+}
+function showDetails(on){
+  panel.classList.toggle('open', on); panel.setAttribute('aria-hidden', String(!on)); syncOpen();
+}
+function syncOpen(){ panelOpen = panel.classList.contains('open') || stage.classList.contains('show'); }
+function closePanel(){ showDetails(false); closeBook(); }
+
+/* ---------------- Flip book in the middle of the screen ---------------- */
+const stage = document.getElementById('stage'), fbook = document.getElementById('fbook');
+const pgPrev = document.getElementById('pgPrev'), pgNext = document.getElementById('pgNext'), pgInfo = document.getElementById('pgInfo');
+let PAGE_NAMES = [];
+let pageLeaves = [], flipped = 0;
+
+function sizeBook(){
+  const areaW = innerWidth >= 900 ? innerWidth - 420 : innerWidth;
+  const pw = Math.max(130, Math.min(300, (areaW - 40) / 2, (innerHeight - 150) / 1.25));
+  fbook.style.setProperty('--pw', pw + 'px'); fbook.style.setProperty('--ph', pw * 1.25 + 'px');
+}
+addEventListener('resize', sizeBook);
+
+function openBook(i){
+  const it = ITEMS[i], t = TYPES[it.type];
+  const coverURL = exhibits[i].art.material.map.image.toDataURL();   // same cover as on the wall
+  const pub = esc(it.pub || t.pub);
+  // each leaf has a front (right-hand page) and a back (left-hand page once turned)
+  const pages = [
+    [`<div class="face cover" style="background-image:url(${coverURL})"></div>`,
+     `<div class="face back pg l"><div class="seal">马华文学馆<br>藏书</div></div>`],
+    [`<div class="face pg r"><div class="pl">${esc(t.label)}</div><div class="pt">${esc(it.title)}</div>
+        <div class="pa">${esc(it.author)} 著</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
+     `<div class="face back pg l"><h4>内容简介</h4><div class="txt">${esc(it.summary)}</div><div class="num">— 2 —</div></div>`],
+    [`<div class="face pg r"><h4>书籍资料</h4><dl>
+        <dt>作者</dt><dd>${esc(it.author)}</dd><dt>类别</dt><dd>${esc(it.genre)}</dd>
+        <dt>出版社</dt><dd>${pub}</dd><dt>出版年份</dt><dd>${it.year}</dd><dt>书系</dt><dd>${esc(t.label)}</dd></dl>
+        <div class="num">— 3 —</div></div>`,
+     `<div class="face back pg l"><div class="seal" style="margin-top:45%">马华文学馆</div></div>`]
+  ];
+  showBook(pages, '资料来源：马华文学馆出版品', ['封面 Cover', '扉页 Title page', '简介 · 资料 Details', '完 The end']);
+}
+// Build any flip book: pages = [[right-page HTML, left-page HTML (back of the leaf)], ...]
+function showBook(pages, sourceNote, names){
+  PAGE_NAMES = names;
+  fbook.innerHTML = `<div class="base"><div class="face pg r"><div class="pt" style="margin-top:40%">— 完 —</div>
+      <div class="py">${sourceNote}</div></div></div>` +
+    pages.map(([f, b]) => `<div class="leaf">${f}${b}</div>`).join('');
+  pageLeaves = [...fbook.querySelectorAll('.leaf')];
+  pageLeaves.forEach((lf, k) => lf.addEventListener('click', () => (lf.classList.contains('flipped') ? turn(-1) : turn(1))));
+  flipped = 0; sizeBook(); layoutLeaves();
+  stage.classList.remove('show'); void stage.offsetWidth;            // restart the entrance animation
+  stage.classList.add('show'); stage.setAttribute('aria-hidden', 'false');
+}
+/* ---------------- 马华文学馆: introduction and history (end-wall signboard) ---------------- */
+// Summarised from southern.edu.my/mclc/about.php and /history/history.php
+const ABOUT_URL = 'https://www.southern.edu.my/mclc/about.php';
+const HISTORY_URL = 'https://www.southern.edu.my/mclc/history/history.php';
+const CENTRE = {
+  intro: '马华文学馆位于柔佛州士姑来，距新山约15公里，附属于南方大学学院图书馆二楼。1998年4月26日开幕，是马来西亚第一间、也是至今唯一的马华文学馆。',
+  origin: '1997年，作家叶啸与南院中文系赖瑞和博士先后在报章撰文，倡议设立马华文学馆。文学馆以吴天才副教授的3000多册马华文学藏书（1940年代至1997年）为基础，再广纳各方捐赠而成立。',
+  mission: '搜集、保存马华文学及相关资料，支援教学与研究，为国内外研究者提供良好的资料与研究环境，继承与发扬马华文学。',
+  collection: [
+    ['珍藏本', '一万余册（不外借）'], ['阅览室单行本', '一万一千余册'], ['期刊', '万余册'],
+    ['剪报及论文资料', '十四万余笔'], ['视听资料', '60多种'], ['镇馆之宝', '谭云山1930年诗集《海畔》']
+  ],
+  rooms: '馆内设珍藏本室、阅览室、剪报室与专题作家展橱窗；2000年设立论文索引系统，2009年改用台湾师范大学开发的X系统。',
+  writers: '潘雨桐、商晚筠、姚拓、蔡明亮、韦晕、南马文艺研究会、陈瑞献、李永平、王润华、黎紫书、张贵兴',
+  history: [
+    ['1997', '叶啸、赖瑞和撰文倡议设立马华文学馆'],
+    ['1998', '4月26日，马华文学馆在南方学院正式开幕'],
+    ['1999', '推出首个专题作家展：潘雨桐'],
+    ['2002', '姚拓将《蕉风》交托文学馆，12月第489期在南院复刊'],
+    ['2004', '获赠谭云山1930年诗集《海畔》，成为镇馆之宝'],
+    ['2006', '第一届南方人文精神奖暨陈瑞献展'],
+    ['2008', '文学馆十周年暨《蕉风》500期纪念'],
+    ['2009', '陈政欣驻馆；文学馆合并至图书馆二楼'],
+    ['2012', '“浪人作家——李永平”专题作家展'],
+    ['2014', '南方诗歌节，推出首批文创书系诗集'],
+    ['2015', '“南方文学之旅”马新诗文朗诵巡回启动'],
+    ['2020', '出版李永平论文集；黎紫书专题展'],
+    ['2024', '张贵兴专题展；花踪文学奖首次移师新山'],
+    ['2025', '南方大学学院50周年、《蕉风》70载系列活动']
+  ]
+};
+function centreCoverURL(){
+  const c = document.createElement('canvas'); c.width = 320; c.height = 400; const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, 400); grd.addColorStop(0, '#7a1c14'); grd.addColorStop(1, '#2a0a07');
+  g.fillStyle = grd; g.fillRect(0, 0, 320, 400);
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, 400);
+  g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, 270, 368); g.lineWidth = 1.5; g.strokeRect(44, 26, 250, 348);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = 169;
+  g.fillStyle = '#f1d38a'; g.font = `bold 46px ${CJK}`; g.fillText('马华文学馆', cx, 150);
+  g.font = '19px Georgia, serif'; g.fillStyle = '#e6cf98';
+  g.fillText('Malaysian Chinese', cx, 205); g.fillText('Literature Centre', cx, 230);
+  g.strokeStyle = '#d9b25f'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 40, 275); g.lineTo(cx + 40, 275); g.stroke();
+  g.font = `18px ${CJK}`; g.fillStyle = '#f4ecdc'; g.fillText('简介 · 历史', cx, 305);
+  g.font = '16px Georgia, serif'; g.fillStyle = '#d9b25f'; g.fillText('1998', cx, 340);
+  return c.toDataURL();
+}
+function openCentre(){
+  const C = CENTRE, row = ([y, t]) => `<dt>${y}</dt><dd>${t}</dd>`;
+  const h1 = C.history.slice(0, 5), h2 = C.history.slice(5, 10), h3 = C.history.slice(10);
+  showBook([
+    [`<div class="face cover" style="background-image:url(${centreCoverURL()})"></div>`,
+     `<div class="face back pg l"><h4>文学馆简介</h4><div class="txt sm">${C.intro}</div>
+        <div class="txt sm" style="margin-top:.8em">${C.mission}</div><div class="num">— 1 —</div></div>`],
+    [`<div class="face pg r"><h4>缘起</h4><div class="txt sm">${C.origin}</div><div class="num">— 2 —</div></div>`,
+     `<div class="face back pg l"><h4>重点馆藏</h4><dl class="sm hist">${C.collection.map(row).join('')}</dl><div class="num">— 3 —</div></div>`],
+    [`<div class="face pg r"><h4>馆舍与专题作家展</h4><div class="txt sm">${C.rooms}</div>
+        <div class="txt sm" style="margin-top:.8em">历届专题作家展：${C.writers}。</div><div class="num">— 4 —</div></div>`,
+     `<div class="face back pg l"><h4>回顾历史</h4><dl class="sm hist">${h1.map(row).join('')}</dl><div class="num">— 5 —</div></div>`],
+    [`<div class="face pg r"><h4>回顾历史</h4><dl class="sm hist">${h2.map(row).join('')}</dl><div class="num">— 6 —</div></div>`,
+     `<div class="face back pg l"><h4>回顾历史</h4><dl class="sm hist">${h3.map(row).join('')}</dl><div class="num">— 7 —</div></div>`]
+  ], '资料来源：文学馆简介 · 回顾历史',
+  ['封面 Cover', '简介 · 缘起 About', '馆藏 · 馆舍 Collection', '历史 History 1997–2014', '历史 History 2015–2025']);
+
+  document.getElementById('panelBody').innerHTML = `
+    <span class="chip" style="background:#8e2418">马华文学馆 · Literature Centre</span>
+    <h2>马华文学馆</h2><div class="era">Malaysian Chinese Literature Centre · 成立于 1998年4月26日</div>
+    <p>${C.intro}</p>
+    <h3>缘起 Origin</h3><p>${C.origin}</p>
+    <h3>宗旨 Mission</h3><p>${C.mission}</p>
+    <h3>重点馆藏 Collection</h3><ul>${C.collection.map(([k, v]) => `<li>${k}：${v}</li>`).join('')}</ul>
+    <h3>馆舍 Facilities</h3><p>${C.rooms}</p>
+    <h3>专题作家展 Featured writers</h3><p>${C.writers}</p>
+    <h3>回顾历史 History</h3><ul>${C.history.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>
+    <p style="font-size:13px;color:var(--muted)">资料来源 Source：
+      <a href="${ABOUT_URL}" target="_blank" rel="noopener" style="color:var(--gold)">文学馆简介</a> ·
+      <a href="${HISTORY_URL}" target="_blank" rel="noopener" style="color:var(--gold)">回顾历史</a></p>`;
+  panel.scrollTop = 0;
+  if (innerWidth >= 900) showDetails(true);
+  syncOpen();
+}
+
+// stacking: unturned pages - first on top; turned pages - last turned on top
+function layoutLeaves(active = -1){
+  pageLeaves.forEach((lf, k) => {
+    lf.classList.toggle('flipped', k < flipped);
+    lf.style.zIndex = k === active ? 50 : k < flipped ? 10 + k : 10 + pageLeaves.length - k;
+  });
+  fbook.classList.toggle('closed', flipped === 0);
+  pgPrev.disabled = flipped === 0; pgNext.disabled = flipped === pageLeaves.length;
+  pgInfo.textContent = PAGE_NAMES[flipped];
+}
+let settleTimer;
+function turn(d){
+  const n = flipped + d; if (n < 0 || n > pageLeaves.length) return;
+  const active = d > 0 ? flipped : n;                  // the leaf that is moving
+  flipped = n; layoutLeaves(active);
+  clearTimeout(settleTimer); settleTimer = setTimeout(() => layoutLeaves(), 1100);
+}
+function closeBook(){ stage.classList.remove('show'); stage.setAttribute('aria-hidden', 'true'); syncOpen(); }
+pgPrev.addEventListener('click', () => turn(-1));
+pgNext.addEventListener('click', () => turn(1));
+document.getElementById('bkClose').addEventListener('click', closePanel);
+document.getElementById('bkDetails').addEventListener('click', () => showDetails(!panel.classList.contains('open')));
+stage.addEventListener('click', e => { if (e.target === stage) closePanel(); });   // click outside the book
+
+/* ---------------- Minimap (matches the sketch) ---------------- */
+const map = document.getElementById('map'), mg = map.getContext('2d');
+function drawMap(){
+  const W = map.width, H = map.height, pad = 10;
+  // start (entrance) at the bottom, far end at the top
+  const zToY = z => pad + (z - LEN_BACK) / (Z_START - LEN_BACK) * (H - pad*2);
+  mg.clearRect(0, 0, W, H);
+  mg.strokeStyle = '#d9b25f'; mg.lineWidth = 2;
+  const lx = W*0.3, rx = W*0.7, fy = zToY(FZ), gap = (rx - lx) * DOOR_W / (HALF_W * 2) / 2;
+  mg.beginPath(); mg.moveTo(lx, pad); mg.lineTo(lx, fy); mg.moveTo(rx, pad); mg.lineTo(rx, fy);
+  mg.moveTo(lx, pad); mg.lineTo(rx, pad);                                   // end wall
+  mg.moveTo(4, fy); mg.lineTo(W/2 - gap, fy); mg.moveTo(W/2 + gap, fy); mg.lineTo(W - 4, fy);  // facade + door gap
+  mg.stroke();
+  exhibits.forEach((ex, i) => {
+    const y = zToY(ex.item.z), x = ex.item.side < 0 ? lx - 12 : rx;
+    mg.fillStyle = i === nearest ? '#ffd27a' : 'rgba(217,178,95,.35)';
+    mg.fillRect(x, y - 2, 12, 4);
+  });
+  const py = zToY(camera.position.z);
+  mg.save(); mg.translate(W/2, py); mg.rotate(-yaw);   // arrow shows where you are looking
+  mg.fillStyle = '#fff'; mg.beginPath();
+  mg.moveTo(0, -7); mg.lineTo(-5, 5); mg.lineTo(5, 5); mg.closePath(); mg.fill(); mg.restore();
+}
+
+/* ---------------- Loop ---------------- */
+const clock = new THREE.Clock();
+function tick(){
+  const dt = Math.min(clock.getDelta(), .05), time = clock.elapsedTime;
+  dir = btnDir || ((keys.ArrowUp || keys.KeyW) ? -1 : (keys.ArrowDown || keys.KeyS) ? 1 : 0);
+  const kTurn = turnDir || ((keys.ArrowLeft || keys.KeyA) ? 1 : (keys.ArrowRight || keys.KeyD) ? -1 : 0);
+  if (dir || kTurn) cancelTravel();                         // any manual control stops the glide
+  if (dir && !panelOpen) {
+    focus = -1;
+    camera.position.z = THREE.MathUtils.clamp(camera.position.z + dir * SPEED * dt, Z_END, Z_START);
+    camera.position.y = EYE + Math.sin(time * 9) * 0.025;   // subtle head bob
+  }
+  // glide to a clicked book: ease in/out, at most 7 m/s, then open its details
+  if (travel >= 0 && !panelOpen) {
+    const dz = ITEMS[travel].z - camera.position.z;
+    const step = Math.sign(dz) * Math.min(Math.abs(dz), Math.min(7, Math.abs(dz) * 2.5 + .6) * dt);
+    camera.position.z += step;
+    camera.position.y = EYE + Math.sin(time * 9) * 0.02;
+    if (Math.abs(dz) < .03 && Math.abs(yawTarget - yaw) < .05) { focus = travel; travel = -1; openPanel(focus); }
+  }
+  // glide to the end-wall signboard, then open the Centre's introduction
+  if (travelSign && !panelOpen) {
+    const dz = Z_END - camera.position.z;
+    camera.position.z += Math.sign(dz) * Math.min(Math.abs(dz), Math.min(7, Math.abs(dz) * 2.5 + .6) * dt);
+    camera.position.y = EYE + Math.sin(time * 9) * 0.02;
+    if (Math.abs(dz) < .03 && Math.abs(yawTarget - yaw) < .05) { travelSign = false; openCentre(); }
+  }
+  // manual look: arrow keys / A D / on-screen buttons / mouse drag
+  if (kTurn && !panelOpen)
+    yawTarget = THREE.MathUtils.clamp(yawTarget + kTurn * TURN_SPEED * dt, -YAW_LIMIT, YAW_LIMIT);
+  yaw += (yawTarget - yaw) * Math.min(1, dt * 12);   // light smoothing, no auto-turn
+  camera.rotation.set(-0.005, yaw, 0);
+
+  // doors open automatically when you walk up to them, close when you walk away outside
+  const wantOpen = camera.position.z < FZ + 4 ? 1 : 0;
+  doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.5);
+  leaves.forEach(({pivot, s}) => { pivot.rotation.y = -s * doorOpen * 1.75; });
+
+  // find nearest exhibit within range
+  // pick the frame closest to ~1.5 m ahead, from either side
+  let best = -1, bestD = Infinity;
+  exhibits.forEach((ex, i) => {
+    if (!inRange(ex.item)) return;
+    const d = Math.abs((camera.position.z - ex.item.z) - 1.5);
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  nearest = travel >= 0 ? travel : focus >= 0 ? focus : best;   // the clicked book stays highlighted
+  exhibits.forEach((ex, i) => {
+    const on = i === nearest, pulse = .5 + .5 * Math.sin(time * 4);
+    ex.glow.material.opacity += ((on ? .35 + .25 * pulse : 0) - ex.glow.material.opacity) * .15;
+    ex.marker.material.opacity += ((on ? 1 : 0) - ex.marker.material.opacity) * .15;
+    ex.marker.rotation.y = time * 2; ex.marker.position.y = 1.12 + Math.sin(time * 3) * .05;
+    ex.art.material.emissiveIntensity = on ? .45 + .1 * pulse : .3;
+  });
+  // the signboard becomes active in the empty stretch after the last book
+  signActive = nearest < 0 && camera.position.z < LAST_BOOK_Z - 2;
+  endSignFace.emissiveIntensity = signActive ? .45 + .15 * Math.sin(time * 4) : .25;
+  if (nearest >= 0) {
+    const it = ITEMS[nearest];
+    highlight.position.set(it.side * (HALF_W - .8), 2.6, it.z); highlight.intensity = .9;
+    viewBtn.textContent = `查看 View：《${it.title}》`;
+    viewBtn.classList.add('show');
+  } else if (signActive) {
+    viewBtn.textContent = '查看 View：马华文学馆简介与历史';
+    viewBtn.classList.add('show'); highlight.intensity = 0;
+  } else { viewBtn.classList.remove('show'); highlight.intensity = 0; }
+
+  drawMap();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>

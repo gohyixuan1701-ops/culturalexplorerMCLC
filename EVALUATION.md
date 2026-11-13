@@ -69,6 +69,8 @@ Not done on purpose: English summaries, English text for the Centre's history, a
 
 ## 5. Business plan sketch
 
+**Superseded.** This first sketch used assumed numbers. Use [BUSINESS_MODEL.md](BUSINESS_MODEL.md), which has sourced market figures and a reasoned price. The text below is kept only as a record.
+
 ### Customer and problem
 - **Who pays:** schools (Chinese primary schools, Chinese independent secondary schools, national schools with Chinese classes), and the associations and foundations that fund Chinese education.
 - **Who uses:** Chinese-language and literature teachers, and their students.

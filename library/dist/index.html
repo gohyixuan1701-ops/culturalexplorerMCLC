@@ -7,22 +7,26 @@
   <meta name="description" content="Discover Malaysian Chinese literature. Browse books, explore authors, and step inside the Cultural Explorer 3D gallery.">
   <title>MCLC · 马华文学馆</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=readable-type-1">
+  <link rel="stylesheet" href="styles.css?v=feature-board-1">
   <script src="author-profiles.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=feature-board-1" defer></script>
 </head>
 <body>
   <a class="skip" href="#catalogue" data-t="skip">Skip to catalogue</a>
   <div class="topline"><span data-t="topline">A living collection of Malaysian Chinese literature</span><span>马华文学 · 薪火相传</span></div>
   <header class="header">
-    <a href="./" class="brand" aria-label="MCLC · 马华文学馆"><span class="seal">马华<br>文学馆</span><span class="brand-type"><span data-t="brandName">MCLC</span><small data-t="brandFullName">Malaysian Chinese Literature Center</small><span class="brand-team">CULTURAL EXPLORER</span></span></a>
+    <a href="./" class="brand" aria-label="MCLC · 马华文学馆"><span class="seal">马华<br>文学馆</span><span class="brand-type"><span data-t="brandName">MCLC</span><small data-t="brandFullName">Malaysian Chinese Literature Center</small><span class="brand-team">by Cultural Explorer</span></span></a>
     <nav class="main-nav" aria-label="Main navigation"><button class="nav-link active" data-view="catalogue" data-t="navBooks">The collection</button><button class="nav-link" data-view="authors" data-t="navAuthors">Authors</button><button class="nav-link" id="about" data-t="navAbout">Our story</button></nav>
     <div class="header-actions"><button id="language" class="language" aria-label="Switch to Chinese">中文 <span>⌄</span></button><button class="shelf-button" data-view="saved"><svg><use href="#i-bookmark"/></svg><span data-t="myShelf">My bookshelf</span><span class="shelf-count" id="shelfCount">0</span></button></div>
   </header>
   <main>
-    <section class="intro" aria-labelledby="introTitle">
-      <div class="intro-copy"><div class="eyebrow"><span></span><span data-t="eyebrow">THE MALAYSIAN CHINESE LITERATURE COLLECTION</span></div><h1 id="introTitle" data-t="hero">Many voices.<br>One literary home.</h1><p data-t="intro">From familiar hometowns to imagined worlds. Discover the stories, poetry, and ideas that make Mahua literature.</p><div class="intro-note"><svg><use href="#i-book"/></svg><span data-t="introNote">38 works to discover · Chinese & English editions</span></div></div>
-      <div class="hero-art" aria-hidden="true"><span class="art-ring"></span><div class="art-label">字里行间<br><small>STORIES THAT CONNECT US</small></div><div class="hero-books" id="heroBooks"></div><div class="art-shelf"></div><span class="art-caption">A collection rooted in Malaysia. A world within its pages.</span></div>
+    <section class="feature-board" id="features" aria-roledescription="carousel" aria-label="Featured collections and gallery visits" tabindex="0" data-feature="collection">
+      <div class="intro" id="featureSlide" role="group" aria-roledescription="slide" aria-labelledby="introTitle">
+        <div class="intro-copy"><div class="eyebrow"><span></span><span id="featureEyebrow">THE MALAYSIAN CHINESE LITERATURE COLLECTION</span></div><h1 id="introTitle">Many voices.<br>One literary home.</h1><p id="featureDescription">From familiar hometowns to imagined worlds. Discover the stories, poetry, and ideas that make Mahua literature.</p><div class="intro-note"><svg><use href="#i-book"/></svg><span id="featureNote">38 works to discover · Chinese & English editions</span></div><div class="feature-action" id="featureAction"><a class="primary" href="#catalogue" data-feature-action="catalogue">Browse all books →</a></div></div>
+        <div class="hero-art" aria-hidden="true"><span class="art-ring"></span><div class="art-label">字里行间<br><small>STORIES THAT CONNECT US</small></div><div class="hero-books" id="heroBooks"></div><div class="art-shelf"></div><span class="art-caption" id="featureCaption">A collection rooted in Malaysia. A world within its pages.</span></div>
+      </div>
+      <div class="feature-controls"><button class="feature-arrow" id="featurePrev" aria-label="Previous feature">←</button><div class="feature-dots" id="featureDots" role="group" aria-label="Choose a feature"></div><button class="feature-arrow" id="featureNext" aria-label="Next feature">→</button><span class="feature-counter" id="featureCounter">1 / 3</span></div>
+      <span class="sr-only" id="featureStatus" role="status" aria-live="polite" aria-atomic="true"></span>
     </section>
     <div class="workspace" id="catalogue">
       <aside class="sidebar" id="sidebar" aria-label="Catalogue filters">

@@ -60,9 +60,10 @@
     border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);
     box-shadow:var(--shadow)}
   .tool{height:36px;padding:0 15px;border-radius:999px;border:0;background:none;font-size:14px;cursor:pointer;white-space:nowrap;
-    transition:background-color .16s,transform .16s var(--ease)}
-  .tool:hover{background:var(--hover)} .tool:active{transform:scale(.96)}
-  .tool.primary{background:var(--gold);color:var(--on-gold);font-weight:600} .tool.primary:hover{background:var(--gold-strong)}
+    transition:background-color .16s,color .16s,transform .16s var(--ease)}
+  /* all four buttons look the same on the glass bar; gold only shows under the cursor (or the finger) */
+  #tools .tool:active{transform:scale(.96);background:var(--gold);color:var(--on-gold)}
+  @media (hover:hover){ #tools .tool:hover{background:var(--gold);color:var(--on-gold)} }
   #helpBtn{width:36px;padding:0;font-weight:600;color:var(--muted)}
 
   /* ---------- Minimap, bottom left ---------- */
@@ -155,6 +156,8 @@
     writing-mode:vertical-rl;letter-spacing:.25em;transform:rotate(-4deg);margin-top:35%}
   .pg .pl{font-size:.7em;color:#8b7355;letter-spacing:.2em}
   .pg .pt{font:bold 1.5em/1.4 var(--display);margin:1.5em 0 .8em;color:#5e1610}
+  .pg .pt.long{font-size:1.2em;margin-top:1.2em}                    /* long titles, mostly English */
+  .pg .pt:has(+ .ps){margin-bottom:.3em} .pg .ps{font-size:.8em;color:#8b7355;line-height:1.45;margin-bottom:.9em}
   .pg .pa{font-size:.95em;margin-bottom:.3em}
   .pg .py{font-size:.85em;color:#8b7355}
   .pg .pp{position:absolute;bottom:1.4em;left:0;right:0;font-size:.7em;color:#8b7355;padding:0 1em}
@@ -163,6 +166,7 @@
   .pg dl{text-align:left;font-size:.82em;line-height:1.5;margin:0}
   .pg dt{color:#8b7355;font-size:.85em;margin-top:.7em} .pg dd{margin:0}
   .pg .txt.sm,.pg dl.sm{font-size:.74em;line-height:1.7}
+  .pg .txt.xs,.pg dl.xs{font-size:.64em;line-height:1.55}           /* English runs longer than Chinese */
   .pg dl.hist{display:grid;grid-template-columns:auto 1fr;gap:.35em .7em;line-height:1.45}
   .pg dl.hist dt{margin:0;font-weight:bold;color:#8e2418;font-size:1em}
   .pg .num{position:absolute;bottom:.8em;left:0;right:0;font-size:.65em;color:#a8957a}
@@ -239,12 +243,16 @@
   @media (max-width:1180px){ #search{top:74px} #toast{top:130px} }          /* search gets its own row */
   @media (max-width:760px){
     .hud-title small{display:none} #search kbd,#viewBtn::after{display:none}
-    #tools{top:72px;left:16px;right:auto} .hud-title{left:16px}
-    .tool{height:44px} #helpBtn{width:44px} #closeBtn,.x,#authorClose{width:44px;height:44px;top:8px;right:8px} .chips button{height:40px}                                   /* finger-sized targets */ #search{top:134px} #toast{top:188px}
+    /* two rows: brand on the left and tools on the right, search bar centred underneath */
+    #tools{right:16px} .hud-title{left:16px} #search{top:80px} #toast{top:136px}
+    .tool{height:44px} #helpBtn{width:44px} #closeBtn,.x,#authorClose{width:44px;height:44px;top:8px;right:8px} .chips button{height:40px}   /* finger-sized targets */
     #viewBtn{bottom:158px;max-width:calc(100vw - 32px)}
     #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
     .arrow{width:54px;height:54px} .opts{grid-template-columns:1fr} .qq{font-size:21px}
     #authorBox,.box{padding:26px 20px 22px} }
+  /* phones: the brand shrinks to its seal and the tools tighten, so both still share the top row */
+  @media (max-width:560px){ .hud-title{padding:0 4px} .hud-title > div{display:none} }
+  @media (max-width:400px){ .tool{padding:0 10px;font-size:13px} }
   @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
 </style>
 </head>
@@ -253,7 +261,7 @@
 <div class="hud-title"><span class="seal-mark" aria-hidden="true">馆</span><div><b>Cultural Explorer</b><small id="sub"></small></div></div>
 <div id="tools">
   <button class="tool" id="catBtn"></button>
-  <button class="tool primary" id="quizBtn"></button>
+  <button class="tool" id="quizBtn"></button>
   <button class="tool" id="langBtn" aria-label="Switch language"></button>
   <button class="tool" id="helpBtn">?</button>
 </div>
@@ -315,9 +323,11 @@ const TYPES = {
   wenchuang:{label:'文创书系', en:'Creative Writing Series', color:'#2f6b5a', pub:'南方大学学院、马华文学馆',
              pubEn:'Southern University College & Malaysian Chinese Literature Centre'},
   academic: {label:'马华文学馆学术丛书', en:'MCLC Academic Series', color:'#2f4f86', pub:'南方大学学院、马华文学馆',
-             pubEn:'Southern University College & Malaysian Chinese Literature Centre'}
+             pubEn:'Southern University College & Malaysian Chinese Literature Centre'},
+  translated:{label:'马华文学英译作品', en:'In English Translation', color:'#5b3f7d', pub:'', pubEn:''}
 };
-const ITEMS = [
+// Every book on the Centre's publications page. The corridor shows the ten named in LOCAL_PICK (below); the rest are kept here.
+const MCLC_BOOKS = [
   {type:'mclc', title:'跳蚤', author:'商晚筠', year:2003, genre:'小说集', cover:'2003.jpg',
    summary:'商晚筠的小说集，收入两篇生前未发表的遗作，以及她在台湾与马华文坛引起关注的中、短篇代表作。'},
   {type:'mclc', title:'等待一棵无花果树', author:'黄远雄', year:2007, genre:'诗集', cover:'2007.jpg',
@@ -376,35 +386,127 @@ const ITEMS = [
   {type:'academic', title:'橡胶树寓言', author:'王润华', year:2024, genre:'散文、诗与论述', cover:'xiangjiaoshu.png',
    summary:'王润华以橡胶树为母题的散文、诗与学术论述合集，连结南洋书写与后殖民论述。'}
 ];
-// Place books automatically: alternate left / right, evenly spaced down the corridor
-const SPACING = 1.4;
-ITEMS.forEach((it, i) => { it.side = i % 2 ? 1 : -1; it.z = -4 - i * SPACING; });
+
+// Malaysian Chinese literature published in English translation (book survey of 2026-11-14: publishers' pages and ISBN records).
+// title / author / summary describe the Chinese work and are shown in Chinese mode; `en` is the English edition, shown in English mode.
+// year is the year of the English edition. Summaries are short descriptions written for this page, not publishers' text.
+// en.cover names the English edition's cover in covers-en.js. Only 《重返诗钞》 also has a photo of its Chinese edition (cover).
+const TRANSLATED = [
+  {type:'translated', title:'重返诗钞', author:'王润华', year:2023, genre:'诗集', cover:'2014 prof wong.jpg',
+   summary:'王润华的中英双语选诗集，由黄毅圣英译。诗作选自《重返诗钞》与《重返马来亚》，回望家国、故乡与热带雨林。',
+   en:{title:'Homecomings', cover:'homecomings.jpg', translator:'Ng Yi-Sheng', translatorZh:'黄毅圣（Ng Yi-Sheng）', publisher:'Global Publishing / World Scientific',
+       year:'2023', isbn:'9789811282133', kind:'双语选诗集', kindEn:'Bilingual selected poems',
+       url:'https://www.ngyisheng.com/home/edited',
+       summary:'A bilingual selection of poems by Wong Yoon Wah, translated by Ng Yi-Sheng. The poems come from two Chinese collections, 《重返诗钞》 (2014) and 《重返马来亚》 (2017), and look back at homeland, hometown and the tropical rainforest.',
+       note:'选诗英译，并非《重返诗钞》与《重返马来亚》两书的完整英译。', noteEn:'A selection: neither Chinese collection is translated in full.'}},
+  {type:'translated', title:'野猪渡河', author:'张贵兴', year:2026, genre:'长篇小说',
+   summary:'张贵兴的长篇小说，写日本占领时期婆罗洲一座村庄的历史，雨林与战争交织，带有魔幻现实色彩。',
+   en:{title:'The Crossing of the Boars', cover:'boars.jpg', translator:'Christopher Rea, Julie M. Wang', publisher:'Columbia University Press',
+       year:'2026', isbn:'9780231217675', kind:'长篇完整英译', kindEn:'Complete translation of a novel',
+       url:'https://cup.columbia.edu/book/the-crossing-of-the-boars/9780231217675/',
+       summary:'A novel by Zhang Guixing about a village in Borneo under the Japanese occupation. Village history, the rainforest and war are told with a touch of magical realism.'}},
+  {type:'translated', title:'群象', author:'张贵兴', year:2025, genre:'长篇小说',
+   summary:'张贵兴的长篇小说，以砂拉越雨林为背景，借一段家族寻访，牵出当地族群与政治的历史。',
+   en:{title:'Elephant Herd', cover:'elephant.jpg', translator:'Carlos Rojas', publisher:'Columbia University Press',
+       year:'2025', isbn:'9780231211697', kind:'长篇完整英译', kindEn:'Complete translation of a novel',
+       url:'https://cup.columbia.edu/book/elephant-herd/9780231211697/',
+       summary:'A novel by Zhang Guixing set in the rainforest of Sarawak. A family search leads into the ethnic and political history of the region.'}},
+  {type:'translated', title:'告别的年代', author:'黎紫书', year:2022, genre:'长篇小说',
+   summary:'黎紫书的长篇小说，以书中有书的写法，书写马来西亚的历史记忆、家庭与身份。',
+   en:{title:'The Age of Goodbyes', cover:'goodbyes.jpg', translator:'YZ Chin', publisher:'Feminist Press',
+       year:'2022', isbn:'9781952177699', kind:'长篇完整英译', kindEn:'Complete translation of a novel',
+       url:'https://feministpress.org/products/9781952177699-the-age-of-goodbyes',
+       summary:'A novel by Li Zi Shu that places a book inside a book to explore historical memory, family and identity in Malaysia.'}},
+  {type:'translated', title:'湖面如镜', author:'贺淑芳', year:2019, genre:'小说集',
+   summary:'贺淑芳的短篇小说集，多写马来西亚女性在社会与宗教规范之下的处境。',
+   en:{title:'Lake Like a Mirror', cover:'lake.jpg', translator:'Natascha Bruce', publisher:'Granta Books (UK) / Two Lines Press (US)',
+       year:'2019 (UK) / 2020 (US)', isbn:'9781846276903 (UK) / 9781931883986 (US)', kind:'小说集英译', kindEn:'Translated story collection',
+       url:'https://www.twolinespress.com/shop/books/lake-like-a-mirror',
+       summary:'A collection of short stories by Ho Sok Fong, many of them about women in Malaysia living under social and religious constraints.'}},
+  {type:'translated', title:'我思念的长眠中的南国公主', author:'张贵兴', year:2007, genre:'长篇小说',
+   summary:'张贵兴的长篇小说，往返于婆罗洲雨林与台湾之间，书写成长、记忆与思念。',
+   en:{title:'My South Seas Sleeping Beauty: A Tale of Memory and Longing', cover:'sleeping.jpg', translator:'Valerie Jaffee', publisher:'Columbia University Press',
+       year:'2007', isbn:'9780231140584', kind:'长篇完整英译', kindEn:'Complete translation of a novel',
+       url:'https://cup.columbia.edu/book/my-south-seas-sleeping-beauty/9780231140584/',
+       summary:'A novel by Zhang Guixing that moves between the Borneo rainforest and Taiwan: a story of growing up, memory and longing.'}},
+  {type:'translated', title:'吉陵春秋', author:'李永平', year:2003, genre:'长篇小说',
+   summary:'李永平的连作小说，由多个相互关联的短篇组成，围绕小镇吉陵的一桩罪行及其报应展开。',
+   en:{title:'Retribution: The Jiling Chronicles', cover:'retribution.jpg', translator:'Howard Goldblatt, Sylvia Li-chun Lin', publisher:'Columbia University Press',
+       year:'2003', isbn:'9780231128742', kind:'长篇／连作小说英译', kindEn:'Translated novel in linked stories',
+       url:'https://cup.columbia.edu/book/retribution/9780231128742/',
+       summary:"A cycle of linked stories by Li Yung-p'ing, set in the town of Jiling and circling around a crime and the retribution that follows."}},
+  {type:'translated', title:'黄锦树小说英译选集', author:'黄锦树', year:2016, genre:'小说集',
+   summary:'由 Carlos Rojas 从黄锦树不同的中文作品中编选并英译的短篇小说集。',
+   en:{title:'Slow Boat to China and Other Stories', cover:'slowboat.jpg', translator:'Carlos Rojas', publisher:'Columbia University Press',
+       year:'2016', isbn:'9780231168120', kind:'小说英译选集', kindEn:'Selected stories in translation',
+       url:'https://cup.columbia.edu/book/slow-boat-to-china-and-other-stories/9780231168120/',
+       summary:'Short stories by Ng Kim Chew, chosen from several of his Chinese books and translated by Carlos Rojas.',
+       note:'英文选集，没有同名的中文原著。', noteEn:'An English-language selection. No single Chinese book has this title.'}},
+  {type:'translated', title:'新村', author:'王润华', year:2012, genre:'诗集',
+   summary:'王润华诗作的英译诗集，以马来亚的“新村”为题，由 Ho Lian Geok 与黄毅圣翻译。',
+   en:{title:'The New Village', cover:'newvillage.jpg', translator:'Ho Lian Geok, Ng Yi-Sheng', translatorZh:'Ho Lian Geok、黄毅圣（Ng Yi-Sheng）', publisher:'Ethos Books',
+       year:'2012', isbn:'9789810715984', kind:'诗歌英译集', kindEn:'Poetry in translation',
+       url:'https://www.ethosbooks.com.sg/products/the-new-village',
+       summary:'Poems by Wong Yoon Wah about the "new villages" of Malaya, translated from Chinese by Ho Lian Geok and Ng Yi-Sheng.'}},
+  {type:'translated', title:'王润华散文英译选集', author:'王润华', year:2013, genre:'散文集',
+   summary:'王润华散文与自然书写的英译选集，写热带的水果、草木与南洋生活，由程异（Jeremy Tiang）翻译。',
+   en:{title:'Durians Are Not the Only Fruit: Notes from the Tropics', cover:'durians.jpg', translator:'Jeremy Tiang', translatorZh:'程异（Jeremy Tiang）', publisher:'Epigram Books',
+       year:'2013', isbn:'9789810766702', kind:'散文英译选集', kindEn:'Selected essays in translation',
+       url:'https://epigrambookshop.sg/products/durians-are-not-the-only-fruit',
+       summary:'A selection of essays and nature writing by Wong Yoon Wah about tropical fruit, plants and life in Southeast Asia, translated by Jeremy Tiang.',
+       note:'英文选集，没有同名的中文原著。', noteEn:'An English-language selection. No single Chinese book has this title.'}}
+];
+
+// The two walls. Left wall: ten Centre publications that have no English translation (change the titles to swap books).
+// Right wall: the ten translated works above. Books are paired off down the corridor, left then right.
+const LOCAL_PICK = ['跳蚤', '等待一棵无花果树', '记忆书册', '青天白日凉飕飕', '即将远行', '小曼诗藏',
+  '从婆罗洲到世界华文文学：李永平的文学行旅', '诗路', '褪色', '声声慢：黄荟如作品集 2013-2023'];
+const LOCAL = LOCAL_PICK.map(t => MCLC_BOOKS.find(b => b.title === t)).filter(Boolean);
+const ITEMS = [];
+for (let i = 0; i < Math.max(LOCAL.length, TRANSLATED.length); i++) {
+  if (LOCAL[i]) ITEMS.push(Object.assign(LOCAL[i], {side:-1, z:-4 - i * 2.8}));              // left wall
+  if (TRANSLATED[i]) ITEMS.push(Object.assign(TRANSLATED[i], {side:1, z:-5.4 - i * 2.8}));   // right wall, half a step further on
+}
+ITEMS.sort((a, b) => b.z - a.z);                              // from the door to the far end
+// English names of authors. Only names with a checked source are listed: grade A in the name survey of 2026-11-14,
+// and the names printed on the published English editions. An author who is not listed keeps the Chinese name.
+const AUTHOR_EN = {
+  '商晚筠':'Shang Wanyun', '王润华':'Wong Yoon Wah', '何启良':'Ho Khai Leong', '许通元':'Kho Tong Guan', '蔡志礼':'Chua Chee Lay',
+  '小曼':'Xiao Man (Tan Chai Puan)', '淡莹':'Dan Ying (Lew Poo Chan)', '黄郁兰':'Michelle Yu-Lan Huang', '黄琦旺':'Ng Kee Ong',
+  '冯白羽':'Pang Pek Yee', '黄荟如':'Wong Wai Kuan', '黄益启':'Wong Yit Gee', '曾繁靖':'Chen Fan Jing', '余历雄':'Er Lee Siong',
+  '锺怡慧':'Chong Yi Hui',
+  '张贵兴':'Zhang Guixing', '黎紫书':'Li Zi Shu', '贺淑芳':'Ho Sok Fong', '李永平':"Li Yung-p'ing", '黄锦树':'Ng Kim Chew'
+};
+const SPACING = 1.4;                                          // distance from one book to the next (they alternate walls)
 
 /* ---------------- Language: 中文 / English ---------------- */
 const GENRE_EN = {'小说集':'Short stories', '诗集':'Poetry', '微型小说':'Flash fiction', '散文集':'Essays',
-  '散文与小说':'Essays & fiction', '诗文集':'Poetry & prose', '论文集':'Research papers', '散文、诗与论述':'Essays, poetry & criticism'};
+  '散文与小说':'Essays & fiction', '诗文集':'Poetry & prose', '论文集':'Research papers', '散文、诗与论述':'Essays, poetry & criticism',
+  '长篇小说':'Novel'};
 const TEXT = {
   zh: {
-    langBtn:'English', sub:'马华文学馆出版品', searchPh:'搜索书名、作者…', none:'找不到相关书籍',
+    langBtn:'English', sub:'马华文学馆出版品与英译作品', searchPh:'搜索书名、作者…', none:'找不到相关书籍',
     helpBtn:'使用说明', catBtn:'书目', quizBtn:'课堂问答',
-    gTitle:'欢迎来到马华文学馆', gLead:'这是一座可以走进去的线上文学馆，馆内展出马华文学馆出版的 28 本书。',
+    gTitle:'欢迎来到马华文学馆', gLead:'这是一座可以走进去的线上文学馆。左边的墙展出 10 本马华文学馆出版品，右边的墙展出 10 本已有英译本的马华文学作品。',
+    translator:'译者', pubEn:'英译本出版社', yearEn:'英译本年份', kind:'译作类型', otherTitle:'英文书名', sourcePub:'出版资料',
+    transBy:t => `${t} 译`, yearTag:y => `英译 ${y}`,
     gSteps:['<b>走动</b>：按 ↑ ↓（或 W S）前进后退，按 ← →（或拖动鼠标）转动视角。手机和平板请用右下角的按钮。',
-      '<b>看书</b>：点击墙上的书本走过去，再点一次（或按 Enter）翻开。点击作者名字可以看作者简介。',
+      '<b>看书</b>：把鼠标指向身边的书，点击它（或按 Enter）翻开；点击远处的书会先走过去。点击作者名字可以看作者简介。',
       '<b>找书</b>：用上方的搜索栏、左下角的小地图，或打开「书目」查看全部藏书。',
       '<b>上课</b>：老师可以打开「课堂问答」，让全班分成两队比赛。'],
     gStart:'开始参观',
-    catTitle:'馆藏书目', catLead:n => `共 ${n} 本。点击任何一本书，就会走到它面前。`, all:'全部',
+    catTitle:'馆藏书目', catLead:n => `共 ${n} 本。点击任何一本书，就会直接翻开。`, all:'全部',
     qTitle:'课堂问答', qLead:'全班分成红、蓝两队，题目来自馆内的藏书。',
     qRules:['两队轮流作答，每题四个选项。', '队伍讨论后说出答案，由老师点击选项。', '答对得 1 分，分数高的一队获胜。'],
     qStart:n => `开始（${n} 题）`, teams:['红队', '蓝队'], qNum:(k, n) => `第 ${k} / ${n} 题`, qTurn:t => `${t}作答`,
-    qText:{author:t => `《${t}》的作者是谁？`, year:t => `《${t}》是哪一年出版的？`, genre:t => `《${t}》属于哪一类作品？`,
+    qText:{author:t => `${t}的作者是谁？`, year:t => `${t}是哪一年出版的？`, genre:t => `${t}属于哪一类作品？`,
       book:a => `以下哪一本书是${a}的作品？`},
     qRight:t => `✓ 答对了！${t}得 1 分。`, qWrong:'✗ 答错了，正确答案已标出。', qNext:'下一题', qFinish:'看结果',
     qWin:t => `${t}获胜！`, qTie:'平手！两队一样棒。', qAgain:'再玩一次', qClose:'回到文学馆',
-    welcome:'按 ↑ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学馆简介…', view:'查看：',
-    centreName:'马华文学馆简介与历史', centreWhere:'走廊尽头',
+    welcome:'按 ↑ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学简史…', view:'查看：',
+    centreName:'马华文学简史与文学馆简介', centreWhere:'走廊尽头',
     details:'书籍资料', summary:'内容简介', author:'作者', genre:'类别', publisher:'出版社', year:'出版年份', series:'书系',
-    by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', coverCredit:'封面图片来自马华文学馆网站', end:'完',
+    by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', coverCredit:'封面图片来自马华文学馆网站', coverCreditEn:'英译本封面来自出版社或书店网页', end:'完',
     bookPages:['封面', '扉页', '简介 · 资料', '完'], centrePages:['封面', '简介 · 缘起', '馆藏 · 馆舍', '历史 1997-2014', '历史 2015-2025'],
     chat:'<em>即将推出：</em>向 AI 提问关于这本书的问题。',
     authorTitle:'作者简介', authorNote:'作者简介整理中，敬请期待。', authorWorks:'馆藏作品',
@@ -412,26 +514,28 @@ const TEXT = {
     cWriters:'历届专题作家展', cHistory:'回顾历史', cFounded:'成立于 1998年4月26日', cNote:''
   },
   en: {
-    langBtn:'中文', sub:'Malaysian Chinese Literature Centre book collection', searchPh:'Search title, author…', none:'No matching books',
+    langBtn:'中文', sub:'Centre publications and English translations', searchPh:'Search title, author…', none:'No matching books',
     helpBtn:'How to use', catBtn:'Catalogue', quizBtn:'Class quiz',
-    gTitle:'Welcome to the Literature Centre', gLead:'This is an online literature centre you can walk through. It shows 28 books published by the Malaysian Chinese Literature Centre.',
+    gTitle:'Welcome to the Literature Centre', gLead:'This is an online literature centre you can walk through. The left wall shows 10 books published by the Malaysian Chinese Literature Centre. The right wall shows 10 works of Malaysian Chinese literature that have been published in English.',
+    translator:'Translator', pubEn:'Publisher', yearEn:'Year', kind:'Type', otherTitle:'Chinese title', sourcePub:'Publication record',
+    transBy:t => `Translated by ${t}`, yearTag:y => String(y),
     gSteps:['<b>Walk</b>: press ↑ ↓ (or W S) to move and ← → (or drag the mouse) to look around. On a phone or tablet, use the buttons at the bottom right.',
-      '<b>Read</b>: click a book on the wall to walk to it, then click again (or press Enter) to open it. Click the author\'s name to read about the author.',
+      '<b>Read</b>: point at a book near you and click it (or press Enter) to open it. Click a book further away to walk to it first. Click the author\'s name to read about the author.',
       '<b>Find</b>: use the search bar at the top, the minimap at the bottom left, or open the Catalogue to see every book.',
       '<b>Teach</b>: teachers can open the Class quiz and let the class compete in two teams.'],
     gStart:'Start exploring',
-    catTitle:'Book catalogue', catLead:n => `${n} books. Click any book to walk to it.`, all:'All',
+    catTitle:'Book catalogue', catLead:n => `${n} books. Click any book to open it.`, all:'All',
     qTitle:'Class quiz', qLead:'Split the class into a red team and a blue team. The questions come from the books in the Centre.',
     qRules:['Teams take turns. Each question has four options.', 'The team agrees on an answer and the teacher clicks it.', 'A correct answer scores 1 point. The higher score wins.'],
     qStart:n => `Start (${n} questions)`, teams:['Red team', 'Blue team'], qNum:(k, n) => `Question ${k} of ${n}`, qTurn:t => `${t} to answer`,
-    qText:{author:t => `Who wrote 《${t}》?`, year:t => `In which year was 《${t}》 published?`, genre:t => `What kind of work is 《${t}》?`,
+    qText:{author:t => `Who wrote ${t}?`, year:t => `In which year was ${t} published?`, genre:t => `What kind of work is ${t}?`,
       book:a => `Which of these books is by ${a}?`},
     qRight:t => `✓ Correct! 1 point to the ${t}.`, qWrong:'✗ Not quite. The correct answer is marked.', qNext:'Next question', qFinish:'See the result',
     qWin:t => `The ${t} wins!`, qTie:'It\'s a tie! Well played, both teams.', qAgain:'Play again', qClose:'Back to the Centre',
-    welcome:'Press ↑ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the Centre…', view:'View: ',
-    centreName:'About the Centre and its history', centreWhere:'end of the corridor',
+    welcome:'Press ↑ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the history of Mahua literature…', view:'View: ',
+    centreName:'History of Mahua literature, and the Centre', centreWhere:'end of the corridor',
     details:'Book details', summary:'Summary', author:'Author', genre:'Genre', publisher:'Publisher', year:'Year', series:'Series',
-    by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', coverCredit:'Cover photo from the MCLC website', end:'The end',
+    by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', coverCredit:'Cover photo from the MCLC website', coverCreditEn:'Cover from the publisher\'s or bookseller\'s page', end:'The end',
     bookPages:['Cover', 'Title page', 'Summary · Details', 'The end'], centrePages:['Cover', 'About · Origin', 'Collection · Facilities', 'History 1997-2014', 'History 2015-2025'],
     chat:'<em>Coming next:</em> ask a question about this book (AI chat).',
     authorTitle:'About the author', authorNote:'Author introduction coming soon.', authorWorks:'Works in this collection',
@@ -444,8 +548,19 @@ let LANG = 'zh';
 try { if (localStorage.getItem('ce-lang') === 'en') LANG = 'en'; } catch (e) {}
 const L = k => TEXT[LANG][k];
 const typeLabel = t => LANG === 'en' ? t.en : t.label;
-const typePub = (it, t) => LANG === 'en' ? t.pubEn : (it.pub || t.pub);
+const typePub = (it, t) => it.en ? it.en.publisher : LANG === 'en' ? t.pubEn : (it.pub || t.pub);
 const genreOf = it => LANG === 'en' ? (GENRE_EN[it.genre] || it.genre) : it.genre;
+// What a book shows in the language chosen.
+// Chinese: everything about the Chinese work. English: a translated work shows its English edition; a book with no
+// translation keeps its Chinese title, cover and summary, and only the details that exist in English change.
+const isEn = it => LANG === 'en' && !!it.en;                              // shown as its English edition
+const titleOf = it => isEn(it) ? it.en.title : it.title;
+const bookName = it => isEn(it) ? it.en.title : `《${it.title}》`;          // title as written in a sentence
+const summaryOf = it => isEn(it) ? it.en.summary : it.summary;
+const authorName = a => (LANG === 'en' && AUTHOR_EN[a]) || a;             // unverified names stay in Chinese
+const authorsOf = it => it.author.split('、').map(authorName).join(LANG === 'en' ? ', ' : '、');
+const translatorOf = it => (LANG !== 'en' && it.en.translatorZh) || it.en.translator;
+const yearOf = it => it.en ? L('yearTag')(it.year) : String(it.year);     // a translated work gives the year of its English edition
 // Previous Melaka history exhibits — kept for reference, not shown in the corridor
 const OLD_ITEMS = [
   { side:-1, z:-6,  type:'figure', mono:'P',  title:'Parameswara', era:'c. 1344 – c. 1414',
@@ -907,35 +1022,63 @@ function wrapText(g, text, maxW){
   }
   if (line) lines.push(line); return lines;
 }
-// Book cover drawn in the series colour: series name, title, author, year (laid out at 320×400, drawn at 512×640)
-function portraitTex(item){
-  const t = TYPES[item.type];
-  return canvasTex(512, 640, g => {
-    const w = 320, h = 400; g.scale(1.6, 1.6);
-    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, t.color); grd.addColorStop(1, '#14100c');
-    g.fillStyle = grd; g.fillRect(0, 0, w, h);
-    speckle(g, w, h, 2500, ['#000', '#fff']);                                     // cloth texture
-    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, h);                    // book spine shade
-    g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, w - 50, h - 32);
-    g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = (34 + w - 16) / 2;
-    g.font = `16px ${CJK}`; g.fillStyle = '#e6cf98'; g.fillText(t.label, cx, 44);
-    // title (subtitle after "：" drawn smaller)
-    const [main, sub] = item.title.split('：');
-    let size = main.length > 12 ? 30 : main.length > 6 ? 36 : 46;
-    g.font = `bold ${size}px ${CJK}`;
-    let lines = wrapText(g, main, w - 90).slice(0, 5);
-    let y = 150 - (lines.length - 1) * size * 0.6;
-    g.fillStyle = '#fff8e8';
-    lines.forEach(l => { g.fillText(l, cx, y); y += size * 1.2; });
-    if (sub) {
-      g.font = `18px ${CJK}`; g.fillStyle = '#e6cf98';
-      wrapText(g, sub, w - 90).slice(0, 2).forEach(l => { g.fillText(l, cx, y + 4); y += 24; });
-    }
-    g.strokeStyle = '#d9b25f'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 40, 300); g.lineTo(cx + 40, 300); g.stroke();
+// The same for English: break between words
+function wrapWords(g, text, maxW){
+  const lines = []; let line = '';
+  for (const word of text.split(' ')) {
+    const next = line ? line + ' ' + word : word;
+    if (g.measureText(next).width > maxW && line) { lines.push(line); line = word; } else line = next;
+  }
+  if (line) lines.push(line); return lines;
+}
+// Book cover drawn in the series colour (laid out at 320×400, drawn at 512×640).
+// Chinese edition: series name, title, author, year. English edition of a translated work: English title, author, translator.
+const SERIF = '"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif';
+function drawCover(g, item){
+  const t = TYPES[item.type], en = isEn(item), w = 320, h = 400;
+  g.setTransform(1.6, 0, 0, 1.6, 0, 0);
+  const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, t.color); grd.addColorStop(1, '#14100c');
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  speckle(g, w, h, 2500, ['#000', '#fff']);                                     // cloth texture
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, h);                    // book spine shade
+  g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, w - 50, h - 32);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = (34 + w - 16) / 2;
+  g.font = `16px ${en ? SERIF : CJK}`; g.fillStyle = '#e6cf98'; g.fillText(en ? t.en : t.label, cx, 44);
+  // title (subtitle after the colon drawn smaller)
+  const [main, sub] = en ? item.en.title.split(': ') : item.title.split('：');
+  const size = en ? (main.length > 22 ? 28 : main.length > 12 ? 34 : 42) : (main.length > 12 ? 30 : main.length > 6 ? 36 : 46);
+  g.font = `bold ${size}px ${en ? SERIF : CJK}`;
+  const lines = (en ? wrapWords : wrapText)(g, main, w - 90).slice(0, 5);
+  let y = 150 - (lines.length - 1) * size * 0.6;
+  g.fillStyle = '#fff8e8';
+  lines.forEach(l => { g.fillText(l, cx, y); y += size * 1.2; });
+  if (sub) {
+    g.font = `18px ${en ? SERIF : CJK}`; g.fillStyle = '#e6cf98';
+    (en ? wrapWords : wrapText)(g, sub, w - 90).slice(0, 2).forEach(l => { g.fillText(l, cx, y + 4); y += 24; });
+  }
+  g.strokeStyle = '#d9b25f'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 40, 300); g.lineTo(cx + 40, 300); g.stroke();
+  if (en) {
+    g.font = `20px ${SERIF}`; g.fillStyle = '#f4ecdc'; g.fillText(authorsOf(item), cx, 324);
+    g.font = `italic 13px ${SERIF}`; g.fillStyle = '#d9b25f';
+    wrapWords(g, L('transBy')(item.en.translator), w - 80).slice(0, 2).forEach((l, k) => g.fillText(l, cx, 348 + k * 16));
+  } else {
     g.font = `20px ${CJK}`; g.fillStyle = '#f4ecdc';
     g.fillText(wrapText(g, item.author, w - 90)[0], cx, 330);
-    g.font = '18px Georgia'; g.fillStyle = '#d9b25f'; g.fillText(String(item.year), cx, 360);
-  });
+    // a translated work shows no year on its Chinese cover: the year in the data is that of the English edition
+    if (!item.en) { g.font = '18px Georgia'; g.fillStyle = '#d9b25f'; g.fillText(String(item.year), cx, 360); }
+  }
+}
+const portraitTex = item => canvasTex(512, 640, g => drawCover(g, item));
+// Brass caption plate under the shelf: author, year, genre
+function drawPlate(g, item){
+  const w = 512, h = 78;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#e2c276'); grd.addColorStop(1, '#a8823a');
+  g.fillStyle = grd; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(60,40,10,.6)'; g.lineWidth = 3; g.strokeRect(4, 4, w - 8, h - 8);
+  g.fillStyle = '#2a1a08'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `26px ${CJK}`;
+  let text = `${authorsOf(item)} · ${yearOf(item)} · ${genreOf(item)}`;
+  while (g.measureText(text).width > w - 40 && text.length > 4) text = text.slice(0, -2) + '…';
+  g.fillText(text, w / 2, h / 2 + 2);
 }
 const pagesMat = std({roughness:.9, envMapIntensity:.2, map:canvasTex(64, 64, (g, w, h) => {      // page edges
   g.fillStyle = '#efe6d0'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(120,100,70,.35)';
@@ -983,14 +1126,7 @@ ITEMS.forEach((item, i) => {
   const book = add(BOOK_GEO, [pagesMat, bindMat[item.type], pagesMat, pagesMat, coverMat, bindMat[item.type]], 0, .5, .045, lean);
   book.userData.index = i;
   // Brass caption plate under the shelf
-  const plate = canvasTex(512, 78, (g, w, h) => {
-    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#e2c276'); grd.addColorStop(1, '#a8823a');
-    g.fillStyle = grd; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(60,40,10,.6)'; g.lineWidth = 3; g.strokeRect(4, 4, w - 8, h - 8);
-    g.fillStyle = '#2a1a08'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `26px ${CJK}`;
-    let text = `${item.author} · ${item.year} · ${item.genre}`;
-    while (g.measureText(text).width > w - 40 && text.length > 4) text = text.slice(0, -2) + '…';
-    g.fillText(text, w / 2, h / 2 + 2);
-  });
+  const plate = canvasTex(512, 78, g => drawPlate(g, item));
   add(PLATE_GEO, std({map:plate, metalness:.5, roughness:.4}), 0, .84, .053, grp);
   // Picture light above the board
   const lampBar = add(LAMP_GEO, brass, 0, 2.62, .34, grp); lampBar.rotation.z = Math.PI / 2;
@@ -1001,7 +1137,35 @@ ITEMS.forEach((item, i) => {
   const marker = add(new THREE.OctahedronGeometry(.1), new THREE.MeshBasicMaterial({color:0xd89a2c, transparent:true, opacity:0}), 0, 1.12, .42, holder);
   scene.add(grp);
 
-  exhibits.push({item, grp, art:book, cover, coverMat, glow, marker});
+  exhibits.push({item, grp, art:book, cover, plate, coverMat, glow, marker});
+});
+// Repaint a book on the wall for the language chosen: its real cover when there is one (see coverOf), otherwise the
+// drawn cover; then the caption plate.
+function paintExhibit(i){
+  const ex = exhibits[i], it = ex.item, c = ex.cover.image, g = c.getContext('2d');
+  const img = coverOf(it);
+  if (img) {
+    g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(img, 0, 0, c.width, c.height);
+    const shade = g.createLinearGradient(0, 0, 40, 0); shade.addColorStop(0, 'rgba(0,0,0,.4)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = shade; g.fillRect(0, 0, 40, c.height);   // spine shade
+    ex.art.scale.x = 1 / coverRatio(img) / .78;            // the book shape (BOOK_GEO) is .78 wide and 1 tall
+  } else { drawCover(g, it); ex.art.scale.x = 1; }
+  ex.cover.needsUpdate = true;
+  drawPlate(ex.plate.image.getContext('2d'), it); ex.plate.needsUpdate = true;
+}
+// Wall titles by the door, in both languages: which books hang on which wall
+// (each sits midway between two wall pilasters, which stand at different places on the two walls)
+[[-1, -1.2, TYPES.mclc.label, 'Centre publications'], [1, -2.6, TYPES.translated.label, 'In English translation']].forEach(([side, z, zh, en]) => {
+  const grp = new THREE.Group(); grp.position.set(side * HALF_W, 0, z); grp.rotation.y = -side * Math.PI / 2;
+  add(box(1.9, .78, .05), timber, 0, 2.05, .025, grp);
+  add(new THREE.PlaneGeometry(1.78, .66), std({roughness:.7, envMapIntensity:.15, map:canvasTex(712, 264, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#8e2418'); grd.addColorStop(1, '#5e1610');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h); g.strokeStyle = '#d9b25f'; g.lineWidth = 6; g.strokeRect(12, 12, w - 24, h - 24);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#fbe9c8'; g.font = `bold 74px ${CJK}`; g.fillText(zh, w / 2, 106);
+    g.fillStyle = '#e6cf98'; g.font = `40px ${SERIF}`; g.fillText(en, w / 2, 196);
+  })}), 0, 2.05, .052, grp);
+  scene.add(grp);
 });
 // One spotlight that follows the active book (cheaper than a light per book)
 const highlight = new THREE.PointLight(0xffe0a8, 0, 3.5); scene.add(highlight);
@@ -1058,6 +1222,23 @@ viewBtn.addEventListener('click', () => { if (nearest >= 0) openPanel(nearest); 
 let signActive = false;   // true when standing at the end-wall signboard
 
 const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+const pickables = [...exhibits.map(x => x.art), endSign];    // what a click or the cursor can land on
+// The View button follows the mouse: it offers the book the cursor points at, if that book is one of the
+// five nearest in front of you or the five nearest behind you. With no mouse (touch screens) there is no cursor
+// to follow, so the button offers the book you are standing next to, as before.
+const NEAR_N = 5;   // how many books each way can be picked with the cursor
+let hoverMode = matchMedia('(hover:hover) and (pointer:fine)').matches;
+addEventListener('pointerdown', e => { hoverMode = e.pointerType === 'mouse'; }, true);
+addEventListener('pointermove', e => { if (e.pointerType === 'mouse') hoverMode = true; }, true);
+const mouse = new THREE.Vector2(); let ptrOn = false;      // cursor position over the 3D scene
+function nearSet(){
+  const z = camera.position.z, ahead = [], behind = [];
+  if (z > FZ) return [];                                     // still outside the building
+  ITEMS.forEach((it, i) => (it.z <= z ? ahead : behind).push(i));   // books are listed from the door to the far end
+  return [...ahead.slice(0, NEAR_N), ...behind.slice(-NEAR_N)];
+}
+canvas.addEventListener('pointerleave', e => { if (e.relatedTarget !== viewBtn) ptrOn = false; });   // moving onto the View button keeps the book
+viewBtn.addEventListener('pointerleave', e => { if (e.relatedTarget !== canvas) ptrOn = false; });
 let downPos = null;
 let lastX = 0;
 canvas.addEventListener('pointerdown', e => {
@@ -1066,6 +1247,7 @@ canvas.addEventListener('pointerdown', e => {
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}   // keep the drag if the finger leaves the canvas; never fatal
 });
 canvas.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse') { mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ptrOn = true; }
   if (!downPos || panelOpen) return;
   if (e.clientX !== lastX) cancelTravel();
   yawTarget = THREE.MathUtils.clamp(yawTarget + (e.clientX - lastX) * 0.004, -YAW_LIMIT, YAW_LIMIT);
@@ -1076,12 +1258,12 @@ canvas.addEventListener('pointerup', e => {
   if (!start || Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 8) return;
   ptr.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ptr, camera);
-  const hit = ray.intersectObjects([...exhibits.map(x => x.art), endSign])[0];
+  const hit = ray.intersectObjects(pickables)[0];
   if (!hit) return;
   if (hit.object === endSign) { signActive ? openCentre() : travelToSign(); return; }
   const idx = hit.object.userData.index;
-  if (idx === nearest) openPanel(idx);
-  else travelTo(idx);
+  if (idx === nearest || nearSet().includes(idx)) { cancelTravel(); openPanel(idx); }   // a book near you opens where you stand
+  else travelTo(idx);                                                                 // a far one: walk there first
 });
 
 /* ---------------- Click a far book: glide over to it ---------------- */
@@ -1091,7 +1273,7 @@ let travelFar = false;         // long trip: look where you walk first, turn to 
 function travelTo(idx){
   travel = idx; focus = -1; travelSign = false;
   travelFar = Math.abs(ITEMS[idx].z - camera.position.z) > 4;
-  toast(`${L('going')}《${ITEMS[idx].title}》…`);
+  toast(`${L('going')}${bookName(ITEMS[idx])}…`);
 }
 let travelSign = false;    // gliding to the end-wall signboard
 function travelToSign(){
@@ -1128,7 +1310,7 @@ function setMapHover(idx, e){
   mapHover = idx;
   if (idx < 0) { mapTip.classList.remove('show'); return; }
   const it = ITEMS[idx];
-  mapTip.innerHTML = `《${it.title}》<small>${it.author} · ${it.year} · ${genreOf(it)}</small>`;
+  mapTip.innerHTML = `${esc(bookName(it))}<small>${esc(authorsOf(it))} · ${yearOf(it)} · ${genreOf(it)}</small>`;
   const r = map.getBoundingClientRect();
   mapTip.style.left = Math.min(r.right + 10, innerWidth - mapTip.offsetWidth - 8) + 'px';
   mapTip.style.top = Math.max(8, e.clientY - mapTip.offsetHeight / 2) + 'px';
@@ -1155,22 +1337,53 @@ map.addEventListener('click', e => {
 
 /* ---------------- Search bar ---------------- */
 const qInput = document.getElementById('q'), resultsEl = document.getElementById('results');
-const CENTRE_WORDS = '马华文学馆 文学馆 简介 历史 缘起 馆藏 mclc centre center about history malaysian chinese literature';
+const CENTRE_WORDS = '马华文学馆 马华文学 文学馆 简介 简史 文学史 历史 缘起 馆藏 mclc mahua centre center about history malaysian chinese literature';
 let results = [], resultOn = 0;
 // Matching ignores case, full-width / half-width forms, spaces and punctuation, so 《跳蚤》, "声声慢:" or "2013 2023" all work.
 // A query made only of symbols (e.g. "·") is matched as typed.
 const norm = s => String(s).normalize('NFKC').toLowerCase();
 const strip = s => s.replace(/[\s\p{P}\p{S}]/gu, '');
 const HAY = ITEMS.map(it => { const t = TYPES[it.type];
-  return norm([it.title, it.author, it.genre, GENRE_EN[it.genre], it.year, t.label, t.en].join(' ')); });
+  const e = it.en ? [it.en.title, it.en.translator, it.en.publisher, it.en.isbn] : [];   // the English edition can be searched too
+  return norm([it.title, it.author, ...it.author.split('、').map(a => AUTHOR_EN[a] || ''), it.genre, GENRE_EN[it.genre], it.year,
+    t.label, t.en, ...e].join(' ')); });
 const HAY_KEY = HAY.map(strip), CENTRE_KEYS = CENTRE_WORDS.split(' ');
 const HAY_NAME = ITEMS.map(it => strip(norm(it.title + it.author)));   // one Latin letter or digit: titles and authors only
+// Hanyu Pinyin search: "huang" finds 黄…, "xu tong yuan" finds 许通元, "chongfan" finds 重返….
+// PINYIN lists every Chinese character used in the titles and authors, without tones (ü is typed v or u).
+// A character with two readings lists both (重 chong|zhong). After adding a book, add its new characters here.
+const PINYIN = Object.fromEntries(('一yi 与yu 世shi 丛cong 丽li 之zhi 乐yue|le 书shu 乳ru 亚ya 从cong 何he 余yu 作zuo 做zuo 儿er 元yuan 光guang ' +
+  '兰lan 养yang 册ce 冯feng 冼xian 凉liang 出chu 创chuang 到dao 勓kai 华hua 南nan 即ji 历li 叛pan 听ting 启qi 哀ai 品pin 商shang 图tu ' +
+  '地di 型xing 城cheng 声sheng 夕xi 天tian 女nv|nu 如ru 婆po 学xue 寓yu 将jiang 小xiao 山shan 市shi 布bu 平ping 座zuo 影ying 待dai ' +
+  '微wei 心xin 忆yi 志zhi 思si 怡yi 情qing 惕ti 愁chou 慢man 慧hui 挑tiao 摇yao 政zheng 散san 文wen 斋zhai 新xin 方fang 旅lv|lu 无wu ' +
+  '日ri 旺wang 晚wan 景jing 曼man 曾zeng|ceng 朝chao|zhao 木mu 术shu 李li 来lai 果guo 树shu 棵ke 橡xiang 欣xin 正zheng 死si 残can ' +
+  '永yong 洲zhou 润run 淡dan 清qing 渡du 温wen 版ban 王wang 琢zhuo 琦qi 瓶ping 界jie 白bai 的de 益yi 相xiang 短duan 礼li 稿gao ' +
+  '等deng 筠yun|jun 篇pian 系xi 繁fan 红hong 统tong 缘yuan 罗luo 置zhi 美mei 羽yu 聆ling 背bei 胡hu 胶jiao 脸lian 舌she 良liang ' +
+  '色se 花hua 荟hui 莹ying 菌jun 蔡cai 藏cang|zang 蚤zao 行xing|hang 褪tui 覃qin|tan 言yan 记ji 许xu 论lun 诒yi 诗shi 说shuo 路lu ' +
+  '跳tiao 辛xin 返fan 进jin 远yuan 述shu 通tong 邢xing 郁yu 酷ku 酸suan 重chong|zhong 金jin 钞chao 锺zhong 阱jing 陈chen 陌mo ' +
+  '陷xian 难nan 雄xiong 集ji 青qing 靖jing 音yin 顺shun 飕sou 馆guan 马ma 麻ma 黄huang 黑hei ' +
+  '野ye 猪zhu 河he 群qun 象xiang 告gao 别bie 年nian 代dai 湖hu 面mian 镜jing 我wo 念nian 长chang|zhang 眠mian 中zhong 国guo 公gong ' +
+  '主zhu 吉ji 陵ling 春chun 秋qiu 锦jin 英ying 译yi 选xuan 村cun 张zhang 贵gui 兴xing 黎li 紫zi 贺he 淑shu 芳fang')
+  .split(' ').map(s => [s[0], s.slice(1).split('|')]));
+// a title or name as a list of syllables; each syllable is the list of its possible readings
+const syllables = s => [...norm(s)].map(ch => PINYIN[ch] || (/[a-z0-9]/.test(ch) ? [ch] : null)).filter(Boolean);
+const PY_TEXTS = ITEMS.map(it => [it.title, ...it.author.split('、')].map(syllables));
+// the letters typed must start at the beginning of a character and follow the characters in order; the last one may be unfinished
+function pinyinFrom(syl, p, q){
+  if (!q) return true;
+  if (p >= syl.length) return false;
+  return syl[p].some(r => r.startsWith(q) || (q.startsWith(r) && pinyinFrom(syl, p + 1, q.slice(r.length))));
+}
+const pinyinMatch = (i, q) => PY_TEXTS[i].some(syl => syl.some((_, p) => pinyinFrom(syl, p, q)));
 function runSearch(){
   const q = norm(qInput.value.trim()), key = strip(q);
   results = [];
   if (q) {
     const hay = /^[a-z0-9]$/.test(key) ? HAY_NAME : key ? HAY_KEY : HAY;
     ITEMS.forEach((it, i) => { if (hay[i].includes(key || q)) results.push(i); });
+    // then books whose title or author reads like the letters typed (two letters or more)
+    const py = key.replace(/ü/g, 'v');
+    if (/^[a-z]{2,}$/.test(py)) ITEMS.forEach((it, i) => { if (!results.includes(i) && pinyinMatch(i, py)) results.push(i); });
     // -1: the Centre's own introduction (end signboard); one Latin letter alone is too vague to match it
     if (key && (key.length > 1 || /[^\x00-\x7f]/.test(key)) && CENTRE_KEYS.some(w => w.includes(key))) results.push(-1);
   }
@@ -1178,7 +1391,7 @@ function runSearch(){
   resultsEl.innerHTML = !q ? '' : !results.length ? `<li class="none">${L('none')}</li>` :
     results.map((i, k) => i < 0
       ? `<li data-k="${k}"><i style="background:#d9b25f"></i><span>${L('centreName')}<small>${L('centreWhere')}</small></span></li>`
-      : `<li data-k="${k}"><i style="background:${TYPES[ITEMS[i].type].color}"></i><span>《${esc(ITEMS[i].title)}》<small>${esc(ITEMS[i].author)} · ${ITEMS[i].year} · ${esc(genreOf(ITEMS[i]))}</small></span></li>`).join('');
+      : `<li data-k="${k}"><i style="background:${TYPES[ITEMS[i].type].color}"></i><span>${esc(bookName(ITEMS[i]))}<small>${esc(authorsOf(ITEMS[i]))} · ${yearOf(ITEMS[i])} · ${esc(genreOf(ITEMS[i]))}</small></span></li>`).join('');
   resultsEl.classList.toggle('show', !!q);
   markResult();
 }
@@ -1220,25 +1433,31 @@ function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'
 let current = null;   // what is open: book index, -1 for the Centre's introduction, null for nothing
 // Author names are links that open the author detail box (several authors are separated by 、)
 function authorLinks(s){
-  return s.split('、').map(a => `<a class="au" data-au="${esc(a)}">${esc(a)}</a>`).join(LANG === 'en' ? ', ' : '、');
+  return s.split('、').map(a => `<a class="au" data-au="${esc(a)}">${esc(authorName(a))}</a>`).join(LANG === 'en' ? ', ' : '、');
 }
+// The other-language title of a translated work: its English title in Chinese mode, its Chinese title in English mode
+const otherTitle = it => isEn(it) ? `《${it.title}》` : it.en.title;
 function openPanel(i){
-  const it = ITEMS[i], t = TYPES[it.type]; current = i;
-  const summary = LANG === 'en'
-    ? `<p>${esc(it.summary)}</p><p class="ph">${L('phNote')}</p>`
-    : `<p>${esc(it.summary)}</p>`;
+  const it = ITEMS[i], t = TYPES[it.type], e = it.en; current = i;
+  const row = (k, v) => `<dt>${L(k)}</dt><dd>${v}</dd>`;
+  const src = e ? [e.url, L('sourcePub')] : [SOURCE_URL, L('sourceName')];
   document.getElementById('panelBody').innerHTML = `
     <span class="chip" style="background:${t.color}">${typeLabel(t)}</span>
-    <h2>《${esc(it.title)}》</h2><div class="era">${authorLinks(it.author)} · ${it.year}</div>
-    ${summary}
+    <h2>${esc(bookName(it))}</h2>${e ? `<div class="era" style="margin-bottom:4px">${esc(otherTitle(it))}</div>` : ''}
+    <div class="era">${authorLinks(it.author)} · ${yearOf(it)}</div>
+    <p>${esc(summaryOf(it))}</p>${LANG === 'en' && !e ? `<p class="ph">${L('phNote')}</p>` : ''}
+    ${e && e.note ? `<p class="note">${esc(LANG === 'en' ? e.noteEn : e.note)}</p>` : ''}
     <h3>${L('details')}</h3><dl class="meta">
-      <dt>${L('author')}</dt><dd>${authorLinks(it.author)}</dd>
-      <dt>${L('genre')}</dt><dd>${esc(genreOf(it))}</dd>
-      <dt>${L('publisher')}</dt><dd>${esc(typePub(it, t))}</dd>
-      <dt>${L('year')}</dt><dd>${it.year}</dd>
-      <dt>${L('series')}</dt><dd>${esc(typeLabel(t))}</dd></dl>
-    <p style="font-size:13px;color:var(--muted)">${L('source')}：<a href="${SOURCE_URL}" target="_blank" rel="noopener"
-      style="color:var(--gold)">${L('sourceName')}</a><span id="coverCredit" ${it.coverImg ? '' : 'hidden'}> · ${L('coverCredit')}</span></p>
+      ${row('author', authorLinks(it.author))}
+      ${e ? row('translator', esc(translatorOf(it))) : ''}
+      ${row('genre', esc(genreOf(it)))}
+      ${e ? row('otherTitle', esc(otherTitle(it))) : ''}
+      ${row(e ? 'pubEn' : 'publisher', esc(typePub(it, t)))}
+      ${row(e ? 'yearEn' : 'year', e ? esc(e.year) : it.year)}
+      ${e ? `<dt>ISBN</dt><dd>${esc(e.isbn)}</dd>` + row('kind', esc(LANG === 'en' ? e.kindEn : e.kind)) : ''}
+      ${row('series', esc(typeLabel(t)))}</dl>
+    <p style="font-size:13px;color:var(--muted)">${L('source')}：<a href="${src[0]}" target="_blank" rel="noopener"
+      style="color:var(--gold)">${src[1]}</a><span id="coverCredit" ${coverOf(it) ? '' : 'hidden'}> · ${coverCreditOf(it)}</span></p>
     <div class="ask">${L('chat')}</div>`;
   panel.scrollTop = 0;
   openBook(i);
@@ -1279,52 +1498,61 @@ addEventListener('resize', sizeBook);
 // Without covers.js, or for a book that has no photo in it, the drawn cover stays.
 // (The photos sit inside covers.js, not in picture files, so that the page also works when opened by double-click:
 // a browser does not let a 3D scene use picture files from the disk or from another website.)
-const coverPhoto = it => `<img src="${it.coverImg.src}" alt="${esc(it.title)}" draggable="false">`;
+// covers.js holds the Centre's photos of the Chinese editions (window.COVERS, keyed by `cover`);
+// covers-en.js holds the covers of the English editions (window.COVERS_EN, keyed by `en.cover`).
+const coverPhoto = (it, img) => `<img src="${img.src}" alt="${esc(titleOf(it))}" draggable="false">`;
 const coverRatio = img => Math.min(1.65, Math.max(1.2, img.naturalHeight / img.naturalWidth));   // book takes the photo's shape (the 28 photos run from 1.29 to 1.63)
-function applyCovers(){
-  const photos = window.COVERS || {};
-  ITEMS.forEach((it, i) => {
-    if (!photos[it.cover]) return;
-    const img = new Image();
-    img.onload = () => {
-      it.coverImg = img;
-      // wall: paint the photo over the whole drawn cover, shade the spine, and make the book as wide as the photo needs
-      const ex = exhibits[i], c = ex.cover.image, g = c.getContext('2d');
-      g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(img, 0, 0, c.width, c.height);
-      const shade = g.createLinearGradient(0, 0, 40, 0); shade.addColorStop(0, 'rgba(0,0,0,.4)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = shade; g.fillRect(0, 0, 40, c.height);
-      ex.cover.needsUpdate = true;
-      ex.art.scale.x = 1 / coverRatio(img) / .78;          // the book shape (BOOK_GEO) is .78 wide and 1 tall
-      if (current !== i) return;
-      // this book is already open with the drawn cover: swap the photo in where it is
-      const face = fbook.querySelector('.cover');
-      if (face) { face.classList.add('photo'); face.style.backgroundImage = ''; face.innerHTML = coverPhoto(it); }
-      bookRatio = coverRatio(img); sizeBook();
-      const credit = document.getElementById('coverCredit'); if (credit) credit.hidden = false;
-    };
-    img.src = photos[it.cover];
-  });
+// The real cover to show now. English: the English edition's cover. Chinese: the Chinese edition's photo, or, for a
+// translated work that has none here, the cover of its English edition (a real cover rather than a drawn one).
+const coverOf = it => isEn(it) ? it.en.coverImg : (it.coverImg || (it.en && it.en.coverImg));
+const coverCreditOf = it => coverOf(it) === it.coverImg ? L('coverCredit') : L('coverCreditEn');
+function loadCover(i, src, holder){                          // holder: the book (Chinese edition) or its `en` part
+  if (!src || holder.coverAsked) return;
+  holder.coverAsked = true;
+  const img = new Image();
+  img.onload = () => {
+    holder.coverImg = img;
+    // wall: paint the photo over the whole drawn cover, shade the spine, and make the book as wide as the photo needs
+    paintExhibit(i);
+    if (current !== i || coverOf(ITEMS[i]) !== img) return;
+    // this book is already open with another cover: swap the photo in where it is
+    const face = fbook.querySelector('.cover');
+    if (face) { face.classList.add('photo'); face.style.backgroundImage = ''; face.innerHTML = coverPhoto(ITEMS[i], img); }
+    bookRatio = coverRatio(img); sizeBook();
+    const credit = document.getElementById('coverCredit');
+    if (credit) { credit.hidden = false; credit.textContent = ' · ' + coverCreditOf(ITEMS[i]); }
+  };
+  img.src = src;
 }
-{ const s = document.createElement('script'); s.src = 'covers.js'; s.onload = applyCovers; document.head.appendChild(s); }
+function applyCovers(){
+  const zh = window.COVERS || {}, en = window.COVERS_EN || {};
+  ITEMS.forEach((it, i) => { loadCover(i, zh[it.cover], it); if (it.en) loadCover(i, en[it.en.cover], it.en); });
+}
+['covers.js', 'covers-en.js'].forEach(f => { const s = document.createElement('script'); s.src = f; s.onload = applyCovers; document.head.appendChild(s); });
 
 function openBook(i){
-  const it = ITEMS[i], t = TYPES[it.type];
-  const photo = it.coverImg;                               // set once the real cover photo is ready
-  const coverFace = photo ? `<div class="face cover photo">${coverPhoto(it)}</div>`
+  const it = ITEMS[i], t = TYPES[it.type], e = it.en;
+  const photo = coverOf(it);                               // set once the real cover photo is ready
+  const coverFace = photo ? `<div class="face cover photo">${coverPhoto(it, photo)}</div>`
     : `<div class="face cover" style="background-image:url(${exhibits[i].cover.image.toDataURL()})"></div>`;   // same cover as on the wall
   const ratio = photo ? coverRatio(photo) : 1.25;
   const pub = esc(typePub(it, t)), label = esc(typeLabel(t));
-  const summary = esc(it.summary);   // English translations are not written yet: the Chinese summary is shown in both languages
+  const [main, sub] = isEn(it) ? e.title.split(': ') : it.title.split('：');   // subtitle after the colon goes on its own line
+  const row = (k, v) => `<dt>${L(k)}</dt><dd>${v}</dd>`;
   // each leaf has a front (right-hand page) and a back (left-hand page once turned)
   const pages = [
     [coverFace,
      `<div class="face back pg l"><div class="seal">马华文学馆<br>藏书</div></div>`],
-    [`<div class="face pg r"><div class="pl">${label}</div><div class="pt">${esc(it.title)}</div>
-        <div class="pa">${L('by')(authorLinks(it.author))}</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
-     `<div class="face back pg l"><h4>${L('summary')}</h4><div class="txt">${summary}</div><div class="num">2</div></div>`],
-    [`<div class="face pg r"><h4>${L('details')}</h4><dl class="hist">
-        <dt>${L('author')}</dt><dd>${authorLinks(it.author)}</dd><dt>${L('genre')}</dt><dd>${esc(genreOf(it))}</dd>
-        <dt>${L('publisher')}</dt><dd>${pub}</dd><dt>${L('year')}</dt><dd>${it.year}</dd><dt>${L('series')}</dt><dd>${label}</dd></dl>
+    [`<div class="face pg r"><div class="pl">${label}</div><div class="pt${main.length > (isEn(it) ? 18 : 9) ? ' long' : ''}">${esc(main)}</div>
+        ${sub ? `<div class="ps">${esc(sub)}</div>` : ''}
+        <div class="pa">${L('by')(authorLinks(it.author))}</div>
+        <div class="py">${e ? esc(L('transBy')(translatorOf(it))) : it.year}</div><div class="pp">${pub}</div></div>`,
+     `<div class="face back pg l"><h4>${L('summary')}</h4><div class="txt${isEn(it) ? ' sm' : ''}">${esc(summaryOf(it))}</div><div class="num">2</div></div>`],
+    [`<div class="face pg r"><h4>${L('details')}</h4><dl class="hist${e ? ' sm' : ''}">
+        ${row('author', authorLinks(it.author))}
+        ${e ? row('translator', esc(translatorOf(it))) : row('genre', esc(genreOf(it)))}
+        ${row(e ? 'pubEn' : 'publisher', pub)}${row(e ? 'yearEn' : 'year', e ? esc(e.year) : it.year)}
+        ${e ? `<dt>ISBN</dt><dd>${esc(e.isbn)}</dd>` : row('series', label)}</dl>
         <div class="num">3</div></div>`,
      `<div class="face back pg l"><div class="seal" style="margin-top:45%">马华文学馆</div></div>`]
   ];
@@ -1345,8 +1573,8 @@ function showBook(pages, sourceNote, names, ratio = 1.25){
   stage.classList.remove('show'); void stage.offsetWidth;            // restart the entrance animation
   stage.classList.add('show'); stage.setAttribute('aria-hidden', 'false');
 }
-/* ---------------- 马华文学馆: introduction and history (end-wall signboard) ---------------- */
-// Summarised from southern.edu.my/mclc/about.php and /history/history.php
+/* ---------------- End-wall signboard: the history of Mahua literature, then the Centre ---------------- */
+// CENTRE (the Centre's own story) is summarised from southern.edu.my/mclc/about.php and /history/history.php
 const ABOUT_URL = 'https://www.southern.edu.my/mclc/about.php';
 const HISTORY_URL = 'https://www.southern.edu.my/mclc/history/history.php';
 const CENTRE = {
@@ -1376,6 +1604,68 @@ const CENTRE = {
     ['2025', '南方大学学院50周年、《蕉风》70载系列活动']
   ]
 };
+// A short history of Mahua literature: the main content at the end of the corridor (the Centre's own story follows it).
+// Written for this page as a visitor's overview, in both languages. Dates were checked against the pages in MAHUA.sources;
+// scholars draw the periods in different ways, and the note says so.
+const MAHUA = {
+  zh: {
+    chip:'马华文学', title:'马华文学简史', era:'1919 年至今',
+    note:'这是给参观者的概述。各时期的起讫，学界有不同的说法。',
+    pages:['封面', '马华文学 · 萌芽', '抗战 · 战后', '现代主义 · 国家文学之外', '走向世界 · 文学馆', '文学馆大事'],
+    sections:[
+      ['什么是马华文学', '马华文学，即马来西亚华文文学，指马来西亚（以及独立前的马来亚）作者用华文写成的文学作品。它在这片土地的历史与多元文化中成长，既与中国新文学有渊源，也走出了自己的道路。'],
+      ['萌芽：1919 年起', '受中国五四新文化运动影响，白话新文学在新马萌芽。文学史家方修以 1919 年 10 月新加坡《新国民日报》及其副刊《新国民杂志》创刊为起点，也有学者认为白话作品出现得更早。1920 年代后期起，作者开始提倡“南洋色彩”，书写本地题材。'],
+      ['抗战与沦陷：1937–1945', '1937 年中国抗战爆发后，马华文坛掀起抗战文艺的热潮，诗歌、剧本与报告文学大量涌现，郁达夫等中国作家也在这时南来。1942 年日军占领马来亚与新加坡，文学活动几乎停顿，直到 1945 年战争结束。'],
+      ['战后与独立：1945–1957', '战后文坛复苏。1947 至 1948 年的“马华文艺独特性”论争，争论文学应该书写“此时此地”的马来亚现实，还是延续“侨民文艺”，本土意识由此加强。1955 年文学杂志《蕉风》创刊。1957 年马来亚独立。'],
+      ['现代主义与留台作家：1960–70 年代', '1950 年代末起，《蕉风》等刊物引介现代主义，与原有的现实主义传统并行，也互相争论。1970 年代有温任平领导的天狼星诗社。同时，许多青年赴台湾升学，在当地组织星座诗社、神州诗社，李永平、张贵兴、商晚筠等人也在台湾开始发表作品。'],
+      ['国家文学之外：1970–90 年代', '1971 年的国家文化政策以马来文化为核心，华文作品不列入“国家文学”，马华文学依靠报章副刊、文学团体与华文教育延续下来。1990 年星洲日报创办花踪文学奖，成为重要的发表与交流平台。1990 年代，年轻作者与学者围绕马华文学的定位与经典展开多场论争。'],
+      ['走向世界：2000 年以后', '进入 21 世纪，马华文学有了更多读者与研究者。李永平、张贵兴、黄锦树、黎紫书、贺淑芳等作者的作品在各地出版，并陆续译成英文等语言。右边墙上展出的，就是其中十部英译作品。']
+    ],
+    timelineTitle:'大事年表',
+    timeline:[['1919', '《新国民日报》创刊，方修以此为马华新文学的起点'], ['1937', '抗战文艺兴起'], ['1942–45', '日据时期，文学活动几乎停顿'],
+      ['1947–48', '“马华文艺独特性”论争'], ['1955', '《蕉风》创刊'], ['1957', '马来亚独立'], ['1963', '留台学生在台湾成立星座诗社'],
+      ['1971', '国家文化政策'], ['1986', '李永平《吉陵春秋》出版'], ['1990', '星洲日报创办花踪文学奖'], ['1998', '马华文学馆在南方学院开幕']],
+    centreTitle:'马华文学馆', centreSub:'南方大学学院 · 1998 年开幕',
+    centreIntro:CENTRE.intro, centreMission:CENTRE.mission, centreEvents:'文学馆大事',
+    events:[CENTRE.history[1], CENTRE.history[3], CENTRE.history[4], CENTRE.history[9], CENTRE.history[12]],
+    sourcesTitle:'延伸阅读与资料来源', cover:'简史 · 文学馆简介'
+  },
+  en: {
+    chip:'Mahua literature', title:'A short history of Mahua literature', era:'From 1919 to today',
+    note:'This is an overview for visitors. Scholars draw the periods in different ways.',
+    pages:['Cover', 'Mahua literature · Beginnings', 'War · Independence', 'Modernism · Outside national literature', 'To the world · The Centre', 'Milestones'],
+    sections:[
+      ['What is Mahua literature?', 'Mahua literature is literature written in Chinese by writers of Malaysia, and of Malaya before independence. It grew out of the history and the many cultures of this land. It has roots in modern Chinese literature, and it has found a path of its own.'],
+      ['Beginnings: from 1919', 'Inspired by the May Fourth Movement in China, new writing in everyday Chinese took root in Malaya and Singapore. The historian Fang Xiu dated its start to October 1919, when the Singapore newspaper 《新国民日报》 and its supplement were founded. Other scholars point to earlier works. From the late 1920s, writers called for "Nanyang colour": writing about local life.'],
+      ['War and occupation: 1937–1945', 'After war broke out in China in 1937, anti-war writing surged in poems, plays and reportage. Writers from China, among them Yu Dafu, came south in these years. The Japanese occupation of Malaya and Singapore from 1942 to 1945 brought literary life almost to a stop.'],
+      ['After the war: 1945–1957', 'Literary life revived after the war. In 1947–48 writers debated whether literature should show Malaya "here and now" or remain the writing of sojourners from China. The debate strengthened a local outlook. The literary magazine Chao Foon (《蕉风》) was founded in 1955. Malaya became independent in 1957.'],
+      ['Modernism and writers in Taiwan: 1960s–70s', 'From the late 1950s, magazines such as Chao Foon introduced modernism, which grew beside the older realist tradition and argued with it. The Sirius Poetry Society, led by Wen Ren-Ping, was active in the 1970s. Many young people went to study in Taiwan and formed poetry societies there. Li Yung-p\'ing, Zhang Guixing and Shang Wanyun began to publish in Taiwan.'],
+      ['Outside "national literature": 1970s–90s', 'The National Culture Policy of 1971 was built around Malay culture, and writing in Chinese was not counted as national literature. Mahua literature carried on through newspaper supplements, writers\' groups and Chinese schools. Sin Chew Daily founded the Huazong Literary Award in 1990. In the 1990s younger writers and scholars debated its identity and its canon.'],
+      ['To the world: since 2000', 'In this century Mahua literature has reached more readers and researchers. Books by Li Yung-p\'ing, Zhang Guixing, Ng Kim Chew, Li Zi Shu, Ho Sok Fong and others are published in many places and translated into English and other languages. Ten of those English translations are on the right-hand wall of this corridor.']
+    ],
+    timelineTitle:'Timeline',
+    timeline:[['1919', '《新国民日报》 is founded in Singapore; Fang Xiu takes this as the start of new Mahua literature'], ['1937', 'Anti-war writing surges'],
+      ['1942–45', 'Japanese occupation; literary life almost stops'], ['1947–48', 'Debate on the "uniqueness of Mahua literature"'], ['1955', 'Chao Foon (《蕉风》) is founded'],
+      ['1957', 'Malaya becomes independent'], ['1963', 'Students from Malaya form the Constellation Poetry Society in Taiwan'], ['1971', 'National Culture Policy'],
+      ['1986', 'Li Yung-p\'ing publishes 《吉陵春秋》 (Retribution: The Jiling Chronicles)'], ['1990', 'Sin Chew Daily founds the Huazong Literary Award'],
+      ['1998', 'The Malaysian Chinese Literature Centre opens at Southern College']],
+    centreTitle:'The Literature Centre', centreSub:'Southern University College · opened 1998',
+    centreIntro:'The Malaysian Chinese Literature Centre is in Skudai, Johor, on the second floor of the library of Southern University College. It opened on 26 April 1998. It is the first centre of its kind in Malaysia, and so far the only one.',
+    centreMission:'It collects and preserves Mahua literature, supports teaching and research, and gives researchers a place to work.',
+    centreEvents:'Milestones',
+    events:[['1998', 'The Centre opens at Southern College'], ['2002', 'Chao Foon (《蕉风》) resumes publication at the Centre'],
+      ['2004', 'Receives 《海畔》 (1930) by 谭云山, now its most treasured book'],
+      ['2014', 'First poetry books of the Creative Writing Series'],
+      ['2024', 'Zhang Guixing exhibition; Huazong Award held in Johor Bahru for the first time']],
+    sourcesTitle:'Further reading and sources', cover:'A short history'
+  },
+  sources:[
+    ['新加坡华文文学的滥觞与进程（BiblioAsia, NLB）', 'https://biblioasia.nlb.gov.sg/vol-6/issue-4/jan-2011/chinese-literature-historical-material/'],
+    ['《新国民日报》与五四新文学（ERUDITE, UPSI）', 'https://ejournal.upsi.edu.my/index.php/ERUDITE/article/view/9697'],
+    ['马华文艺独特性论争（JCLC, Universiti Malaya）', 'https://adab.um.edu.my/index.php/JCLC/article/view/72947'],
+    ['温任平与天狼星诗社（JCLC, Universiti Malaya）', 'https://adab.um.edu.my/index.php/JCLC/article/view/13208']
+  ]
+};
 function centreCoverURL(){
   const c = document.createElement('canvas'); c.width = 320; c.height = 400; const g = c.getContext('2d');
   const grd = g.createLinearGradient(0, 0, 0, 400); grd.addColorStop(0, '#7a1c14'); grd.addColorStop(1, '#2a0a07');
@@ -1383,44 +1673,50 @@ function centreCoverURL(){
   g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, 400);
   g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, 270, 368); g.lineWidth = 1.5; g.strokeRect(44, 26, 250, 348);
   g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = 169;
-  g.fillStyle = '#f1d38a'; g.font = `bold 46px ${CJK}`; g.fillText('马华文学馆', cx, 150);
+  g.fillStyle = '#f1d38a'; g.font = `bold 50px ${CJK}`; g.fillText('马华文学', cx, 150);
   g.font = '19px Georgia, serif'; g.fillStyle = '#e6cf98';
-  g.fillText('Malaysian Chinese', cx, 205); g.fillText('Literature Centre', cx, 230);
+  g.fillText('Malaysian Chinese', cx, 205); g.fillText('Literature', cx, 230);
   g.strokeStyle = '#d9b25f'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 40, 275); g.lineTo(cx + 40, 275); g.stroke();
-  g.font = `18px ${CJK}`; g.fillStyle = '#f4ecdc'; g.fillText('简介 · 历史', cx, 305);
-  g.font = '16px Georgia, serif'; g.fillStyle = '#d9b25f'; g.fillText('1998', cx, 340);
+  g.font = `18px ${CJK}`; g.fillStyle = '#f4ecdc'; g.fillText(MAHUA[LANG].cover, cx, 305);
+  g.font = '16px Georgia, serif'; g.fillStyle = '#d9b25f'; g.fillText('1919 —', cx, 340);
   return c.toDataURL();
 }
+// The book at the end of the corridor: the history of Mahua literature first, then the Centre itself
 function openCentre(){
-  const C = CENTRE, row = ([y, t]) => `<dt>${y}</dt><dd>${t}</dd>`; current = -1;
-  const h1 = C.history.slice(0, 5), h2 = C.history.slice(5, 10), h3 = C.history.slice(10);
+  const M = MAHUA[LANG], C = CENTRE, row = ([y, t]) => `<dt>${y}</dt><dd>${t}</dd>`; current = -1;
+  const S = M.sections, link = ([label, url]) => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--gold)">${label}</a>`;
+  // one history section per page: side l is a left-hand page (back of a leaf), side r a right-hand page
+  const sz = LANG === 'en' ? 'xs' : 'sm';
+  const page = (k, side) => `<div class="face ${side === 'l' ? 'back ' : ''}pg ${side}"><h4>${S[k][0]}</h4>
+    <div class="txt ${sz}">${S[k][1]}</div><div class="num">${k + 1}</div></div>`;
   showBook([
-    [`<div class="face cover" style="background-image:url(${centreCoverURL()})"></div>`,
-     `<div class="face back pg l"><h4>${L('cAbout')}</h4><div class="txt sm">${C.intro}</div>
-        <div class="txt sm" style="margin-top:.8em">${C.mission}</div><div class="num">1</div></div>`],
-    [`<div class="face pg r"><h4>${L('cOrigin')}</h4><div class="txt sm">${C.origin}</div><div class="num">2</div></div>`,
-     `<div class="face back pg l"><h4>${L('cCollection')}</h4><dl class="sm hist">${C.collection.map(row).join('')}</dl><div class="num">3</div></div>`],
-    [`<div class="face pg r"><h4>${L('cRooms')}</h4><div class="txt sm">${C.rooms}</div>
-        <div class="txt sm" style="margin-top:.8em">${L('cWriters')}：${C.writers}。</div><div class="num">4</div></div>`,
-     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h1.map(row).join('')}</dl><div class="num">5</div></div>`],
-    [`<div class="face pg r"><h4>${L('cHistory')}</h4><dl class="sm hist">${h2.map(row).join('')}</dl><div class="num">6</div></div>`,
-     `<div class="face back pg l"><h4>${L('cHistory')}</h4><dl class="sm hist">${h3.map(row).join('')}</dl><div class="num">7</div></div>`]
-  ], `${L('source')}：southern.edu.my/mclc`, L('centrePages'));
+    [`<div class="face cover" style="background-image:url(${centreCoverURL()})"></div>`, page(0, 'l')],
+    [page(1, 'r'), page(2, 'l')],
+    [page(3, 'r'), page(4, 'l')],
+    [page(5, 'r'), page(6, 'l')],
+    [`<div class="face pg r"><h4>${M.centreTitle}</h4><div class="txt ${sz}">${M.centreIntro}</div>
+        <div class="txt ${sz}" style="margin-top:.8em">${M.centreMission}</div><div class="num">8</div></div>`,
+     `<div class="face back pg l"><h4>${M.centreEvents}</h4><dl class="${sz} hist">${M.events.map(row).join('')}</dl><div class="num">9</div></div>`]
+  ], M.title, M.pages);
 
-  document.getElementById('panelBody').innerHTML = `
-    <span class="chip" style="background:#8e2418">${LANG === 'en' ? 'Literature Centre' : '马华文学馆'}</span>
-    <h2>${LANG === 'en' ? 'Malaysian Chinese Literature Centre' : '马华文学馆'}</h2><div class="era">${L('cFounded')}</div>
-    ${L('cNote') ? `<p class="ph">${L('cNote')}</p>` : ''}
-    <p>${C.intro}</p>
+  // the Centre's own page is only in Chinese, so its full details are listed in Chinese mode
+  const centreMore = LANG === 'en' ? `<ul>${M.events.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>` : `
     <h3>${L('cOrigin')}</h3><p>${C.origin}</p>
-    <h3>${L('cMission')}</h3><p>${C.mission}</p>
     <h3>${L('cCollection')}</h3><ul>${C.collection.map(([k, v]) => `<li>${k}：${v}</li>`).join('')}</ul>
     <h3>${L('cRooms')}</h3><p>${C.rooms}</p>
     <h3>${L('cWriters')}</h3><p>${C.writers}</p>
-    <h3>${L('cHistory')}</h3><ul>${C.history.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>
-    <p style="font-size:13px;color:var(--muted)">${L('source')}：
-      <a href="${ABOUT_URL}" target="_blank" rel="noopener" style="color:var(--gold)">${L('cAbout')}</a> ·
-      <a href="${HISTORY_URL}" target="_blank" rel="noopener" style="color:var(--gold)">${L('cHistory')}</a></p>`;
+    <h3>${L('cHistory')}</h3><ul>${C.history.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>`;
+  document.getElementById('panelBody').innerHTML = `
+    <span class="chip" style="background:#8e2418">${M.chip}</span>
+    <h2>${M.title}</h2><div class="era">${M.era}</div>
+    <p class="ph">${M.note}</p>
+    ${S.map(([h, t], k) => `${k ? `<h3>${h}</h3>` : ''}<p>${t}</p>`).join('')}
+    <h3>${M.timelineTitle}</h3><ul>${M.timeline.map(([y, t]) => `<li><strong>${y}</strong>　${t}</li>`).join('')}</ul>
+    <h2 style="margin-top:34px;font-size:24px">${M.centreTitle}</h2><div class="era">${M.centreSub}</div>
+    <p>${M.centreIntro}</p><p>${M.centreMission}</p>
+    ${centreMore}
+    <h3>${M.sourcesTitle}</h3><ul style="font-size:13px">${MAHUA.sources.map(s => `<li style="font-size:13.5px">${link(s)}</li>`).join('')}
+      <li style="font-size:13.5px">${link([L('cAbout'), ABOUT_URL])} · ${link([L('cHistory'), HISTORY_URL])}</li></ul>`;
   panel.scrollTop = 0;
   if (innerWidth >= 900) showDetails(true);
   syncOpen();
@@ -1451,10 +1747,10 @@ function openAuthor(name){
   const works = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.author.split('、').includes(name));
   document.getElementById('authorBody').innerHTML = `
     <span class="chip" style="background:#8e2418">${L('authorTitle')}</span>
-    <h2>${esc(name)}</h2>
+    <h2>${esc(authorName(name))}</h2>${authorName(name) !== name ? `<p style="color:var(--muted);margin-top:-4px">${esc(name)}</p>` : ''}
     <p class="ph">${L('authorNote')}</p>
     <h3>${L('authorWorks')}</h3>
-    <ul>${works.map(([it, i]) => `<li><a class="au" data-book="${i}">《${esc(it.title)}》</a> · ${it.year} · ${esc(genreOf(it))}</li>`).join('')}</ul>`;
+    <ul>${works.map(([it, i]) => `<li><a class="au" data-book="${i}">${esc(bookName(it))}</a> · ${yearOf(it)} · ${esc(genreOf(it))}</li>`).join('')}</ul>`;
   authorEl.classList.add('show'); authorEl.setAttribute('aria-hidden', 'false');
 }
 function closeAuthor(){ authorEl.classList.remove('show'); authorEl.setAttribute('aria-hidden', 'true'); }
@@ -1510,13 +1806,13 @@ function renderCat(){
     Object.entries(TYPES).map(([k, t]) => {
       const rows = list.filter(([it]) => it.type === k);
       return !rows.length ? '' : `<h3>${esc(typeLabel(t))}（${rows.length}）</h3><ul>${rows.map(([it, i]) =>
-        `<li data-i="${i}"><i style="background:${t.color}"></i><span>《${esc(it.title)}》<small>${esc(it.author)} · ${it.year} · ${esc(genreOf(it))}</small></span></li>`).join('')}</ul>`;
+        `<li data-i="${i}"><i style="background:${t.color}"></i><span>${esc(bookName(it))}<small>${esc(authorsOf(it))} · ${yearOf(it)} · ${esc(genreOf(it))}</small></span></li>`).join('')}</ul>`;
     }).join('');
 }
 catBody.addEventListener('click', e => {
   const g = e.target.closest('[data-g]'), li = e.target.closest('li[data-i]');
   if (g) { catGenre = g.dataset.g; renderCat(); }
-  else if (li) { closeOverlays(); travelTo(+li.dataset.i); }
+  else if (li) { closeOverlays(); cancelTravel(); openPanel(+li.dataset.i); }   // open it right here, no walking
 });
 document.getElementById('catBtn').addEventListener('click', () => { renderCat(); openOverlay('cat'); });
 
@@ -1534,14 +1830,16 @@ const options = (right, pool) => shuffle([right, ...shuffle([...new Set(pool)].f
 function buildQuestions(n){
   const qs = [];
   ITEMS.forEach((it, i) => {
+    // answers are kept as data (author string, year, genre, book number) and written out in the language chosen when shown
     const title = mainTitle(it), authors = it.author.split('、'), giveaway = authors.some(a => it.title.includes(a));
-    if (!giveaway) qs.push({i, kind:'author', ask:title, right:it.author, opts:options(it.author, ITEMS.map(x => x.author))});
-    qs.push({i, kind:'year', ask:title, right:it.year, opts:options(it.year, ITEMS.map(x => x.year)).sort((a, b) => a - b)});
+    if (!giveaway) qs.push({i, kind:'author', right:it.author, opts:options(it.author, ITEMS.map(x => x.author))});
+    if (!it.en)    // a translated work only records the year of its English edition, so it gets no year question
+      qs.push({i, kind:'year', right:it.year, opts:options(it.year, ITEMS.filter(x => !x.en).map(x => x.year)).sort((a, b) => a - b)});
     if (!/诗|小说|散文|文集|论/.test(title))
-      qs.push({i, kind:'genre', ask:title, right:it.genre, opts:options(it.genre, ITEMS.map(x => x.genre))});
+      qs.push({i, kind:'genre', right:it.genre, opts:options(it.genre, ITEMS.map(x => x.genre))});
     if (!giveaway && authors.length === 1)
-      qs.push({i, kind:'book', ask:it.author, right:title,
-        opts:options(title, ITEMS.filter(x => !x.author.split('、').includes(it.author)).map(mainTitle))});
+      qs.push({i, kind:'book', right:i,
+        opts:options(i, ITEMS.map((x, j) => j).filter(j => !ITEMS[j].author.split('、').includes(it.author)))});
   });
   const used = new Set();                          // one question per book
   return shuffle(qs).filter(q => !used.has(q.i) && used.add(q.i)).slice(0, n);
@@ -1559,16 +1857,20 @@ function quizSetup(){
 }
 function quizShow(){
   const q = quiz.qs[quiz.k], turn = quiz.k % 2, done = quiz.picked !== null, team = L('teams')[turn];
-  const show = v => q.kind === 'genre' && LANG === 'en' ? GENRE_EN[v] : String(v);
-  const mark = (v, j) => !done ? '' : v === q.right ? 'ok' : j === quiz.picked ? 'bad' : '';
   const book = ITEMS[q.i];
+  const names = s => s.split('、').map(authorName).join(LANG === 'en' ? ', ' : '、');
+  const quizTitle = it => isEn(it) ? it.en.title.split(': ')[0] : `《${mainTitle(it)}》`;
+  const show = v => q.kind === 'genre' ? (LANG === 'en' ? GENRE_EN[v] || v : v) : q.kind === 'author' ? names(v)
+    : q.kind === 'book' ? quizTitle(ITEMS[v]) : String(v);
+  const ask = q.kind === 'book' ? names(book.author) : quizTitle(book);
+  const mark = (v, j) => !done ? '' : v === q.right ? 'ok' : j === quiz.picked ? 'bad' : '';
   quizBody.innerHTML = `<h2>${L('qTitle')}</h2>${scoreHTML(done ? -1 : turn)}
     <div class="qn">${L('qNum')(quiz.k + 1, quiz.qs.length)} · ${L('qTurn')(team)}</div>
-    <div class="qq">${esc(L('qText')[q.kind](q.ask))}</div>
+    <div class="qq">${esc(L('qText')[q.kind](ask))}</div>
     <div class="opts">${q.opts.map((v, j) => `<button data-o="${j}" class="${mark(v, j)}" ${done ? 'disabled' : ''}>${'ABCD'[j]}. ${esc(show(v))}${
       mark(v, j) === 'ok' ? ' ✓' : mark(v, j) === 'bad' ? ' ✗' : ''}</button>`).join('')}</div>
     <div class="fb">${!done ? '' : (q.opts[quiz.picked] === q.right ? L('qRight')(team) : L('qWrong')) +
-      (LANG === 'zh' ? `<br><span class="ph">《${esc(book.title)}》：${esc(book.summary)}</span>` : '')}</div>
+      (LANG === 'zh' || isEn(book) ? `<br><span class="ph">${esc(bookName(book))}${LANG === 'zh' ? '：' : ': '}${esc(summaryOf(book))}</span>` : '')}</div>
     ${done ? `<div class="row"><button class="btn" id="qNext">${quiz.k + 1 < quiz.qs.length ? L('qNext') : L('qFinish')}</button></div>` : ''}`;
 }
 function quizEnd(){
@@ -1610,6 +1912,7 @@ function switchLang(){
   LANG = LANG === 'en' ? 'zh' : 'en';
   try { localStorage.setItem('ce-lang', LANG); } catch (e) {}
   applyLang();
+  exhibits.forEach((_, i) => paintExhibit(i));                              // covers and caption plates on the walls
   if (current !== null) current < 0 ? openCentre() : openPanel(current);   // redraw what is open
 }
 langBtn.addEventListener('click', switchLang);
@@ -1688,23 +1991,37 @@ function tick(){
   doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.5);
   leaves.forEach(({pivot, s}) => { pivot.rotation.y = -s * doorOpen * 1.75; });
 
-  // find nearest exhibit within range
-  // pick the frame closest to ~1.5 m ahead, from either side
-  let best = -1, bestD = Infinity;
-  exhibits.forEach((ex, i) => {
-    if (!inRange(ex.item)) return;
-    const d = Math.abs((camera.position.z - ex.item.z) - 1.5);
-    if (d < bestD) { bestD = d; best = i; }
-  });
-  // ... but a book you are looking straight at (within about 30 degrees, up to 4 m away) wins
-  const fx = -Math.sin(yaw), fz = -Math.cos(yaw); let lookCos = .85;
-  exhibits.forEach((ex, i) => {
-    const dx = ex.item.side * HALF_W - camera.position.x, dz = ex.item.z - camera.position.z, d = Math.hypot(dx, dz);
-    if (d > 4) return;
-    const cos = (dx * fx + dz * fz) / d;
-    if (cos > lookCos) { lookCos = cos; best = i; }
-  });
-  nearest = travel >= 0 ? travel : focus >= 0 ? focus : best;   // the clicked book stays highlighted
+  // which book does the View button offer?
+  let best = -1;
+  if (hoverMode) {
+    // mouse: the book under the cursor, when it is one of the nearest few in front or behind (NEAR_N each way)
+    let over = -1, onSign = false;
+    if (ptrOn && !panelOpen) {
+      ray.setFromCamera(mouse, camera);
+      const hit = ray.intersectObjects(pickables)[0];
+      if (hit) { onSign = hit.object === endSign; if (!onSign) over = hit.object.userData.index; }
+    }
+    if (over >= 0 && nearSet().includes(over)) best = over;
+    canvas.style.cursor = over >= 0 || onSign ? 'pointer' : '';   // every book and the signboard can be clicked
+  } else {
+    // touch: the book closest to ~1.5 m ahead of you, from either side
+    let bestD = Infinity;
+    exhibits.forEach((ex, i) => {
+      if (!inRange(ex.item)) return;
+      const d = Math.abs((camera.position.z - ex.item.z) - 1.5);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    // ... but a book you are looking straight at (within about 30 degrees, up to 4 m away) wins
+    const fx = -Math.sin(yaw), fz = -Math.cos(yaw); let lookCos = .85;
+    exhibits.forEach((ex, i) => {
+      const dx = ex.item.side * HALF_W - camera.position.x, dz = ex.item.z - camera.position.z, d = Math.hypot(dx, dz);
+      if (d > 4) return;
+      const cos = (dx * fx + dz * fz) / d;
+      if (cos > lookCos) { lookCos = cos; best = i; }
+    });
+    if (focus >= 0) best = focus;                               // the book you walked to stays highlighted
+  }
+  nearest = travel >= 0 ? travel : best;                        // a book you are walking to is always shown
   exhibits.forEach((ex, i) => {
     const on = i === nearest, pulse = .5 + .5 * Math.sin(time * 4);
     ex.glow.material.opacity += ((on ? .35 + .25 * pulse : 0) - ex.glow.material.opacity) * .15;
@@ -1718,7 +2035,7 @@ function tick(){
   if (nearest >= 0) {
     const it = ITEMS[nearest];
     highlight.position.set(it.side * (HALF_W - .8), 2.6, it.z); highlight.intensity = .9;
-    viewBtn.textContent = `${L('view')}《${it.title}》`;
+    viewBtn.textContent = L('view') + bookName(it);
     viewBtn.classList.add('show');
   } else if (signActive) {
     viewBtn.textContent = L('view') + L('centreName');

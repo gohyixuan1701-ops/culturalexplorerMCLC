@@ -239,7 +239,8 @@
   @media (max-width:1180px){ #search{top:74px} #toast{top:130px} }          /* search gets its own row */
   @media (max-width:760px){
     .hud-title small{display:none} #search kbd,#viewBtn::after{display:none}
-    #tools{top:72px;left:16px;right:auto} .hud-title{left:16px} #search{top:126px} #toast{top:180px}
+    #tools{top:72px;left:16px;right:auto} .hud-title{left:16px}
+    .tool{height:44px} #helpBtn{width:44px} #closeBtn,.x,#authorClose{width:44px;height:44px;top:8px;right:8px} .chips button{height:40px}                                   /* finger-sized targets */ #search{top:134px} #toast{top:188px}
     #viewBtn{bottom:158px;max-width:calc(100vw - 32px)}
     #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
     .arrow{width:54px;height:54px} .opts{grid-template-columns:1fr} .qq{font-size:21px}
@@ -297,7 +298,10 @@
 <div class="overlay" id="quiz"><div class="box" role="dialog" aria-modal="true">
   <button class="x" data-close aria-label="Close">×</button><div id="quizBody"></div></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
+<script>   // fallback if the local copy is missing: load the same file from the public CDN
+  if (!window.THREE) document.write('<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></scr' + 'ipt>');
+</script>
 <script>
 /* ---------------- Content (edit here) ---------------- */
 // Book collection of 马华文学馆 (source: southern.edu.my/mclc/chuban.php).
@@ -377,8 +381,6 @@ const SPACING = 1.4;
 ITEMS.forEach((it, i) => { it.side = i % 2 ? 1 : -1; it.z = -4 - i * SPACING; });
 
 /* ---------------- Language: 中文 / English ---------------- */
-// Placeholder text (hackathon): author introductions and English summaries are not written yet.
-const LOREM = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
 const GENRE_EN = {'小说集':'Short stories', '诗集':'Poetry', '微型小说':'Flash fiction', '散文集':'Essays',
   '散文与小说':'Essays & fiction', '诗文集':'Poetry & prose', '论文集':'Research papers', '散文、诗与论述':'Essays, poetry & criticism'};
 const TEXT = {
@@ -405,7 +407,7 @@ const TEXT = {
     by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', coverCredit:'封面图片来自马华文学馆网站', end:'完',
     bookPages:['封面', '扉页', '简介 · 资料', '完'], centrePages:['封面', '简介 · 缘起', '馆藏 · 馆舍', '历史 1997-2014', '历史 2015-2025'],
     chat:'<em>即将推出：</em>向 AI 提问关于这本书的问题。',
-    authorTitle:'作者简介', authorNote:'（示例文字，作者资料待补充）', authorWorks:'馆藏作品',
+    authorTitle:'作者简介', authorNote:'作者简介整理中，敬请期待。', authorWorks:'馆藏作品',
     phNote:'', cAbout:'文学馆简介', cOrigin:'缘起', cMission:'宗旨', cCollection:'重点馆藏', cRooms:'馆舍与专题作家展',
     cWriters:'历届专题作家展', cHistory:'回顾历史', cFounded:'成立于 1998年4月26日', cNote:''
   },
@@ -432,8 +434,8 @@ const TEXT = {
     by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', coverCredit:'Cover photo from the MCLC website', end:'The end',
     bookPages:['Cover', 'Title page', 'Summary · Details', 'The end'], centrePages:['Cover', 'About · Origin', 'Collection · Facilities', 'History 1997-2014', 'History 2015-2025'],
     chat:'<em>Coming next:</em> ask a question about this book (AI chat).',
-    authorTitle:'About the author', authorNote:'(Placeholder text. Author details to be added.)', authorWorks:'Works in this collection',
-    phNote:'(English summary placeholder)', cAbout:'About the Centre', cOrigin:'Origin', cMission:'Mission', cCollection:'Collection',
+    authorTitle:'About the author', authorNote:'Author introduction coming soon.', authorWorks:'Works in this collection',
+    phNote:'English translation coming soon. The original Chinese summary is shown.', cAbout:'About the Centre', cOrigin:'Origin', cMission:'Mission', cCollection:'Collection',
     cRooms:'Facilities & featured writers', cWriters:'Featured writers', cHistory:'History', cFounded:'Founded 26 April 1998',
     cNote:'(English text to be added. Original Chinese shown.)'
   }
@@ -1060,7 +1062,8 @@ let downPos = null;
 let lastX = 0;
 canvas.addEventListener('pointerdown', e => {
   qInput.blur(); map.classList.remove('big'); setMapHover(-1);
-  downPos = [e.clientX, e.clientY]; lastX = e.clientX; canvas.setPointerCapture(e.pointerId);
+  downPos = [e.clientX, e.clientY]; lastX = e.clientX;
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}   // keep the drag if the finger leaves the canvas; never fatal
 });
 canvas.addEventListener('pointermove', e => {
   if (!downPos || panelOpen) return;
@@ -1222,7 +1225,7 @@ function authorLinks(s){
 function openPanel(i){
   const it = ITEMS[i], t = TYPES[it.type]; current = i;
   const summary = LANG === 'en'
-    ? `<p><span class="ph">${L('phNote')}</span> ${LOREM}</p><p style="color:var(--muted)">${esc(it.summary)}</p>`
+    ? `<p>${esc(it.summary)}</p><p class="ph">${L('phNote')}</p>`
     : `<p>${esc(it.summary)}</p>`;
   document.getElementById('panelBody').innerHTML = `
     <span class="chip" style="background:${t.color}">${typeLabel(t)}</span>
@@ -1311,7 +1314,7 @@ function openBook(i){
     : `<div class="face cover" style="background-image:url(${exhibits[i].cover.image.toDataURL()})"></div>`;   // same cover as on the wall
   const ratio = photo ? coverRatio(photo) : 1.25;
   const pub = esc(typePub(it, t)), label = esc(typeLabel(t));
-  const summary = LANG === 'en' ? `<span class="ph">${L('phNote')}</span> ${LOREM.split('. ')[0]}.` : esc(it.summary);
+  const summary = esc(it.summary);   // English translations are not written yet: the Chinese summary is shown in both languages
   // each leaf has a front (right-hand page) and a back (left-hand page once turned)
   const pages = [
     [coverFace,
@@ -1449,7 +1452,7 @@ function openAuthor(name){
   document.getElementById('authorBody').innerHTML = `
     <span class="chip" style="background:#8e2418">${L('authorTitle')}</span>
     <h2>${esc(name)}</h2>
-    <p>${LOREM}</p><p class="ph">${L('authorNote')}</p>
+    <p class="ph">${L('authorNote')}</p>
     <h3>${L('authorWorks')}</h3>
     <ul>${works.map(([it, i]) => `<li><a class="au" data-book="${i}">《${esc(it.title)}》</a> · ${it.year} · ${esc(genreOf(it))}</li>`).join('')}</ul>`;
   authorEl.classList.add('show'); authorEl.setAttribute('aria-hidden', 'false');
@@ -1692,6 +1695,14 @@ function tick(){
     if (!inRange(ex.item)) return;
     const d = Math.abs((camera.position.z - ex.item.z) - 1.5);
     if (d < bestD) { bestD = d; best = i; }
+  });
+  // ... but a book you are looking straight at (within about 30 degrees, up to 4 m away) wins
+  const fx = -Math.sin(yaw), fz = -Math.cos(yaw); let lookCos = .85;
+  exhibits.forEach((ex, i) => {
+    const dx = ex.item.side * HALF_W - camera.position.x, dz = ex.item.z - camera.position.z, d = Math.hypot(dx, dz);
+    if (d > 4) return;
+    const cos = (dx * fx + dz * fz) / d;
+    if (cos > lookCos) { lookCos = cos; best = i; }
   });
   nearest = travel >= 0 ? travel : focus >= 0 ? focus : best;   // the clicked book stays highlighted
   exhibits.forEach((ex, i) => {

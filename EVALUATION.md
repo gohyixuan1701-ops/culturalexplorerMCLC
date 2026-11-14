@@ -106,7 +106,7 @@ How to look at the numbers yourself: add `?debug=1` to the address for an overla
 | Books | Hardcover shape: two boards, a page block set in from the edges, a rounded spine, a pressed joint on the cover |
 | Corridor | Painted coffered ceiling with purlins, a carved brace where every beam meets the wall, a fret band under the cornice, palace lanterns with gilt rims and tassels, a moulded frame and brackets on every display board, relief on the wall panelling |
 | Entrance | Real brass studs on the doors, timber lattices in front of the lit windows, bracket sets under the canopy, drum stones beside the door, six-sided stone lanterns |
-| End wall | The empty 12 m of corridor after the last books is gone (4 m of standing room is left). Console table with upturned ends, a pile of books and an incense burner |
+| End wall | The empty 12 m of corridor after the last books is gone (4 m of standing room is left). Under the painting stands a scholar's cabinet: a lattice door at each end, a shelf of books between them, and on top a potted bamboo, an open book, brushes in a pot, an ink dish, two seals and a scholar's rock on a pile of books. It is still two draw calls (timber, and everything painted) |
 
 Measured on a laptop with AMD Radeon 780M graphics, in Chrome, at the entrance (the most expensive view):
 

@@ -954,7 +954,7 @@ function animateScene(time){
   dust.position.set(Math.sin(time * .07) * .25, Math.sin(time * .11) * .15, Math.sin(time * .05) * .4);
 }
 
-/* ---------------- End wall: signboard, ink painting, couplets, console table ---------------- */
+/* ---------------- End wall: signboard, ink painting, couplets, scholar's cabinet ---------------- */
 add(new THREE.PlaneGeometry(HALF_W * 2, WALL_H), wallMat, 0, WALL_H / 2, LEN_BACK);
 add(box(HALF_W * 2 - .5, WALL_H - .5, .04), timber, 0, WALL_H / 2 + .05, LEN_BACK + .02);       // timber backdrop
 // Ink-wash mountains, painted by code
@@ -983,38 +983,127 @@ add(new THREE.PlaneGeometry(2.14, 1.28), std({map:inkTex, roughness:.9, envMapIn
   });
   add(new THREE.PlaneGeometry(.42, 1.68), std({map:tex, roughness:.8, envMapIntensity:.2}), s * 1.62, 1.5, LEN_BACK + .045);
 });
-// Console table with books on it and nothing else: a pile at each end and a row standing in the middle
-const TZ = LEN_BACK + .3;                                  // the table stands against the end wall
-add(merge([[box(2.2, .06, .44), at(0, .72, TZ)], [box(.07, .06, .44), at(-1.085, .775, TZ)], [box(.07, .06, .44), at(1.085, .775, TZ)],   // top with upturned ends
-  [box(2.0, .1, .03), at(0, .64, TZ + .17)], [box(2.0, .1, .03), at(0, .64, TZ - .17)],                                                 // aprons
-  ...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([a, b]) => [box(.06, .69, .06), at(a * .98, .345, TZ + b * .16)]),                         // legs
-  [box(.04, .05, .32), at(-.98, .16, TZ)], [box(.04, .05, .32), at(.98, .16, TZ)], [box(1.96, .04, .04), at(0, .16, TZ)]]), timber, 0, 0, 0);   // stretchers
+// Scholar's cabinet against the end wall: a lattice door at each end and an open shelf of books between them. On top stand
+// a potted bamboo, an open book, brushes in a pot, an ink dish, two seals, and a scholar's rock on a pile of books.
+// It is drawn with two calls: the timber as one joined shape, and everything painted as one joined shape that carries its colours.
+const TZ = LEN_BACK + .3;                                  // the cabinet stands against the end wall
+const TOP_Y = .78, BOARD = .006, PAPER = C(0xe6dcc4);      // TOP_Y: the cabinet's top surface, just under the painting
 // A closed book made of four boxes: two boards, the spine and the page block. Lying flat it is w wide (spine at -x), t thick
 // and d deep; m puts it in the room.
-const TOP_Y = .75, BOARD = .006, PAPER = C(0xe6dcc4);
 const tableBook = (w, t, d, hex, m) => { const c = C(hex).multiplyScalar(.75); return [
   [box(w, BOARD, d), at(0, t / 2 - BOARD / 2, 0), c], [box(w, BOARD, d), at(0, BOARD / 2 - t / 2, 0), c],
   [box(BOARD, t, d), at(BOARD / 2 - w / 2, 0, 0), c], [box(w - .014, t - BOARD * 2, d - .014), at(.001, 0, 0), PAPER]
 ].map(([geo, local, colour]) => [geo, m.clone().multiply(local), [], undefined, colour]); };
-// a pile lying flat: books = [[width, thickness, depth, colour, turn], ...] from the bottom up
-const pile = (x, books) => { let y = TOP_Y; return books.flatMap(([w, t, d, hex, turn]) => {
-  y += t; return tableBook(w, t, d, hex, at(x, y - t / 2, TZ + .01, 0, turn)); }); };
-// a book standing with its spine to the room: thickness runs along the table, depth becomes its height
+// a pile lying flat on a surface at height y0: books = [[width, thickness, depth, colour, turn], ...] from the bottom up
+const pile = (x, books, y0 = TOP_Y, z = TZ + .01) => { let y = y0; return books.flatMap(([w, t, d, hex, turn]) => {
+  y += t; return tableBook(w, t, d, hex, at(x, y - t / 2, z, 0, turn)); }); };
+// a book standing with its spine to the room: thickness runs along the shelf, depth becomes its height
 const STAND = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0));
-const ROW = [[.044, .29, '#8e2418'], [.034, .265, '#2f4f86'], [.05, .31, '#2f6b5a'], [.038, .28, '#6b4a1e'], [.046, .3, '#5b3f7d'], [.032, .26, '#a3271c'], [.042, .31, '#26374f']];
-let rowX = -ROW.reduce((sum, b) => sum + b[0], 0) / 2 - .02;   // the row is centred on the table (with the leaning book at its end)
-const row = ROW.flatMap(([t, h, hex]) => { rowX += t; return tableBook(.19, t, h, hex, at(rowX - t / 2, TOP_Y + h / 2, TZ - .03).multiply(STAND)); });
-const LEAN_T = .036, LEAN_H = .265, LEAN_A = .26;             // the last book leans against the row
-row.push(...tableBook(.19, LEAN_T, LEAN_H, '#2f6b5a', at(rowX + LEAN_T / 2 * Math.cos(LEAN_A) + LEAN_H / 2 * Math.sin(LEAN_A),
-  TOP_Y + LEAN_H / 2 * Math.cos(LEAN_A) - LEAN_T / 2 * Math.sin(LEAN_A), TZ - .03, 0, 0, LEAN_A).multiply(STAND)));
-add(merge([
-  ...pile(-.7, [[.36, .05, .25, TYPES.mclc.color, .12], [.34, .044, .24, TYPES.translated.color, -.16], [.31, .048, .23, TYPES.wenchuang.color, .3]]),
-  ...row,
-  ...pile(.7, [[.37, .054, .255, TYPES.academic.color, -.1], [.32, .042, .23, '#6b4a1e', .22]])
-]), paintMat, 0, 0, 0);
-// soft shadows on the table top under the two piles and the row
+{
+  const W = 2.5, D = .46, FLOOR = .2, front = TZ + D / 2, painted = [];        // FLOOR: the shelf inside, where the books stand
+  const paint = (geo, m, hex) => painted.push([geo, m, [], undefined, C(hex)]);
+  // a matrix that stands a thing at (x, y, z), leans it by `lean` and turns the lean toward `yaw`
+  const leaning = (x, y, z, yaw, lean) => new THREE.Matrix4().makeTranslation(x, y, z)
+    .multiply(new THREE.Matrix4().makeRotationY(yaw)).multiply(new THREE.Matrix4().makeRotationX(lean));
+
+  // ----- the cabinet (timber)
+  const wood = [
+    [box(W + .08, .045, D + .05), at(0, TOP_Y - .0225, TZ)],                                 // top
+    [box(W, .035, D), at(0, FLOOR - .0175, TZ)],                                             // floor of the cabinet
+    [box(W, .57, .02), at(0, .45, TZ - D / 2 + .01)],                                        // back
+    ...[-1.23, -.62, .62, 1.23].map(x => [box(.04, .555, D), at(x, .4575, TZ)]),             // two ends and two dividers
+    ...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([i, j]) => [box(.06, .185, .06), at(i * 1.2, .0925, TZ + j * (D / 2 - .03))]),   // feet
+    [box(W - .12, .045, .03), at(0, .1, front - .03)],                                       // rails between the feet
+    [box(.03, .045, D - .12), at(-1.2, .1, TZ)], [box(.03, .045, D - .12), at(1.2, .1, TZ)],
+    [box(1.2, .03, .02), at(0, TOP_Y - .06, front - .01)]];                                  // lip over the open shelf
+  [-1, 1].forEach(s => {                                                                     // a lattice door at each end
+    const h = TOP_Y - .045 - FLOOR, cx = s * .925, cy = FLOOR + h / 2, z = front - .0125, grip = cx - s * .26;
+    wood.push([box(.05, h, .025), at(cx - .26, cy, z)], [box(.05, h, .025), at(cx + .26, cy, z)],             // frame
+      [box(.47, .05, .025), at(cx, cy + h / 2 - .025, z)], [box(.47, .05, .025), at(cx, cy - h / 2 + .025, z)],
+      [box(.47, .018, .02), at(cx, cy + .05, z)]);                                                             // cross bar
+    for (let k = 0; k < 13; k++) wood.push([box(.012, h - .1, .012), at(cx - .216 + k * .036, cy, z)]);       // slats
+    paint(box(.47, h - .1, .004), at(cx, cy, z - .03), 0x0d0907);                                             // the dark inside, seen between the slats
+    paint(new THREE.TorusGeometry(.028, .0055, 8, 18), at(grip, cy - .02, front + .007), 0xd9ae58);           // ring handle on its stud
+    paint(new THREE.CylinderGeometry(.012, .012, .008, 10), at(grip, cy + .008, front + .004, Math.PI / 2), 0xd9ae58);
+  });
+  add(merge(wood), timber, 0, 0, 0);
+
+  // ----- on the shelf between the doors: a row of books standing spine out, and two lying flat
+  let x = -.57;
+  [[.04, .36, 0xcdbb95], [.034, .33, 0xb89868], [.046, .39, 0xd9cba6], [.038, .35, 0x7a3524], [.05, .37, 0xa5512f], [.034, .32, 0xbba77a],
+   [.044, .38, 0x6c7d57], [.04, .35, 0x4c6848], [.036, .4, 0xc8b388], [.048, .36, 0x9f472b], [.036, .33, 0x86673c], [.042, .34, 0x5d4a36],
+   [.05, .38, 0xc4ae82], [.038, .31, 0x8f3f29]].forEach(([t, h, hex]) => {
+    x += t; painted.push(...tableBook(.19, t, h, hex, at(x - t / 2, FLOOR + h / 2, TZ + .02).multiply(STAND)));
+  });
+  painted.push(...pile(.36, [[.2, .055, .3, 0x5a4a3a, Math.PI / 2], [.19, .05, .28, 0xcdbb95, Math.PI / 2 + .05]], FLOOR, TZ + .02));
+
+  // ----- on top, left: a bamboo in a pot on a low stand
+  const bx = -.98, bz = TZ + .02, potY = TOP_Y + .06;
+  paint(box(.3, .018, .21), at(bx, TOP_Y + .051, bz), 0x3a2213);
+  [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([i, j]) => paint(box(.022, .042, .022), at(bx + i * .125, TOP_Y + .021, bz + j * .08), 0x3a2213));
+  paint(new THREE.LatheGeometry([[.04, 0], [.074, .018], [.092, .06], [.088, .1], [.07, .128], [.076, .14]].map(([r, y]) => new THREE.Vector2(r, y)), 18),
+    at(bx, potY, bz), 0xd8ccb2);
+  paint(new THREE.CylinderGeometry(.068, .068, .004, 18), at(bx, potY + .128, bz), 0x2a1c12);                 // soil
+  const LEAF = new THREE.BufferGeometry();                 // one lance-shaped leaf, 1 long, with a face on each side
+  { const pts = [0, 0, 0, -.085, .3, 0, .085, .3, 0, 0, 1, 0];
+    LEAF.setAttribute('position', new THREE.Float32BufferAttribute([...pts, ...pts], 3));
+    LEAF.setAttribute('normal', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1], 3));
+    LEAF.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(16).fill(0), 2));
+    LEAF.setIndex([0, 2, 1, 1, 2, 3, 4, 5, 6, 5, 7, 6]); }
+  let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;   // the same plant on every visit
+  [[.52, .2, .15], [.7, 1.5, .19], [.84, 3.1, .1], [.6, 4.6, .22], [.44, 5.6, .3]].forEach(([h, yaw, lean]) => {   // five canes: height, which way it leans, how far
+    const cane = leaning(bx, potY + .128, bz, yaw, lean);
+    paint(new THREE.CylinderGeometry(.005, .007, h, 5), cane.clone().multiply(at(0, h / 2, 0)), 0x7c9440);
+    for (let k = 0; k < 13; k++) {                                                                           // leaves along the upper part, drooping outward
+      const at3 = new THREE.Vector3(0, h * (.45 + .55 * rnd()), 0).applyMatrix4(cane), len = .16 + .11 * rnd();
+      paint(LEAF, leaning(at3.x, at3.y, at3.z, rnd() * 6.283, .75 + rnd() * .85).multiply(new THREE.Matrix4().makeScale(len, len, 1)), [0x4f8a34, 0x6a9a3c, 0x86a84a][k % 3]);
+    }
+  });
+
+  // ----- an open book, its pages rising a little from the middle, with lines of text
+  const ob = -.38, oz = TZ + .05;
+  paint(box(.41, .006, .285), at(ob, TOP_Y + .003, oz), 0x5a1f16);
+  [-1, 1].forEach(s => {
+    const page = at(ob + s * .1, TOP_Y + .024, oz, 0, 0, s * .09);
+    paint(box(.195, .016, .27), page, 0xe9dfc6);
+    for (let k = 0; k < 8; k++) paint(box(.15, .0012, .005), page.clone().multiply(at(0, .0087, -.105 + k * .03)), 0x4a4238);
+  });
+
+  // ----- brushes standing in a pot, an ink dish, two seals
+  const px = .12, pz = TZ - .04;
+  paint(new THREE.CylinderGeometry(.043, .047, .125, 16), at(px, TOP_Y + .0625, pz), 0x4f2e1c);
+  paint(new THREE.CylinderGeometry(.036, .036, .002, 16), at(px, TOP_Y + .1262, pz), 0x120c08);
+  [[.25, .4, .13], [.29, 2.2, .1], [.27, 3.9, .15], [.23, 5.3, .08]].forEach(([len, yaw, lean], k) => {
+    const m = leaning(px, TOP_Y + .03, pz, yaw, lean);
+    paint(new THREE.CylinderGeometry(.0045, .0045, len, 6), m.clone().multiply(at(0, len / 2, 0)), k % 2 ? 0x2c1a10 : 0xc7a567);   // handle
+    paint(new THREE.ConeGeometry(.011, .05, 8), m.clone().multiply(at(0, len + .025, 0)), 0xe6ddcc);                              // hair
+    paint(new THREE.ConeGeometry(.006, .02, 8), m.clone().multiply(at(0, len + .045, 0)), 0x1a1614);                              // inked tip
+  });
+  paint(new THREE.LatheGeometry([[.03, 0], [.058, .004], [.074, .026], [.07, .036], [.06, .03], [.04, .012], [.001, .01]]
+    .map(([r, y]) => new THREE.Vector2(r, y)), 18), at(.31, TOP_Y, TZ + .09), 0x1c1a18);
+  paint(box(.036, .052, .036), at(0, TOP_Y + .026, TZ + .12, 0, .3), 0x9a3b2a);
+  paint(box(.03, .04, .03), at(.21, TOP_Y + .02, TZ + .15, 0, -.5), 0xb5492f);
+
+  // ----- right: two books carrying a scholar's rock on its little stand
+  painted.push(...pile(.8, [[.36, .052, .25, 0x4c6848, -.06], [.33, .046, .235, 0xa5512f, .1]]));
+  const lump = (r, n) => {                                   // a knobbly stone: a ball with its corners pushed in and out
+    const g = new THREE.DodecahedronGeometry(r, 1), q = g.attributes.position;
+    for (let i = 0; i < q.count; i++) {
+      const k = 1 + .5 * (Math.abs(Math.sin(q.getX(i) * 913 + q.getY(i) * 371 + q.getZ(i) * 531 + n) * 43758.5) % 1 - .5);
+      q.setXYZ(i, q.getX(i) * k, q.getY(i) * k, q.getZ(i) * k);
+    }
+    g.computeVertexNormals(); return g;
+  };
+  const ry = TOP_Y + .098;
+  paint(box(.15, .014, .09), at(.8, ry + .007, TZ + .01), 0x3a2213);
+  [[.058, 0, .075, 0, 1, 1.3, .8], [.04, .045, .12, .01, 1, 1, .9], [.034, -.04, .05, -.005, 1.2, .9, 1]].forEach(([r, dx, dy, dz, sx, sy, sz], n) =>
+    paint(lump(r, n + 1), at(.8 + dx, ry + .014 + dy, TZ + .01 + dz, 0, n + 1, 0, sx, sy, sz), 0x857a6c));
+
+  add(merge(painted), paintMat, 0, 0, 0);
+}
+// soft shadows on the cabinet top under the plant, the desk things and the pile
 const bookShade = new THREE.MeshBasicMaterial({map:glowTex, color:0x000000, transparent:true, opacity:.5, depthWrite:false});
-[[-.7, .62], [0, .7], [.7, .62]].forEach(([x, w]) => {
+[[-.98, .5], [-.1, 1.0], [.8, .56]].forEach(([x, w]) => {
   const sh = add(new THREE.PlaneGeometry(w, .42), bookShade, x, TOP_Y + .002, TZ); sh.rotation.x = -Math.PI / 2;
 });
 

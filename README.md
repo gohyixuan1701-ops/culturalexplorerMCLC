@@ -2,7 +2,7 @@
 
 The Digital Malaysian Chinese Literature Centre is a browser-based 3D exhibition of Malaysian Chinese literature. Visitors can walk through a virtual gallery, discover books and their English editions, and explore the history of Mahua literature.
 
-Built for the **SUC × FeedMe Startup Hackathon 2026**. The repository is named `feedme`.
+Built for the **SUC × FeedMe Startup Hackathon 2026**. The repository is named `culturalexplorerMCLC`.
 
 ## Explore the gallery
 
@@ -35,13 +35,24 @@ The flip books present information about each work; they do not contain the full
 
 The hosted demo is a deployment snapshot and may lag behind `main`. Use the local instructions below to inspect the repository version. QR images for the public address are in `qr/`.
 
+### Redeploying the public demo
+
+The address and the QR code stay the same. Only the files behind the address are replaced.
+
+1. Pull `main`.
+2. Publish these five files, and nothing else, to the **existing** Vercel project behind `cultural-explorer-roan.vercel.app`, as its production deployment: `index.html`, `cultural explorer.html`, `three.min.js`, `covers.js`, `covers-en.js`. A new project would get a new address, and the QR code would no longer lead to it.
+3. Open the address and check: it lands on the app, the name at the top left reads "The Digital Malaysian Chinese Literature Centre", the first book on each wall faces the other, and the table at the end of the corridor carries books only.
+4. Scan the QR code with a phone and open the history book at the end of the corridor.
+
+The latest entry in [qr/VNV_REPORT.md](qr/VNV_REPORT.md) lists the SHA-256 of each file, to compare with what the address serves.
+
 ## Run locally
 
 You need a modern browser with WebGL enabled. GitHub access is required to clone this private repository. Python 3 is needed only for the local-server command.
 
 ```bash
-git clone https://github.com/gohyixuan1701-ops/feedme.git
-cd feedme
+git clone https://github.com/gohyixuan1701-ops/culturalexplorerMCLC.git
+cd culturalexplorerMCLC
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
@@ -71,7 +82,7 @@ Search normalizes case, full-width characters, spaces, and punctuation. Pinyin m
 ## Project structure
 
 ```text
-feedme/
+culturalexplorerMCLC/
 ├── index.html                   # Hosting entry point
 ├── cultural explorer.html       # App, styles, book data, history, and interactions
 ├── three.min.js                 # Bundled Three.js r128

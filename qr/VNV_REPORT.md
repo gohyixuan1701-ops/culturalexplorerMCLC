@@ -192,3 +192,28 @@ Limits of this round:
 - The browser pane used for these checks draws about one frame a second, so walking and page-turn animation were not judged for smoothness.
 - The signboards in the 3D scene still read "Malaysian Chinese Literature Centre". Only the brand at the top left, the page title, the entry link, the QR poster and the README carry the new name.
 - Not tested: a real phone, iPhone Safari, WeChat's built-in browser.
+
+### Handover for the redeploy
+
+The address `https://cultural-explorer-roan.vercel.app` and both QR images stay as they are. The redeploy replaces the files behind the address; the steps are in the README under "Redeploying the public demo".
+
+Ready on `main` (app files last changed in `da6d849`):
+
+| Check | Result |
+|---|---|
+| Local folder equals GitHub `main` | Pass: no uncommitted change to any tracked file; each of the five app files on disk has the same git blob as on `origin/main` |
+| Entry page | Pass: opening `/` on the local server lands on `cultural%20explorer.html`; the page title and the brand read the new name; 20 books, the two walls at identical positions; `three.min.js` (r128), `covers.js` (28 covers) and `covers-en.js` (10 covers) each HTTP 200 |
+| QR images, `make_qr.py`, `index.html` | Unchanged since `cee6240`, where both images decoded to the public address. Not decoded again in this round |
+| Repository access | The account that will redeploy has write access to the repository |
+
+Files to publish, and their SHA-256 at `da6d849`:
+
+| File | Bytes | SHA-256 |
+|---|---|---|
+| `index.html` | 722 | `a599bf119119bbf52292ae8665d6d4101768ef4d95f8b41a227d8ddc242ddcca` |
+| `cultural explorer.html` | 185868 | `2492f0a3e236e30c48f8940319d4f54bf204646e4c280ac97c3da012c9651765` |
+| `three.min.js` | 603445 | `9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2` |
+| `covers.js` | 1065665 | `55bbfc462ddd1ebe6bb6465332dbd49c0d6e7f88fcb46bc8a7614b6df04c76c7` |
+| `covers-en.js` | 523459 | `f0f4c6a7e284480e18291c02dd0efd6687b7fc5b0c64dbbcdfdf77c7deeae578` |
+
+After the redeploy, still to do: compare the served files with these values, run the phone flip-book check on the public address, and record the result here.

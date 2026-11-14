@@ -217,3 +217,31 @@ Files to publish, and their SHA-256 at `da6d849`:
 | `covers-en.js` | 523459 | `f0f4c6a7e284480e18291c02dd0efd6687b7fc5b0c64dbbcdfdf77c7deeae578` |
 
 After the redeploy, still to do: compare the served files with these values, run the phone flip-book check on the public address, and record the result here.
+
+## Update: redeployed at commit `1fb70bd` (15 November 2026)
+
+The five app files at `1fb70bd` were published to the existing project, so the address and both QR images are unchanged. This closes the "not yet redeployed" note above.
+
+| File | Bytes | SHA-256 | Served at the public address |
+|---|---|---|---|
+| `index.html` | 722 | `a599bf119119bbf52292ae8665d6d4101768ef4d95f8b41a227d8ddc242ddcca` | HTTP 200, identical |
+| `cultural explorer.html` | 192846 | `36f947d173b083fb7c31a6690610d38e89ec563fca46666f036e615e71da403b` | HTTP 200, identical |
+| `covers.js` | 1065665 | `55bbfc462ddd1ebe6bb6465332dbd49c0d6e7f88fcb46bc8a7614b6df04c76c7` | HTTP 200, identical |
+| `covers-en.js` | 523459 | `f0f4c6a7e284480e18291c02dd0efd6687b7fc5b0c64dbbcdfdf77c7deeae578` | HTTP 200, identical |
+| `three.min.js` | 603445 | `9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2` | HTTP 200, identical |
+
+Checks run on the local copy and again on the public address, with no failures and no console errors:
+
+| Check | Phone, 375×812 (touch, low tier) | Laptop, 1366×768 (mouse, high tier) |
+|---|---|---|
+| Page title is "The Digital Malaysian Chinese Literature Centre" | Pass | Pass |
+| 20 books, 28 Chinese covers, 10 English covers loaded; scene fills the window | Pass | Pass |
+| Title, tools, search, minimap and walk buttons on screen, none overlapping | Pass | Pass |
+| History book, Chinese: every page on screen, no text outside its page | Pass: one page at a time, 11 steps, smallest text 15 px | Pass: two-page spread, 6 steps, smallest text 13 px |
+| History book, English: every page on screen, no text outside its page | Pass: 11 steps, smallest text 14.8 px | Pass: 6 steps, smallest text 12.8 px |
+| Paging back returns to the cover | Pass | Pass |
+| Catalogue lists 20 books; choosing one walks there and opens it; first page turn is clean | Pass | Pass |
+
+QR code: both images in `qr/` were decoded again and return `https://cultural-explorer-roan.vercel.app`.
+
+Not checked this time: tablet, landscape phone and small-phone sizes; walking controls, search and the author box (last tested at `f66e347`). Still never tested: a real phone, iPhone Safari, WeChat's built-in browser, and scanning the printed or projected code with a camera.

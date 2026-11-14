@@ -5,25 +5,25 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#233c33">
   <meta name="description" content="Discover Malaysian Chinese literature. Browse books, explore authors, and step inside the Cultural Explorer 3D gallery.">
-  <title>MCLC · 马华文学馆</title>
+  <title>Malaysian Chinese Literature Center · 马华文学馆</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=feature-board-1">
+  <link rel="stylesheet" href="styles.css?v=formal-language-1">
   <script src="author-profiles.js" defer></script>
-  <script src="app.js?v=feature-board-1" defer></script>
+  <script src="app.js?v=formal-language-1" defer></script>
 </head>
 <body>
   <a class="skip" href="#catalogue" data-t="skip">Skip to catalogue</a>
   <div class="topline"><span data-t="topline">A living collection of Malaysian Chinese literature</span><span>马华文学 · 薪火相传</span></div>
   <header class="header">
-    <a href="./" class="brand" aria-label="MCLC · 马华文学馆"><span class="seal">马华<br>文学馆</span><span class="brand-type"><span data-t="brandName">MCLC</span><small data-t="brandFullName">Malaysian Chinese Literature Center</small><span class="brand-team">by Cultural Explorer</span></span></a>
+    <a href="./" class="brand" aria-label="Malaysian Chinese Literature Center · 马华文学馆"><span class="seal">马华<br>文学馆</span><span class="brand-type"><span class="brand-title"><span><b>M</b>alaysian <b>C</b>hinese</span> <span><b>L</b>iterature <b>C</b>enter</span></span><span class="brand-team">by Cultural Explorer</span></span></a>
     <nav class="main-nav" aria-label="Main navigation"><button class="nav-link active" data-view="catalogue" data-t="navBooks">The collection</button><button class="nav-link" data-view="authors" data-t="navAuthors">Authors</button><button class="nav-link" id="about" data-t="navAbout">Our story</button></nav>
-    <div class="header-actions"><button id="language" class="language" aria-label="Switch to Chinese">中文 <span>⌄</span></button><button class="shelf-button" data-view="saved"><svg><use href="#i-bookmark"/></svg><span data-t="myShelf">My bookshelf</span><span class="shelf-count" id="shelfCount">0</span></button></div>
+    <div class="header-actions"><div class="language-picker" id="languagePicker"><button id="language" class="language" aria-label="Choose language" title="Choose language" aria-haspopup="menu" aria-controls="languageMenu" aria-expanded="false"><svg aria-hidden="true"><use href="#i-globe"/></svg><span class="sr-only" data-t="chooseLanguage">Choose language</span><span class="language-chevron" aria-hidden="true">⌄</span></button><div class="language-menu" id="languageMenu" role="menu" aria-labelledby="language" hidden><button type="button" role="menuitemradio" data-language="zh" aria-checked="false" lang="zh-Hans"><span>中文</span><span class="language-check" aria-hidden="true">✓</span></button><button type="button" role="menuitemradio" data-language="en" aria-checked="true" lang="en"><span>EN</span><span class="language-check" aria-hidden="true">✓</span></button></div></div><button class="shelf-button" data-view="saved"><svg><use href="#i-bookmark"/></svg><span data-t="myShelf">My bookshelf</span><span class="shelf-count" id="shelfCount">0</span></button></div>
   </header>
   <main>
     <section class="feature-board" id="features" aria-roledescription="carousel" aria-label="Featured collections and gallery visits" tabindex="0" data-feature="collection">
       <div class="intro" id="featureSlide" role="group" aria-roledescription="slide" aria-labelledby="introTitle">
-        <div class="intro-copy"><div class="eyebrow"><span></span><span id="featureEyebrow">THE MALAYSIAN CHINESE LITERATURE COLLECTION</span></div><h1 id="introTitle">Many voices.<br>One literary home.</h1><p id="featureDescription">From familiar hometowns to imagined worlds. Discover the stories, poetry, and ideas that make Mahua literature.</p><div class="intro-note"><svg><use href="#i-book"/></svg><span id="featureNote">38 works to discover · Chinese & English editions</span></div><div class="feature-action" id="featureAction"><a class="primary" href="#catalogue" data-feature-action="catalogue">Browse all books →</a></div></div>
-        <div class="hero-art" aria-hidden="true"><span class="art-ring"></span><div class="art-label">字里行间<br><small>STORIES THAT CONNECT US</small></div><div class="hero-books" id="heroBooks"></div><div class="art-shelf"></div><span class="art-caption" id="featureCaption">A collection rooted in Malaysia. A world within its pages.</span></div>
+        <div class="intro-copy"><div class="eyebrow"><span></span><span id="featureEyebrow">THE MALAYSIAN CHINESE LITERATURE COLLECTION</span></div><h1 id="introTitle">Many voices.<br>One literary home.</h1><p id="featureDescription">From familiar hometowns to imagined worlds. Discover the stories, poetry, and ideas that make Malaysian Chinese literature.</p><div class="intro-note"><svg><use href="#i-book"/></svg><span id="featureNote">38 works to discover · Chinese & English editions</span></div><div class="feature-action" id="featureAction"><a class="primary" href="#catalogue" data-feature-action="catalogue">Browse all books →</a></div></div>
+        <div class="hero-art" aria-hidden="true"><span class="art-ring"></span><div class="book-display"><div class="hero-books" id="heroBooks"></div><div class="art-shelf"></div></div><div class="art-label"><span class="art-label-zh">字里行间</span><small>STORIES THAT CONNECT US</small></div><span class="art-caption" id="featureCaption">A collection rooted in Malaysia. A world within its pages.</span></div>
       </div>
       <div class="feature-controls"><button class="feature-arrow" id="featurePrev" aria-label="Previous feature">←</button><div class="feature-dots" id="featureDots" role="group" aria-label="Choose a feature"></div><button class="feature-arrow" id="featureNext" aria-label="Next feature">→</button><span class="feature-counter" id="featureCounter">1 / 3</span></div>
       <span class="sr-only" id="featureStatus" role="status" aria-live="polite" aria-atomic="true"></span>
@@ -56,6 +56,7 @@
   <dialog id="authorSourcesDialog" aria-labelledby="authorSourcesTitle"><button class="dialog-close" aria-label="Close author sources" data-close="authorSourcesDialog">×</button><div id="authorSourcesContent"></div></dialog>
   <div class="toast" role="status" id="toast"></div>
   <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
     <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></symbol>
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M3 4q5-1 9 2 4-3 9-2v15q-5-1-9 2-4-3-9-2zM12 6v15"/></symbol>

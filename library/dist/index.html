@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#233c33">
+  <meta name="description" content="Discover Malaysian Chinese literature. Browse books, explore authors, and step inside the Cultural Explorer 3D gallery.">
+  <title>MCLC · 马华文学馆</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <script src="author-profiles.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#catalogue" data-t="skip">Skip to catalogue</a>
+  <div class="topline"><span data-t="topline">A living collection of Malaysian Chinese literature</span><span>马华文学 · 薪火相传</span></div>
+  <header class="header">
+    <a href="./" class="brand" aria-label="MCLC · 马华文学馆"><span class="seal">马华<br>文学馆</span><span class="brand-type"><span data-t="brandName">MCLC</span><small data-t="brandFullName">Malaysian Chinese Literature Center</small><span class="brand-team">CULTURAL EXPLORER</span></span></a>
+    <nav class="main-nav" aria-label="Main navigation"><button class="nav-link active" data-view="catalogue" data-t="navBooks">The collection</button><button class="nav-link" data-view="authors" data-t="navAuthors">Authors</button><button class="nav-link" id="about" data-t="navAbout">Our story</button></nav>
+    <div class="header-actions"><button id="language" class="language" aria-label="Switch to Chinese">中文 <span>⌄</span></button><button class="shelf-button" data-view="saved"><svg><use href="#i-bookmark"/></svg><span data-t="myShelf">My bookshelf</span><span class="shelf-count" id="shelfCount">0</span></button></div>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="introTitle">
+      <div class="intro-copy"><div class="eyebrow"><span></span><span data-t="eyebrow">THE MALAYSIAN CHINESE LITERATURE COLLECTION</span></div><h1 id="introTitle" data-t="hero">Many voices.<br>One literary home.</h1><p data-t="intro">From familiar hometowns to imagined worlds. Discover the stories, poetry, and ideas that make Mahua literature.</p><div class="intro-note"><svg><use href="#i-book"/></svg><span data-t="introNote">38 works to discover · Chinese & English editions</span></div></div>
+      <div class="hero-art" aria-hidden="true"><span class="art-ring"></span><div class="art-label">字里行间<br><small>STORIES THAT CONNECT US</small></div><div class="hero-books" id="heroBooks"></div><div class="art-shelf"></div><span class="art-caption">A collection rooted in Malaysia. A world within its pages.</span></div>
+    </section>
+    <div class="workspace" id="catalogue">
+      <aside class="sidebar" id="sidebar" aria-label="Catalogue filters">
+        <div class="side-heading"><h2 data-t="browse">Browse the library</h2><button class="text-button" id="reset" data-t="reset">Reset</button></div>
+        <div id="categories" class="categories"></div>
+        <div class="filter-group"><h3 data-t="collection">COLLECTION</h3><div id="collections"></div></div>
+        <div class="filter-group"><label for="edition" data-t="edition">EDITION LANGUAGE</label><select id="edition"><option value="all" data-t="anyLanguage">All editions</option><option value="zh" data-t="chineseEdition">Chinese editions</option><option value="en" data-t="englishEdition">English translations</option></select></div>
+        <div class="gallery-card"><svg><use href="#i-gallery"/></svg><span class="eyebrow" data-t="beyond">BEYOND THE BOOKSHELF</span><h3 data-t="galleryTitle">Step into the stories.</h3><p data-t="galleryCopy">Walk through our 3D gallery and explore 20 selected works.</p><a href="gallery/" data-t="enterGallery">Enter 3D gallery ↗</a><span class="gallery-lines" aria-hidden="true"></span></div>
+      </aside>
+      <section class="catalogue-main" aria-labelledby="sectionTitle">
+        <div class="section-heading"><div><div class="breadcrumb"><span data-t="library">Library</span><span>/</span><span id="breadcrumbCurrent" data-t="allBooks">All books</span></div><h2 id="sectionTitle" data-t="allBooks">All books</h2></div><span class="collection-tag" data-t="curated">Curated with care. Collected for discovery.</span></div>
+        <div class="search-row"><div class="searchbox"><svg><use href="#i-search"/></svg><input id="search" type="search" aria-label="Search the library" placeholder="Search by title, author, publisher, or ISBN…"><kbd>/</kbd></div><button class="filter-toggle" id="filterToggle" aria-expanded="false" aria-controls="sidebar"><svg><use href="#i-filter"/></svg><span data-t="filters">Filters</span></button></div>
+        <div class="toolbar"><p id="resultCount" role="status" aria-live="polite">Loading the collection…</p><div class="toolbar-actions"><label for="sort" data-t="sortBy">Sort by</label><select id="sort"><option value="featured" data-t="recommended">Recommended</option><option value="newest" data-t="newest">Newest first</option><option value="oldest" data-t="oldest">Oldest first</option><option value="title" data-t="titleAZ">Title A–Z</option><option value="author" data-t="authorAZ">Author A–Z</option></select><div class="view-switch" role="group" aria-label="Display layout"><button id="gridView" class="selected" aria-label="Grid view" aria-pressed="true"><svg><use href="#i-grid"/></svg></button><button id="listView" aria-label="List view" aria-pressed="false"><svg><use href="#i-list"/></svg></button></div></div></div>
+        <div id="activeFilters" class="active-filters"></div>
+        <div id="books" class="book-grid"></div>
+        <div id="empty" class="empty" hidden><svg><use href="#i-search"/></svg><h3 data-t="emptyTitle">A new chapter awaits.</h3><p id="emptyMessage" data-t="emptyCopy">Try a different search or clear your filters to discover more books.</p><button class="primary" id="emptyReset" data-t="clearFilters">Clear search & filters</button></div>
+        <div class="pagination-row" id="paginationRow"><label class="page-size"><span data-t="show">Show</span><select id="pageSize"><option value="12">12</option><option value="24">24</option><option value="all" data-t="all">All</option></select><span data-t="perPage">per page</span></label><nav id="pagination" aria-label="Catalogue pages"></nav></div>
+        <div class="catalogue-footnote"><span class="dot"></span><span data-t="footnote">Explore book summaries and publication details. Full literary texts are not included.</span></div>
+      </section>
+    </div>
+    <section class="closing"><span class="closing-mark">文</span><div><h2 data-t="closingTitle">Our stories deserve a place to live.</h2><p data-t="closingCopy">Preserving Malaysian Chinese literature, one book and one reader at a time.</p></div><a href="gallery/"><span data-t="discoverGallery">Discover the 3D gallery</span><span>↗</span></a></section>
+  </main>
+  <footer><a href="./" class="footer-brand">MCLC <span>马华文学馆</span></a><p data-t="footer">A Cultural Explorer catalogue prototype · Collection from the Malaysian Chinese Literature Center and published English editions.</p><button class="text-button" id="sources" data-t="sources">About the collection ↗</button><div class="footer-legal"><p data-t="teamCredit">Team Cultural Explorer · A mock-up for the FeedMe Hackathon.</p><button class="text-button" id="terms" data-t="termsLink">T&C · Mock-up notice ↗</button></div></footer>
+  <dialog id="bookDialog" aria-labelledby="bookDialogTitle"><button class="dialog-close" aria-label="Close book details" data-close="bookDialog">×</button><div id="bookDetails"></div></dialog>
+  <dialog id="aboutDialog" aria-labelledby="aboutTitle"><button class="dialog-close" aria-label="Close about" data-close="aboutDialog">×</button><div id="aboutContent"></div></dialog>
+  <dialog id="termsDialog" aria-labelledby="termsTitle"><button class="dialog-close" aria-label="Close terms and conditions" data-close="termsDialog">×</button><div id="termsContent"></div></dialog>
+  <dialog id="authorSourcesDialog" aria-labelledby="authorSourcesTitle"><button class="dialog-close" aria-label="Close author sources" data-close="authorSourcesDialog">×</button><div id="authorSourcesContent"></div></dialog>
+  <div class="toast" role="status" id="toast"></div>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M3 4q5-1 9 2 4-3 9-2v15q-5-1-9 2-4-3-9-2zM12 6v15"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+    <symbol id="i-gallery" viewBox="0 0 40 40"><path d="M5 34V14L20 5l15 9v20M5 14h30M10 34V18h20v16M15 34V22h10v12M4 35h32"/><path d="M17 10h6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+  </defs></svg>
+</body>
+</html>

@@ -1,0 +1,34 @@
+const fs=require('node:fs');
+const vm=require('node:vm');
+const assert=require('node:assert/strict');
+const nodes=new Map();
+function node(selector){if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',hidden:false,dataset:{},classList:{toggle(){},add(){},remove(){}},setAttribute(){},removeAttribute(){},addEventListener(){},scrollIntoView(){}});return nodes.get(selector);}
+const dataset=JSON.parse(fs.readFileSync('dist/books.json','utf8'));
+const context={document:{querySelector:node,querySelectorAll:()=>[],documentElement:{},addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},fetch:async()=>({ok:true,json:async()=>dataset}),console,setTimeout,clearTimeout};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('dist/author-profiles.js','utf8'),context);
+let source=fs.readFileSync('dist/app.js','utf8');source=source.slice(0,source.lastIndexOf('init();'));
+vm.runInContext(source,context);
+const run=code=>vm.runInContext(code,context);
+(async()=>{
+ await run('init()');
+ assert.equal(run('matchingBooks().length'),38,'all records');
+ run("state.collection='translated'");assert.equal(run('matchingBooks().length'),10,'English translation collection');
+ run("state.collection='gallery'");assert.equal(run('matchingBooks().length'),20,'3D selections');
+ run("state.collection='centre'");assert.equal(run('matchingBooks().length'),28,'Centre publications');
+ run("state.collection='all';state.edition='en'");assert.equal(run('matchingBooks().length'),10,'English edition filter');
+ run("state.edition='all';state.query='Lake Like a Mirror'");assert.equal(run('matchingBooks()[0].title'),'湖面如镜','English title search');
+ run("state.query='9789810766702'");assert.equal(run('matchingBooks().length'),1,'ISBN search');
+ run("state.query='跳蚤'");assert.equal(run('matchingBooks()[0].title'),'跳蚤','Chinese title search');
+ run("state.query='Zhang Guixing'");assert.equal(run('matchingBooks().length'),3,'romanized author search');
+ run("state.query='';state.category='poetry'");assert.ok(run('matchingBooks().every(b=>categoriesOf(b).includes("poetry"))'),'poetry category');assert.ok(run('matchingBooks().length')>0);
+ run("state.category='all';state.query='a title that does not exist 1234567'");assert.equal(run('matchingBooks().length'),0,'no results');
+ run("state.query='';state.view='saved';state.saved.add('mclc-0')");assert.equal(run('matchingBooks().length'),1,'saved shelf');
+ run("state.view='catalogue';state.sort='newest'");assert.ok(run('matchingBooks().every((b,i,a)=>!i||Number(a[i-1].year)>=Number(b.year))'),'newest sort');
+ run("state.sort='featured';state.page=1;state.pageSize=12;render()");assert.equal((node('#books').innerHTML.match(/class="book-card"/g)||[]).length,12,'12 records per page');
+ run('state.pageSize="all";render()');assert.equal((node('#books').innerHTML.match(/class="book-card"/g)||[]).length,38,'show all');
+ run("state.lang='en';bookDetails(data.books.find(b=>b.title==='湖面如镜'))");assert.ok(node('#bookDetails').innerHTML.includes('Lake Like a Mirror'),'English detail title');assert.ok(node('#bookDetails').innerHTML.includes('9781846276903'),'detail ISBN');
+ run("state.lang='zh';bookDetails(data.books.find(b=>b.title==='湖面如镜'))");assert.ok(node('#bookDetails').innerHTML.includes('作品简介'),'Chinese details');
+ run('renderAuthors()');assert.ok(node('#books').innerHTML.includes('data-author='),'author directory');
+ console.log('PASS: 18 catalogue logic checks (search, filters, collections, saved shelf, sorting, pagination, bilingual metadata, authors). Browser layout and interaction checks remain unverified.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

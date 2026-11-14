@@ -95,3 +95,26 @@ Extra checks on the laptop size, before the suite:
 - English book summaries and author introductions are not written; a note says so.
 - Cover photos come from the Centre's website and there is no written permission yet. The team chose to publish with them.
 - The published copy is a snapshot. Later changes to the repository do not appear at the public address until it is deployed again.
+
+## Update: redeployed at commit `f66e347` (14 November 2026, 17:17)
+
+The sections above describe the first deployment (14:05). The app changed a lot afterwards: the class quiz was removed, the collection became 20 books (10 Centre publications and 10 English translations, with `covers-en.js`), the scene was rebuilt with device tiers, and on a mouse the View button now follows the book under the cursor. The public address was redeployed with the current version and tested again.
+
+| Check | Result |
+|---|---|
+| Published files identical to the repository at `f66e347` | Pass: SHA-256 matches for `index.html`, `cultural explorer.html`, `covers.js`, `covers-en.js`, `three.min.js`; each returns HTTP 200 with no login |
+| QR code | Unchanged, because the address is the same. Both images decode to `https://cultural-explorer-roan.vercel.app` |
+| Console errors on the public address | None |
+
+Suite adapted to the new version (no quiz checks; book choice tested by cursor in mouse mode and by position in touch mode):
+
+| Screen | Size | Mode, quality tier | Local | Public address |
+|---|---|---|---|---|
+| Laptop | 1366×768 | mouse, high | 32 of 32 pass | 32 of 32 pass |
+| Desktop | 1920×1080 | mouse, high | 32 of 32 pass | not run |
+| Phone, portrait | 375×812 | touch, low | 31 of 31 pass | 31 of 31 pass |
+| Small phone | 360×640 | touch, low | 31 of 31 pass | not run |
+| Phone, landscape | 740×360 | touch, low | 31 of 31 pass | 31 of 31 pass |
+| Tablet | 768×1024 | touch, low | not run | 31 of 31 pass |
+
+Still not tested: a real phone, iPhone Safari, WeChat's built-in browser, slow mobile data, and scanning the printed or projected code with a camera. The team checklist in section 5 still applies, without the quiz step.

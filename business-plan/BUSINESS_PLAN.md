@@ -1,12 +1,12 @@
 # Cultural Explorer: Business Plan
 
-**The Digital Malaysian Chinese Literature Centre (马华文学馆)**
+**Malaysian Chinese Literature Center (马华文学馆)**
 SUC × FeedMe Startup Hackathon 2026 · Team Cultural Explorer · 14 November 2026
 
 How to read this plan:
 
 - Section headings carry the rubric's criterion names from `JUDGING_CRITERIA.md`, so each can be scored directly.
-- The product is described as it exists at commit `a6d089c` on `main`. Anything not built is listed under Roadmap.
+- Product claims were refreshed against `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef` and the catalogue runtime published from Sites source `dda10f1916b65587d19fa9ecd6a95c17eff832a9` in PR #1. See [current status](../PROJECT_STATUS.md). The original financial assumptions and market-source research are retained; external pages were not revalidated in this refresh.
 - A number followed by a source tag such as [S1] was confirmed on the original page on 14 November 2026. The list is in the Sources section.
 - **[UNSOURCED ASSUMPTION]** marks a number with no confirmed source. These are our own estimates, with the arithmetic shown.
 - Every financial figure is produced by `financials.js`; its output is in `financials_output.txt`.
@@ -17,9 +17,9 @@ How to read this plan:
 
 **Problem.** Fewer young Malaysians are reaching Chinese literature. Candidates for SPM Chinese fell from 60,521 in 2017 to 46,046 in 2025, a drop of 23.9% [S4]. Chinese primary school enrolment fell by 26,526 in one year, to 463,988 [S1]. The country's only Malaysian Chinese literature centre is one location in Skudai, Johor [S6], which most students will never visit.
 
-**Product.** Cultural Explorer is a 3D literature centre that runs in a browser. A class walks a gallery of 28 books published by the Centre, opens each one as a flip book, and competes in a two-team quiz. It works in Chinese and English. A working prototype is in the repository.
+**Product.** Cultural Explorer provides a public browser-based gallery of 20 exhibits: 10 selected Centre publications and 10 translated works. Covers, summaries and publication details open as flip books. A separate catalogue offers all 38 bibliographic records, author information and a local bookshelf. Both experiences have Chinese/English interfaces. The former class quiz is removed; complete texts and paid teaching tools are not implemented.
 
-**Business model.** The walk-through is free. Schools pay a yearly licence for lesson material built on it, and cultural sponsors pay to add exhibition rooms. The lesson material is not built yet (Roadmap).
+**Proposed business model.** Keep discovery access free, then test school licences for future lesson material and commissioned exhibitions for sponsors. Neither paid teaching tools nor a purchasing/payment flow is implemented or validated.
 
 **Market.** There are 1,303 Chinese primary schools [S1]. Half have fewer than 150 pupils [S1], so about 651 are realistic paying customers. At our proposed price that is RM 781,200 a year. Adding Chinese independent secondary schools brings it to about RM 1.0 million a year, but that part rests on an unsourced school count.
 
@@ -62,7 +62,7 @@ Validation plan for the two weeks after the hackathon:
 
 1. Interview five Chinese-language teachers. Questions: how they teach this literature today, what digital material the school pays for and how much, who approves the purchase, whether they would use the product in a lesson after a five-minute trial, and what price is acceptable.
 2. Ask the Centre for written permission to use covers and short excerpts, and for a statement of support.
-3. Run one classroom trial of the team quiz and record how many students finish it and what the teacher says.
+3. Observe a classroom trial of the current browsing experience and record completion, accessibility issues and teacher feedback. An assessment/quiz trial requires a new implemented and tested feature; no quiz is currently available.
 
 What would count as a pass: at least three of five teachers say they would use it in a lesson, and at least one school agrees to a free pilot term.
 
@@ -72,27 +72,26 @@ What would count as a pass: at least three of five teachers say they would use i
 
 ### What the product does today
 
-A teacher opens one web page on the classroom projector. There is nothing to install and no account.
+- **Visit.** Navigate the standalone 20-exhibit 3D gallery using keyboard, mouse or touch; use its search, catalogue or minimap to discover books.
+- **Inspect.** Open a cover, summary and publication/translation details. The flip book does not contain the literary work's full text.
+- **Browse directly.** Use the separate 38-record catalogue, filters, grid/list views, sorting and pagination, or follow a feature link to the bundled gallery.
+- **Choose a language.** The gallery has a toggle; the catalogue has a globe menu with Chinese/EN options. Ten translated records have English-edition information; untranslated Chinese records retain Chinese titles and summaries.
+- **Discover authors.** The catalogue has 28 cards, including 7 sourced profiles. Other cards show catalogue edition years and genres; standalone author introductions remain notices.
+- **Save locally.** The catalogue bookshelf stores personal bookmarks in the browser. It is not a teacher-results system or account service.
 
-- **Walk in.** A 3D entrance and gallery corridor that the class moves through with the keyboard, mouse or touch.
-- **Find a book.** Search, a catalogue with genre filters, and a clickable minimap. Selecting a book walks you to it.
-- **Open it.** Each book opens as a flip book with its cover photo, summary and publication details.
-- **Compete.** A red-team and blue-team quiz with 6 or 10 questions, generated from the book data.
-- **Two languages.** The interface switches between Chinese and English.
+### Product position to validate
 
-### What is new about it
+The prototype combines a self-guided exhibition with conventional catalogue browsing. Both are public static experiences without account creation. Its suitability for a class, older readers, and mixed-language audiences still needs observation with actual visitors. It does not establish that competitors lack comparable features or that schools will pay.
 
-- **A place, not a list.** The usual way to put a collection online is a web page of titles. This is a room a class can walk through together, which suits a projector and a group.
-- **Built for a lesson.** The quiz turns browsing into a class activity with two teams and a score.
-- **No barrier to entry.** One HTML file plus a cover-image file. No build step, no backend, no login.
-- **Reusable.** The gallery is generated from a list of books in the code. A different collection can be loaded by changing that list. We have not yet done this for a second collection.
+The gallery is generated from data, but reuse for a separate commissioned collection is still a proposal. Root gallery data, catalogue JSON and the bundled gallery copy do not synchronize automatically.
 
-### Limits we state up front
+### Limits stated up front
 
-- The books cannot be read in the product. Only titles, summaries and publication details are shown.
-- The quiz tests facts about the books (author, year, genre), not understanding of the texts.
-- English summaries and author introductions are placeholder text.
-- It needs an internet connection to load the 3D engine.
+- No complete literary texts, class quiz, lesson packs, teacher dashboards, subscriptions/payments, lending, saved class results or Malay.
+- A standalone AI question area is only a future-feature label.
+- English and author coverage is partial, not universally placeholder text and not universally complete.
+- The galleries use local Three.js and cover files; a missing local engine invokes the network CDN fallback. Catalogue fonts may load externally, with fallback fonts available.
+- Public access and file checks are implemented, but current catalogue geometry and real-device acceptance remain unverified.
 
 ---
 
@@ -136,11 +135,11 @@ Not included: national-type secondary schools and universities. We could not con
 |---|---|---|---|
 | **Pandai** | Malaysian learning app with syllabus practice questions | RM 30 a month (Premium Lite) and RM 96 a month (Premium) per student in 2022 [S11]; yearly family plans of RM 800 to RM 960 shown in 2026 [S10] | General exam practice. We found no Malaysian Chinese literature content on the pages we read |
 | **DELIMa** | Ministry of Education digital learning platform | Price not stated in the source; 5.3 million users [S7] | A platform for tools and classes, not a literature collection |
-| **Google Arts & Culture** | Online collections from more than 2,000 cultural institutions [S12] | Described as non-commercial and accessible to anyone [S12] | Look-only. A web search on 14 November 2026 found no partner page for the Centre; this was a search, not a full check of the site. No class quiz |
+| **Google Arts & Culture** | Online collections from more than 2,000 cultural institutions [S12] | Described as non-commercial and accessible to anyone [S12] | A web search on 14 November 2026 found no partner page for the Centre. This was not an exhaustive collection or classroom-feature audit. |
 | **Scanned 3D tours** (Matterport type) | A realistic walk through a real building, made by scanning it | Not confirmed | Needs a real exhibition room and scanning equipment. Shows the room, not the inside of a book |
-| **Build-your-own virtual galleries** (Artsteps, Kunstmatrix) | A 3D room where anyone can hang pictures | Not confirmed | Made for pictures on walls. No book data, search, language switch or quiz |
+| **Build-your-own virtual galleries** (Artsteps, Kunstmatrix) | A 3D room where anyone can hang pictures | Not confirmed | Tools for building virtual exhibitions; book-specific metadata, discovery and classroom-feature overlap were not confirmed. |
 | **Literature museums online** (for example Taiwan's National Museum of Taiwan Literature) | A virtual museum and a 3D game built on its own collection | Not researched | Covers Taiwan literature, not Malaysian Chinese literature. We did not confirm how its virtual museum works today |
-| **Online libraries and catalogues**, including the Centre's own publications page | Lists of books with search; some lend the full e-book | Not researched | A list and a search box. No place to walk through and nothing for a class to do together |
+| **Online libraries and catalogues**, including the Centre's own publications page | Lists of books with search; some lend the full e-book | Not researched | Conventional book discovery is also part of our catalogue. Comparative 3D, lending and classroom capabilities need direct verification. |
 | **Visiting the Centre in person** | The physical collection in Skudai, Johor [S6] | Travel cost not researched | One location; most schools are far away |
 | **Textbook and teacher only** | The status quo | No added cost | No visual or interactive element |
 
@@ -150,18 +149,18 @@ The four rows on virtual museums and online libraries were added on 14 November 
 
 ### Differentiation
 
-A 3D walk-through is not new: virtual museums and gallery builders already offer one. What we found nowhere else is the combination below.
+A 3D walk-through is not new: virtual museums and gallery builders already offer one. The combination below is our proposed position; the research does not prove that no competitor offers it.
 
 - **A museum where the exhibits open.** A virtual museum lets you look at objects, and an online library gives you a list. Here you walk past a book and then open it.
 - **The same literature in two languages.** One wall shows works with no English translation; the other shows works published in English. The language button switches each translated work between its Chinese and English editions.
 - **No room and no scanning needed.** The gallery is generated from a list of books, where a scanned tour needs a physical exhibition and equipment.
 - **Single subject, done in depth.** The general platforms cover every subject thinly. We cover one collection as a place to visit.
-- **Group use.** The team quiz is designed for one projector and a whole class, where most learning apps assume one student per device.
+- **Proposed group use.** A teacher can project the gallery/catalogue for discussion. A structured group lesson or assessment is future work; no team quiz is currently available.
 - **Price position.** Our proposed price works out at about RM 3.37 per pupil per year. That is 0.9% of one year of Pandai Premium Lite for one student (12 × RM 30 = RM 360 [S11]). It is priced as a small add-on, not a platform.
 
 Where we are weaker: the product is 3D in a browser, not headset VR; it shows covers, summaries and details, not the full text that an e-library lends; and its graphics are simpler than a scanned tour.
 
-What would make this wrong: a ministry or Google collection that already includes the Centre's material, a virtual museum of Malaysian Chinese literature that our search missed, or teachers telling us a quiz on book facts is not useful in a lesson.
+What would make this wrong: a ministry or Google collection that already includes the Centre's material, a virtual museum of Malaysian Chinese literature that our search missed, or teachers finding that the current discovery experience does not improve their lessons.
 
 ---
 
@@ -273,36 +272,32 @@ What would make these wrong: a conversion rate below 20%, schools unwilling to p
 
 ### Traction
 
-No users, no pilots, no revenue, no letters of intent, no partnership agreements. The repository is private, so the product has had no public exposure.
+The demos are public without login, while GitHub access remains private. The repository does not establish measured user adoption, completed school pilots, revenue, letters of intent or partnership agreements. Public availability must not be presented as customer traction.
 
 ### Product status
 
-Shipped, with evidence at commit `a6d089c`. Line numbers refer to `cultural explorer.html`.
+Current implementation is tracked in [PROJECT_STATUS.md](../PROJECT_STATUS.md). Symbol names replace line numbers, which changed as the application grew.
 
-| Feature | Evidence |
-|---|---|
-| 3D entrance and gallery with tone-mapped rendering | Line 482; scene rebuilt in commit `15ce670` |
-| 28 books in three series | `ITEMS` list; original data in commit `48308d4` |
-| Cover photographs for the books | `covers.js` (commit `8731baf`), used at line 1282 (commit `0cee968`) |
-| Flip book and details panel | `showBook`, line 1331 |
-| Introduction to the Centre and its history | `openCentre`, line 1391 |
-| Search that ignores case, spacing and punctuation | `runSearch`, line 1165; commit `1caf522` |
-| Clickable minimap and automatic travel | `drawMap`, line 1626; `travelTo`, line 1088 |
-| Catalogue with genre filters | `renderCat`, line 1502; commit `0c19a6d` |
-| Welcome guide on first visit | `renderGuide`, line 1490; commit `0c19a6d` |
-| Two-team quiz, 6 or 10 generated questions | `buildQuestions`, line 1531; commit `0c19a6d` |
-| Chinese and English interface | `switchLang`, line 1606; commit `1caf522` |
-| Author box listing the author's other books | `openAuthor`, line 1447; commit `1caf522` |
-| Phone layout | Style rule at line 240; commit `15ce670` |
+| Implemented capability | Evidence |
+| --- | --- |
+| Walkable entrance/gallery and device quality tiers | Root `cultural explorer.html`: renderer setup, `pickTier`, scene construction |
+| 20 exhibits on mirrored walls | `LOCAL_PICK`, `LOCAL`, `TRANSLATED`, `ITEMS`; source retains 28 Centre + 10 translation records |
+| Local rendering engine and cover photographs | `three.min.js`, `covers.js`, `covers-en.js`; CDN fallback for a missing engine |
+| Flip books and publication details | `openPanel`, `openBook`, `showBook` |
+| Bilingual history/Centre introduction | `openCentre`, `MAHUA`, `CENTRE` |
+| Gallery search, minimap, travel, catalogue and guide | `runSearch`, `drawMap`, `travelTo`, `renderCat`, `renderGuide` |
+| Chinese/English gallery interface and related-author works | `switchLang`, `openAuthor` |
+| Standalone phone reading fixes | Portrait single-page/scrolling rules; versioned checks in `qr/VNV_REPORT.md` |
+| 38-record conventional catalogue | `library/dist/books.json`, `app.js`, `styles.css` in PR #1 |
+| Author cards, personal bookshelf and language menu | `renderAuthors`, `AUTHOR_PROFILES`, `toggleSave`, `chooseLanguage` |
+| Manual feature board and shared height | `FEATURE_SLIDES`, `renderFeature`, `measureFeatureSlides` |
+| Public demo and mock-up terms | README links; catalogue footer and terms dialog |
 
-In the product but not real content:
+Not implemented: class quiz, complete texts, paid school features, saved classroom results, Malay or connected AI. Standalone author introductions are notices; the catalogue provides the sourced/derived facts documented above.
 
-- Author introductions and English book summaries are placeholder text (line 381).
-- The "ask a question about this book" area is a label only. No AI service is connected (line 434).
+Verification: the documentation refresh reran catalogue logic checks and the financial calculator, and compared public deployment bytes with source. Historical gallery browser runs are in `qr/VNV_REPORT.md`; they are not fresh browser tests of this plan. Current catalogue geometry, gestures, performance and real-device behavior remain unverified.
 
-Testing: the team's notes in `EVALUATION.md` record manual checks in one desktop browser and one phone-sized window. There are no automated tests. It has not been tried on a real phone or in a classroom.
-
-Stack: one HTML file, one cover-image file, Three.js r128 loaded from a public CDN. No backend, database or accounts.
+Stack: static HTML/CSS/JavaScript, locally bundled Three.js r128 and cover assets. Catalogue book/profile data is separate. No backend, database or accounts.
 
 ---
 
@@ -310,15 +305,15 @@ Stack: one HTML file, one cover-image file, Three.js r128 loaded from a public C
 
 ### Roadmap
 
-Nothing in this table is built.
+The following outcomes remain unvalidated or unimplemented. Public links and the bundled 3D engine already exist and are not future milestones.
 
 | When | Item |
 |---|---|
 | Months 1 to 3 | Teacher interviews and one classroom trial |
 | Months 1 to 3 | Written permission from the Centre for covers and excerpts |
-| Months 1 to 3 | Public hosted link; bundle the 3D engine for offline use |
+| Months 1 to 3 | Complete real-device/browser acceptance of the existing public links and local assets |
 | Months 1 to 3 | Lesson packs for five books: excerpt, comprehension questions, worksheet |
-| Months 1 to 3 | Replace placeholder author introductions and English summaries |
+| Months 1 to 3 | Finish missing author profiles/translations and synchronize catalogue/gallery data |
 | Months 4 to 8 | School licence and payment; saved class results; teacher view |
 | Months 4 to 8 | Malay interface |
 | Months 9 to 12 | First sponsored exhibition room; second collection on the same platform |
@@ -328,23 +323,23 @@ Nothing in this table is built.
 
 | Risk | Likelihood | Effect | Mitigation |
 |---|---|---|---|
-| No permission to use covers and texts. The repository has no licence or permission record, and the cover photos come from the Centre's website | High until asked | The product cannot be published or sold | Ask the Centre first, before any sales. Fall back to drawn covers, which the code already supports |
+| No permission to use covers and texts. The repository has no licence or permission record, and the cover photos come from the Centre's website | High until asked | Rights clearance for broader distribution and commercial use remains unresolved | Ask the Centre first, before any sales. Fall back to drawn covers, which the code already supports |
 | Teachers do not see the problem as worth paying for | Unknown | No revenue | Interviews and a free pilot before building paid features |
 | The market is small (about RM 1 million a year) and shrinking (enrolment down 5.4%) | Certain | Caps licence revenue | Sponsored rooms and reuse for other collections |
 | Schools prefer free ministry and Google tools | Medium | Slower sales | Position as an add-on at about RM 3 per pupil; keep the walk-through free |
 | School visits convert below 20% | Medium | Primary-school licences lose money in year 1 | Sell to independent schools first, where the margin is 82% |
-| No internet in the classroom | Medium | Demo fails | Bundle the 3D engine locally |
+| Unreliable classroom connectivity or unsupported devices | Medium | External fonts/references or graphics may fail | Use the already-bundled engine/covers, verify local serving and device/browser fallbacks |
 | A student team with limited time | High | Delays | Three-month scope limited to five books |
 
 ### Team
 
 Team name: Cultural Explorer, Southern University College.
 
-The repository shows four commit authors on `main`: Chia Yi Yu (4 commits), yxyy7788 (4), Lim Lu Haw (2) and Thngyh (2). The team has five members.
+Commit authors and counts are not a verified team roster. Member count, names, courses and roles should be supplied by the team; the financial calculator's five-person stipend case is an assumption, not roster evidence.
 
 **To be completed by the team before submission:** each member's full name, course, role in the project, and one relevant skill or experience. This plan does not invent them.
 
-What the commit history does show: within two days the team shipped a working 3D prototype, cover photography for all listed books, a class quiz, a bilingual interface, a README and this plan's supporting documents.
+The repository records an evolving 3D prototype, cover photography, a bilingual interface and supporting documents. The separate catalogue adds conventional browsing and sourced author information. A quiz existed in an earlier build but was removed; it is not current execution evidence.
 
 ---
 
@@ -399,3 +394,4 @@ Each page was opened on 14 November 2026 and the figure was found on it.
 ## Appendix B: how the figures were calculated
 
 Run `node financials.js > financials_output.txt` in this folder. The script holds every input from Appendix A and prints the market sizing, the month-by-month projection for each scenario, and the unit economics. No figure in this plan was calculated by hand.
+

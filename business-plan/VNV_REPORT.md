@@ -1,5 +1,9 @@
 # Verification and validation report
 
+> **Scope update:** the report below records checks against `a6d089c`, not the current prototype or the revised plan. Product statements such as 28 exhibited books, a shipped quiz, universal placeholders, no public demo and CDN-only rendering are historical. Use [PROJECT_STATUS.md](../PROJECT_STATUS.md) and the updated plan for current implementation.
+>
+> In this documentation refresh, `financials.js` was rerun and matched `financials_output.txt` ignoring trailing whitespace. Its assumptions were not changed. The standalone source now exhibits 20 records; the separate catalogue contains 38. Public file comparisons and catalogue logic checks passed, but no new browser/device checks or external market-source verification were performed. The original rubric rating and source checks below have not been re-certified for the revised plan.
+
 For `BUSINESS_PLAN.md`, run on 14 November 2026 against repository commit `a6d089c` (`origin/main`).
 
 Result in one line: 5 checks pass, 1 passes with a caveat, and the rubric coverage has 1 Strong, 3 Partial and 1 Missing-in-part criterion that cannot be fixed by writing.
@@ -100,3 +104,4 @@ Not checked: the features were confirmed to exist in the code at this commit, bu
 - Any cost figure against a real quote.
 - The independent-school figures against any source.
 - Whether judges can open the repository. The README says it is private.
+

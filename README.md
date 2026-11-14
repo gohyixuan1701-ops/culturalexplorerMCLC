@@ -1,54 +1,46 @@
-# The Digital Malaysian Chinese Literature Centre — 马华文学馆
+# Malaysian Chinese Literature Center — 马华文学馆
 
-The Digital Malaysian Chinese Literature Centre is a browser-based 3D exhibition of Malaysian Chinese literature. Visitors can walk through a virtual gallery, discover books and their English editions, and explore the history of Mahua literature.
+A browser-based Malaysian Chinese literature prototype by **Cultural Explorer**, built for the **SUC × FeedMe Startup Hackathon 2026**. Visitors can explore a 3D exhibition or browse a conventional library catalogue.
 
-Built for the **SUC × FeedMe Startup Hackathon 2026**. The repository is named `culturalexplorerMCLC`.
+## Open the demos
 
-## Explore the gallery
+| Experience | Public link | Contents |
+| --- | --- | --- |
+| Standalone 3D literature gallery | [Open the gallery](https://cultural-explorer-roan.vercel.app/) | 20 exhibits: 10 selected Centre publications and 10 English translations |
+| Library catalogue | [Browse the catalogue](https://mahua-literature-library.thngyh.chatgpt.site/) | 38 bibliographic records, filters, author information, and a local bookshelf |
+| Gallery bundled with the catalogue | [Enter the bundled gallery](https://mahua-literature-library.thngyh.chatgpt.site/gallery/) | The catalogue's separate 20-exhibit gallery snapshot |
 
-The current exhibition displays **20 books across two walls**:
+Both deployments are publicly accessible without login. The repository itself is private. A public demo is not evidence of customer adoption, institutional endorsement, or content-rights clearance.
 
-| Wall | Collection |
-| --- | --- |
-| Left | 10 selected publications from the Malaysian Chinese Literature Centre |
-| Right | 10 works of Malaysian Chinese literature published in English translation |
+**Source status:** this documentation was reviewed against `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef` and the catalogue source published from Sites commit `dda10f1916b65587d19fa9ecd6a95c17eff832a9`. The `library/` source is introduced in [PR #1](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/1); it was not yet merged into `main` at that review. Use a checkout containing `library/` for the catalogue instructions below.
 
-The source retains the Centre's larger publication list; `LOCAL_PICK` selects the 10 displayed on the left wall.
+## What is implemented
 
-### Features
+### Standalone gallery
 
-- A walkable 3D entrance and gallery with lighting, lanterns, display shelves, and book-cover photographs.
-- Animated flip-book previews with summaries and publication details.
-- English-edition information including translators, publishers, publication years, ISBNs, and source links.
-- Chinese and English interface options. Translated works show their English titles, summaries, and covers in English mode.
-- Search by Chinese or English title, author, Hanyu Pinyin, genre, year, series, translator, publisher, or ISBN.
-- A catalogue with genre filters for opening books directly, plus a clickable minimap and automatic travel through the gallery.
-- Author panels listing other displayed works by the same author.
-- A bilingual introduction to Mahua literature from 1919 onward, followed by the Centre's story and milestones.
-- A first-visit guide, keyboard controls, mouse and touch interaction, and responsive layouts.
+- A walkable 3D entrance and gallery, built with bundled Three.js r128.
+- Mirrored exhibition walls: 10 selected Centre publications on the left and 10 translated works on the right. The source retains 28 Centre records and 10 translation records; only the selected 20 are exhibited.
+- Cover photographs, flip-book summaries, publication details, and edition-source links. Flip books do not contain the complete literary texts.
+- Chinese and English interfaces; translated works can show their published English editions. Untranslated Centre titles and summaries remain Chinese.
+- Search by title, author, supported Pinyin readings, genre, year, translator, publisher, and ISBN; genre-filtered catalogue; minimap and automatic travel.
+- A first-visit guide, author-related-work panels, literature history, Centre milestones, and keyboard/mouse/touch controls.
+- Portrait-phone single-page reading and scrollable long pages in the latest standalone gallery. See [recorded deployment checks](qr/VNV_REPORT.md) for the exact snapshots tested.
 
-The flip books present information about each work; they do not contain the full literary texts.
+### Library catalogue
 
-## Public demo
+- All **38 records**, with cover images, grid/list layouts, search, genre/collection/edition filters, sorting, and pagination.
+- A globe language selector offering 中文 and EN, with browser-local language preference.
+- **28 author cards**. Seven authors have concise sourced profiles; other cards show clearly labelled catalogue edition years and genres. Source links are available from the cards.
+- A browser-local saved bookshelf. These are personal bookmarks, not borrowing records or saved classroom results.
+- A manual three-page feature board: collection overview, 3D visit, and English translations. Buttons, position dots, arrow keys, and touch swipes switch pages. The layout calculates a shared height across the pages and languages.
+- Larger readable type and touch targets; the full formal wordmark uses bold, seal-coloured M/C/L/C initials; the credit reads `by Cultural Explorer`.
+- Book-detail and source dialogs, the bundled gallery, and bilingual FeedMe Hackathon/mock-up terms in the footer.
 
-[Open The Digital Malaysian Chinese Literature Centre](https://cultural-explorer-roan.vercel.app/)
-
-The hosted demo is a deployment snapshot and may lag behind `main`. Use the local instructions below to inspect the repository version. QR images for the public address are in `qr/`.
-
-### Redeploying the public demo
-
-The address and the QR code stay the same. Only the files behind the address are replaced.
-
-1. Pull `main`.
-2. Publish these five files, and nothing else, to the **existing** Vercel project behind `cultural-explorer-roan.vercel.app`, as its production deployment: `index.html`, `cultural explorer.html`, `three.min.js`, `covers.js`, `covers-en.js`. A new project would get a new address, and the QR code would no longer lead to it.
-3. Open the address and check: it lands on the app, the name at the top left reads "The Digital Malaysian Chinese Literature Centre", the first book on each wall faces the other, and the table at the end of the corridor carries books only.
-4. Scan the QR code with a phone and open the history book at the end of the corridor.
-
-The latest entry in [qr/VNV_REPORT.md](qr/VNV_REPORT.md) lists the SHA-256 of each file, to compare with what the address serves.
+See [catalogue setup and editing](library/README.md) and [current project status](PROJECT_STATUS.md).
 
 ## Run locally
 
-You need a modern browser with WebGL enabled. GitHub access is required to clone this private repository. Python 3 is needed only for the local-server command.
+Requirements: GitHub repository access, Python 3 for the local server, and a modern browser. WebGL is required for the galleries. Node.js is used only for the optional logic and financial checks.
 
 ```bash
 git clone https://github.com/gohyixuan1701-ops/culturalexplorerMCLC.git
@@ -56,102 +48,113 @@ cd culturalexplorerMCLC
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-Open [http://localhost:8765/](http://localhost:8765/). The entry page redirects to `cultural explorer.html`.
+Open:
 
-There is no package installation or build step. You can also open the app HTML file directly. Keep `three.min.js`, `covers.js`, and `covers-en.js` beside it.
+- [Standalone gallery](http://localhost:8765/) — `index.html` redirects to `cultural explorer.html`.
+- [Catalogue](http://localhost:8765/library/dist/) — requires a checkout containing `library/`.
+- [Bundled gallery](http://localhost:8765/library/dist/gallery/).
 
-Three.js r128 is bundled locally, with cdnjs as a fallback if the local copy is missing. With all app files downloaded, the gallery does not require the CDN. External source links still require internet access.
+If your checkout does not contain the catalogue yet:
 
-## Controls
+```bash
+git fetch origin feat/mclc-library-mockup-20261114
+git switch --track origin/feat/mclc-library-mockup-20261114
+```
+
+There is no dependency-installation or build step. Serve the catalogue over HTTP because it fetches `books.json`; opening its HTML directly from the filesystem is insufficient. The standalone gallery can also be opened directly with its three companion JavaScript files beside it.
+
+### Checks
+
+From the repository root:
+
+```bash
+cd library
+node check.cjs
+```
+
+In a separate terminal, or after returning to the repository root:
+
+```bash
+cd business-plan
+node financials.js
+```
+
+The catalogue checks exercise application logic with a simulated document. They do not launch a browser or verify rendered dimensions, real touches, performance, or device compatibility. Financial output is a projection, not actual revenue.
+
+## Gallery controls
 
 | Action | Control |
 | --- | --- |
-| Walk forward / backward | `W` / `S` or up / down arrow keys |
-| Turn left / right | `A` / `D`, left / right arrow keys, or horizontal dragging |
-| Move or turn on a touch screen | On-screen arrow buttons |
-| Open the nearby highlighted exhibit | `Enter`, `E`, or the view button |
-| Open a book directly | Select it in the catalogue |
-| Travel to an exhibit | Select it in search, the minimap, or the scene |
-| Focus search | `/` while exploring |
-| Turn book pages | Left / right arrow keys, page buttons, or tapping a page |
-| Close the active book or overlay | `Esc` or its close control |
-| Reopen the welcome guide | `?` button |
+| Walk | W / S or up / down arrows |
+| Turn | A / D, left / right arrows, or horizontal dragging |
+| Move on a touch screen | On-screen arrow buttons |
+| Open the highlighted exhibit | Enter, E, or the View button |
+| Open a book from the in-gallery catalogue | Select its catalogue entry |
+| Travel to an exhibit | Search result, minimap, or scene selection |
+| Focus gallery search | / while exploring |
+| Turn an open book's pages | Page controls, left / right arrows, or page taps |
+| Close a book or overlay | Escape or its close control |
+| Reopen the welcome guide | ? button |
 
-Search normalizes case, full-width characters, spaces, and punctuation. Pinyin matching uses a character map maintained in the source.
+The standalone gallery uses a language toggle. The catalogue uses a globe menu; its bundled gallery retains its own gallery controls.
 
-## Project structure
+## Source structure
 
 ```text
 culturalexplorerMCLC/
-├── index.html                   # Hosting entry point
-├── cultural explorer.html       # App, styles, book data, history, and interactions
-├── three.min.js                 # Bundled Three.js r128
-├── covers.js                    # Chinese-edition cover photographs
-├── covers-en.js                 # English-edition cover photographs
-├── README.md                    # Project overview and usage
-├── JUDGING_CRITERIA.md           # Hackathon assessment rubric
-├── BUSINESS_MODEL.md             # Earlier business-model notes
-├── EVALUATION.md                 # Earlier development and evaluation notes
-├── business-plan/
-│   ├── BUSINESS_PLAN.md          # Detailed business plan
-│   ├── financials.js             # Financial assumptions and calculations
-│   ├── financials_output.txt     # Recorded calculation output
-│   └── VNV_REPORT.md             # Business-plan verification report
-└── qr/
-    ├── make_qr.py                # QR image generator
-    ├── cultural-explorer-qr.png
-    ├── cultural-explorer-qr-poster.png
-    └── VNV_REPORT.md             # Deployment and browser-check report
+├── index.html                    # Standalone gallery entry point
+├── cultural explorer.html        # Standalone app, data, scene, and interactions
+├── three.min.js                  # Bundled Three.js r128
+├── covers.js                     # Chinese cover data
+├── covers-en.js                  # English cover data
+├── library/
+│   ├── README.md                 # Catalogue setup, editing, and snapshot notes
+│   ├── VNV_REPORT.md             # Catalogue checks and their limits
+│   ├── check.cjs                 # Catalogue/feature/language logic checks
+│   └── dist/                     # Static catalogue deployment directory
+│       ├── index.html
+│       ├── app.js
+│       ├── styles.css
+│       ├── books.json
+│       ├── author-profiles.js
+│       ├── assets/               # 38 JPEG covers and favicon
+│       └── gallery/              # Separate bundled gallery snapshot
+├── PROJECT_STATUS.md             # Current feature and verification scope
+├── BUSINESS_MODEL.md             # Proposal summary; links to detailed plan
+├── EVALUATION.md                 # Current assessment and historical development log
+├── JUDGING_CRITERIA.md            # Hackathon rubric
+├── business-plan/                # Plan, financial calculator, recorded output/report
+└── qr/                           # QR images/generator and gallery deployment history
 ```
 
-The app uses HTML, CSS, vanilla JavaScript, Three.js, and the Canvas API. Language preference and welcome-guide completion are stored in browser local storage. No backend, account system, or database is included.
+## Editing and deployment
 
-## Editing the exhibition
+The standalone data is in `cultural explorer.html`: `MCLC_BOOKS`, `LOCAL_PICK`, `TRANSLATED`, `AUTHOR_EN`, `TEXT`, `PINYIN`, `MAHUA`, and `CENTRE`. Cover data is in `window.COVERS` / `window.COVERS_EN`. Comments mention `make-covers.py`, which is not included.
 
-The app data and rendering logic live in `cultural explorer.html`:
+The catalogue uses `library/dist/books.json`, `author-profiles.js`, and JPEG files in `assets/`. The two gallery copies and catalogue data are **not automatically synchronized**. Changing root gallery data does not update the catalogue or its bundled gallery. See [the catalogue README](library/README.md) before updating them.
 
-| Data or setting | Purpose |
-| --- | --- |
-| `MCLC_BOOKS` | Centre publications and Chinese summaries |
-| `LOCAL_PICK` | Selects the 10 Centre publications displayed |
-| `TRANSLATED` | Translated works and their English-edition metadata |
-| `ITEMS` | Exhibition list generated from the two collections |
-| `AUTHOR_EN` | English names used when available |
-| `TYPES`, `GENRE_EN`, `TEXT` | Series information, translated genres, and interface labels |
-| `PINYIN` | Character readings used by Pinyin search |
-| `MAHUA`, `CENTRE` | Literature history and Centre information |
+Pushing to GitHub does not automatically publish either demo:
 
-Cover images are embedded as data URLs in `window.COVERS` and `window.COVERS_EN`. Match their keys to each book's `cover` or `en.cover` field.
+- **Vercel gallery:** deploy only `index.html`, `cultural explorer.html`, `three.min.js`, `covers.js`, and `covers-en.js` to the existing project behind the public gallery address. Do not publish the entire repository. Compare served-file hashes and record the result in [qr/VNV_REPORT.md](qr/VNV_REPORT.md).
+- **Catalogue:** publish `library/dist/` to the existing Site. Its managed hosting identity and source repository are maintained separately from this GitHub repository. Preserve its public audience and address; verify the deployed assets and record checks in [library/VNV_REPORT.md](library/VNV_REPORT.md).
+- The current QR images point to the **standalone Vercel gallery**, not the catalogue. Changing a deployment's files does not retarget the QR code.
 
-Source comments refer to `make-covers.py`, but that generator is not included in this repository.
+## Limits and supporting documents
 
-## Current limits
+Neither experience implements a class quiz, full-text reading, Malay, accounts, lending, payments, teacher dashboards, or saved class results. The standalone AI question area is a label with no connected service. Its author introductions remain notices rather than biographies; the catalogue has the sourced profiles described above.
 
-- The 10 selected Centre publications retain Chinese titles and summaries when English translations are unavailable.
-- Author biographies are not written yet; panels show an introduction-coming-soon notice and related works.
-- The AI question area is a future-feature label with no connected service.
-- Malay, full-text reading, lesson packs, teacher dashboards, subscriptions, and payments are not implemented.
-- Phone-sized browser checks are documented, but real-device and classroom validation remain necessary.
-- Verification reports refer to particular snapshots. Their results should be checked against the version being demonstrated.
+The latest catalogue layout and shared-height behavior still require browser geometry and real-device checks. Historical browser reports apply only to their named snapshots. Public HTTP access and matching file hashes do not prove visual correctness.
 
-## Supporting documents
+- [Project status](PROJECT_STATUS.md): current features, source versions, and evidence boundaries.
+- [Business model](BUSINESS_MODEL.md) and [detailed plan](business-plan/BUSINESS_PLAN.md): proposed customers, pricing, forecasts, and roadmap.
+- [Financial verification](business-plan/VNV_REPORT.md): arithmetic and the original source-check record.
+- [Development notes](EVALUATION.md): current gaps and labelled historical rounds.
+- [Judging criteria](JUDGING_CRITERIA.md): unchanged hackathon scoring rubric.
 
-- [Business plan](business-plan/BUSINESS_PLAN.md): target customers, proposed pricing, market analysis, costs, and roadmap.
-- [Financial calculations](business-plan/financials.js): run `node financials.js` from `business-plan/` using Node.js to reproduce the projections.
-- [Business-plan verification](business-plan/VNV_REPORT.md): arithmetic checks, source checks, and unresolved assumptions.
-- [Demo verification](qr/VNV_REPORT.md): recorded deployment checks and testing limits.
-- [Judging criteria](JUDGING_CRITERIA.md): hackathon scoring rubric.
-
-Pricing, adoption rates, and financial projections are proposals rather than measured customer results. Earlier root-level business and evaluation documents describe previous versions.
+Prices, adoption rates, and forecasts are proposals. The repository does not establish completed customer interviews, school pilots, paid users, or formal partnerships.
 
 ## Sources and rights
 
-Centre publications and Chinese cover photographs are attributed to the Malaysian Chinese Literature Centre at Southern University College:
+Centre records and Chinese covers are attributed to the Malaysian Chinese Literature Center at Southern University College: [publications](https://www.southern.edu.my/mclc/chuban.php), [about](https://www.southern.edu.my/mclc/about.php), and [history](https://www.southern.edu.my/mclc/history/history.php). Translated editions and author profiles link to their individual sources.
 
-- [Publications](https://www.southern.edu.my/mclc/chuban.php)
-- [About the Centre](https://www.southern.edu.my/mclc/about.php)
-- [Centre history](https://www.southern.edu.my/mclc/history/history.php)
-
-Translated works include publisher or edition-source links in their records. The literature-history section includes its own further-reading sources.
-
-No project licence file or written permission record for third-party covers and literary content is included. Confirm usage rights before broader redistribution.
+No project licence or written third-party permission record is included. Cover and literary-content rights remain with their respective holders. The footer's mock-up terms do not grant redistribution rights or imply institutional endorsement.

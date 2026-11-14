@@ -1,20 +1,24 @@
 # Cultural Explorer: evaluation and business notes
 
-Project: The Digital Malaysian Chinese Literature Centre (马华文学馆).
+Project: Malaysian Chinese Literature Center (马华文学馆), by team Cultural Explorer.
 Goal: help the younger generation discover and inherit Malaysian Chinese culture through an interactive digital literature centre that teachers can use in class.
 
-Written 14 November 2026 against `cultural explorer.html`. Every number marked **assumption** is a placeholder for the pitch, not measured data.
+Current-status review: `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef`, plus the catalogue runtime from Sites source `dda10f1916b65587d19fa9ecd6a95c17eff832a9` in PR #1. See [PROJECT_STATUS.md](PROJECT_STATUS.md). The development rounds below are historical records; old counts, quiz features, placeholder descriptions and frame rates apply only to those rounds. Financial assumptions are not measured business results.
 
-## 1. What the app does today
+## 1. Current implementation
 
-- A walk-through corridor with 28 books published by the Malaysian Chinese Literature Centre, plus the Centre's own introduction and history on the end wall.
-- Each book opens as a flip book with a details panel.
-- Search bar, minimap with click-to-go, keyboard, mouse and touch controls.
-- Book catalogue, welcome guide and a two-team class quiz (new).
-- Chinese / English switch (new).
-- Clickable author names that open an author box (new, placeholder text).
+- Standalone gallery: 20 exhibits, with 10 selected Centre publications and 10 translated works on mirrored walls. Its data retains 28 Centre records and 10 translation records.
+- Cover photographs, flip-book summaries/details, search, minimap, automatic travel, catalogue/genre filters and a first-visit guide.
+- Chinese/English interfaces and English-edition metadata/summaries for translated records. Other Chinese titles and summaries remain Chinese; standalone author boxes still have introduction-coming-soon notices.
+- The separate catalogue in `library/` has all 38 records, 28 author cards (7 sourced profiles), grid/list browsing, filters, sorting, pagination and a local bookshelf.
+- Catalogue UI: globe language choices, three manually paged feature panels with shared-height sizing, larger type/touch targets, and FeedMe Hackathon/mock-up terms.
+- Public demos are linked in the [README](README.md). Three.js is bundled locally, with a CDN fallback when the local file is missing.
+- The class quiz was removed. Full texts, lesson packs, teacher dashboards, saved class results, payments, Malay and connected AI are not implemented.
+- The catalogue's bundled gallery is a separate older copy; standalone phone-book and mirrored-wall updates do not automatically reach it.
 
-## 2. What changed in this round
+## 2. Historical development rounds
+
+### First round: original interaction changes
 
 | Item from the group chat | Change | Checked in the browser |
 |---|---|---|
@@ -133,34 +137,38 @@ One thing tried and taken back: drawing all swaying lanterns as copies of one me
 
 Not checked: a real phone or tablet, Safari on iPhone, and an old classroom PC. The phone numbers above come from Chrome's phone emulation on a laptop, which slows the processor but not the graphics chip. To check a real device, open the page with `?debug=1`, walk the corridor, and read the tier and frames per second; if it is under 50, try `?tier=low`.
 
-## 3. Evaluation
+## 3. Current evaluation
 
 ### Strengths
-- Real content with a stated source (the Centre's publications page), so it is credible in front of judges and teachers.
-- One HTML file, no install and no build step. A teacher can open it on any classroom PC.
-- The corridor, flip book and minimap make a strong first impression in a demo.
 
-### Gaps against the pitch
-| Gap | Why it matters | Severity |
-|---|---|---|
-| Teaching features are thin: a team quiz exists, but no worksheet, lesson view or saved results | The business case is "teaching material used in class". The quiz covers facts about the books only | Major |
-| Content is 28 books from one publisher's list | The title says "culture museum"; the content is one bookshelf. Judges may ask where the culture is | Major |
-| No book excerpts or real covers | Students can read about a book but not read any of it. Needs permission from the Centre and the authors | Major |
-| English and author text are placeholders | Fine for the demo, must be replaced before any school sees it | Minor for the hackathon |
-| No Malay | Schools outside the Chinese stream need it | Minor for the hackathon |
-| three.js is loaded from the internet | The app shows a blank screen with no connection, which is common in classrooms | Minor, a quick fix |
-| The "AI chat" box is only a "coming next" label | Do not present it as a feature | Minor |
-| Not deployed, and the file name has a space | There is no public link to hand to judges | Minor, a quick fix |
-| No automated tests | Checks in section 2 were done by hand in one desktop browser. Phones and tablets were not tested | Minor |
+- Source-attributed literature records, real covers and publication/translation details.
+- A self-guided 3D exhibition plus conventional catalogue browsing for visitors who prefer a list/grid.
+- Static runtime files and public links without accounts; no package installation or build step.
+- Bilingual controls and a catalogue layout designed for larger text and touch targets.
 
-## 4. Suggested next steps (most valuable first)
+### Gaps against the proposed product
 
-1. **Deeper classroom content.** The team quiz is in. Next: one "lesson" per book with a short excerpt, comprehension questions, a discussion prompt and a printable worksheet. This is what turns the demo into the product you are pitching.
-2. **Deploy a public link.** Rename the file to `index.html` and publish it (GitHub Pages or Vercel).
-3. **Bundle three.js locally** so the app works offline.
-4. **Replace the placeholders** with real author introductions and English summaries.
-5. **Ask the Centre for permission** to use covers and short excerpts. Bring this up in the pitch as a partnership, not as a risk.
-6. **Add Malay** as a third language.
+| Gap | Why it matters |
+| --- | --- |
+| No full texts, permitted excerpts, lesson packs, quiz or saved class results | The proposed school licence requires teaching value that has not been implemented or demonstrated |
+| Rights and partnership status are unconfirmed | A public mock-up and source attribution do not establish permission or endorsement |
+| No recorded customer/pilot evidence | Willingness to use/pay and educational effectiveness remain untested |
+| Coverage differs by experience | The gallery exhibits 20 records; the catalogue contains 38; untranslated records remain Chinese |
+| Author coverage is partial | Seven catalogue profiles have sources; the root gallery still uses introduction notices |
+| Gallery/data copies diverge | Root, catalogue JSON and bundled gallery are maintained separately |
+| Real-device and visual acceptance remains incomplete | Earlier browser logs are snapshot-specific; current catalogue geometry/gestures need a recorded pass |
+| No Malay, teacher backend, account sync, lending or payments | These remain roadmap work |
+
+## 4. Next steps
+
+1. Validate both public experiences on actual devices, including text enlargement, the language menu, feature-panel height, long details and gallery page controls.
+2. Obtain written content permissions and complete missing translations/profiles with sources.
+3. Run teacher/student discovery trials with the currently available browsing experience; do not promise a quiz that is absent.
+4. Confirm demand before implementing permission-cleared excerpts, lessons, assessment and teacher results.
+5. Establish a repeatable data/gallery synchronization and deployment process.
+6. Validate prices, adoption assumptions and paid workflows before treating forecasts as traction.
+
+The gallery link and bundled engine already exist; they are no longer future implementation tasks.
 
 ## 5. Business plan sketch
 
@@ -204,3 +212,4 @@ Hosting is close to free at this size (one static page). The real costs are cont
 | Copyright on covers and excerpts | Partner with the Centre and publishers; start with summaries and author-approved excerpts |
 | Schools have little budget | Lead with sponsors and grants so pilot schools pay nothing in year 1 |
 | Teachers do not adopt it | Build lessons that fit one 30-minute period and need no preparation |
+

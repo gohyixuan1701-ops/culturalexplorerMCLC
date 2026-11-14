@@ -1,5 +1,17 @@
 # Public demo: verification and validation report
 
+## Current scope at the documentation refresh
+
+Reviewed standalone source: `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef`. The gallery has 20 exhibits (10 selected Centre publications and 10 translated records), mirrored walls and the latest root phone-reading changes. The class quiz is removed. Translated records have English summaries; other Chinese records retain Chinese text. Standalone author introductions remain notices.
+
+The five runtime files were fetched without login in this refresh. Each returned HTTP 200 and its Git blob hash matched the reviewed `main` file. The app was 192,846 bytes with SHA-256 `36f947d173b083fb7c31a6690610d38e89ec563fca46666f036e615e71da403b`, matching the last deployment entry below. This is source/access verification, not a rerun of the historical browser suites.
+
+The catalogue is a separate public deployment: https://mahua-literature-library.thngyh.chatgpt.site/ . Its embedded gallery is another snapshot. Its current checks and visual limitations are recorded in [library/VNV_REPORT.md](../library/VNV_REPORT.md). The QR files here still point to the standalone Vercel address; they do not open the catalogue.
+
+**Reading the log:** the original result table and early sections below describe a 28-book build with a quiz. Later dated updates supersede those feature claims and deployment statuses. Preserve their recorded results as historical evidence, not a current acceptance certificate. No new QR decode, browser session or real-device pass was performed in this documentation refresh.
+
+## Original deployment log
+
 Date: 14 November 2026
 Public address: https://cultural-explorer-roan.vercel.app
 QR code files: `qr/cultural-explorer-qr.png` (code only), `qr/cultural-explorer-qr-poster.png` (with title and address)
@@ -85,14 +97,14 @@ Extra checks on the laptop size, before the suite:
 
 ## 5. Before the event: team checklist
 
-1. Scan the QR code with an Android phone and an iPhone. Walk in, open a book, play one quiz.
+1. Scan the QR code with an Android phone and an iPhone. Walk in, open a book, turn its pages, and read the history book. The former quiz is no longer included.
 2. Scan it from inside WeChat as well, if participants are likely to use WeChat.
 3. Check it on the venue's Wi-Fi and on mobile data.
 4. On a slide, make the QR code large. A common rule of thumb is a code at least one tenth as wide as the scanning distance, for example 50 cm wide on the projected screen for people 5 m away. Test it from the back of the room.
 
 ## 6. Known limits of the demo
 
-- English book summaries and author introductions are not written; a note says so.
+- In the current gallery, translated works have English summaries; untranslated records retain Chinese summaries with a note. Standalone author introductions remain notices. Earlier entries below record the prior placeholder state.
 - Cover photos come from the Centre's website and there is no written permission yet. The team chose to publish with them.
 - The published copy is a snapshot. Later changes to the repository do not appear at the public address until it is deployed again.
 
@@ -245,3 +257,4 @@ Checks run on the local copy and again on the public address, with no failures a
 QR code: both images in `qr/` were decoded again and return `https://cultural-explorer-roan.vercel.app`.
 
 Not checked this time: tablet, landscape phone and small-phone sizes; walking controls, search and the author box (last tested at `f66e347`). Still never tested: a real phone, iPhone Safari, WeChat's built-in browser, and scanning the printed or projected code with a camera.
+

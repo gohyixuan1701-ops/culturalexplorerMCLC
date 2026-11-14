@@ -185,7 +185,7 @@
   .au{color:inherit;text-decoration:underline dotted;text-underline-offset:4px;cursor:pointer}
   .pg .au:hover{color:#b0362a} #panel .au:hover,#author .au:hover{color:var(--gold)}
 
-  /* ---------- Pop-up boxes: author, welcome guide, catalogue, class quiz ---------- */
+  /* ---------- Pop-up boxes: author, welcome guide, catalogue ---------- */
   #author,.overlay{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(8,6,4,.66);
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:16px}
   #author.show,.overlay.show{display:flex}
@@ -223,22 +223,6 @@
   #catBody li:hover{background:var(--hover)}
   #catBody li i{flex:none;width:8px;height:8px;border-radius:50%}
   #catBody li small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
-  /* class quiz: sized to be read from the back of a classroom */
-  .score{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 22px}
-  .team{border:2px solid transparent;border-radius:16px;padding:12px 18px;background:rgba(255,255,255,.05);
-    display:flex;justify-content:space-between;align-items:center;font-size:17px;font-weight:600;transition:border-color .2s,background-color .2s}
-  .team b{font:600 36px/1 var(--display);font-variant-numeric:tabular-nums} .team.red{color:#ff9d8f} .team.blue{color:#9cc4ff}
-  .team.turn{border-color:currentColor;background:rgba(255,255,255,.09)}
-  .qn{color:var(--muted);font-size:14px}
-  .qq{font:600 26px/1.4 var(--display);margin:8px 0 20px}
-  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-  .opts button{text-align:left;min-height:60px;padding:14px 18px;border-radius:16px;border:1px solid var(--line-strong);
-    background:rgba(255,255,255,.04);font-size:18px;line-height:1.35;cursor:pointer;transition:background-color .14s,transform .14s var(--ease)}
-  .opts button:hover:not(:disabled){background:var(--hover)} .opts button:active:not(:disabled){transform:scale(.985)}
-  .opts button.ok{background:#1f5f3a;border-color:#6fcf8a} .opts button.bad{background:#7a2a1f;border-color:#e0705e}
-  .opts button:disabled{cursor:default}
-  .fb{min-height:24px;font-size:15.5px;line-height:1.6;margin-bottom:16px}
-
   /* ---------- Smaller screens ---------- */
   @media (max-width:1180px){ #search{top:74px} #toast{top:130px} }          /* search gets its own row */
   @media (max-width:760px){
@@ -248,7 +232,7 @@
     .tool{height:44px} #helpBtn{width:44px} #closeBtn,.x,#authorClose{width:44px;height:44px;top:8px;right:8px} .chips button{height:40px}   /* finger-sized targets */
     #viewBtn{bottom:158px;max-width:calc(100vw - 32px)}
     #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
-    .arrow{width:54px;height:54px} .opts{grid-template-columns:1fr} .qq{font-size:21px}
+    .arrow{width:54px;height:54px}
     #authorBox,.box{padding:26px 20px 22px} }
   /* phones: the brand shrinks to its seal and the tools tighten, so both still share the top row */
   @media (max-width:560px){ .hud-title{padding:0 4px} .hud-title > div{display:none} }
@@ -261,7 +245,6 @@
 <div class="hud-title"><span class="seal-mark" aria-hidden="true">馆</span><div><b>Cultural Explorer</b><small id="sub"></small></div></div>
 <div id="tools">
   <button class="tool" id="catBtn"></button>
-  <button class="tool" id="quizBtn"></button>
   <button class="tool" id="langBtn" aria-label="Switch language"></button>
   <button class="tool" id="helpBtn">?</button>
 </div>
@@ -303,8 +286,6 @@
   <button class="x" data-close aria-label="Close">×</button><div id="guideBody"></div></div></div>
 <div class="overlay" id="cat"><div class="box" role="dialog" aria-modal="true">
   <button class="x" data-close aria-label="Close">×</button><div id="catBody"></div></div></div>
-<div class="overlay" id="quiz"><div class="box" role="dialog" aria-modal="true">
-  <button class="x" data-close aria-label="Close">×</button><div id="quizBody"></div></div></div>
 
 <script src="three.min.js"></script>
 <script>   // fallback if the local copy is missing: load the same file from the public CDN
@@ -486,23 +467,15 @@ const GENRE_EN = {'小说集':'Short stories', '诗集':'Poetry', '微型小说'
 const TEXT = {
   zh: {
     langBtn:'English', sub:'马华文学馆出版品与英译作品', searchPh:'搜索书名、作者…', none:'找不到相关书籍',
-    helpBtn:'使用说明', catBtn:'书目', quizBtn:'课堂问答',
+    helpBtn:'使用说明', catBtn:'书目',
     gTitle:'欢迎来到马华文学馆', gLead:'这是一座可以走进去的线上文学馆。左边的墙展出 10 本马华文学馆出版品，右边的墙展出 10 本已有英译本的马华文学作品。',
     translator:'译者', pubEn:'英译本出版社', yearEn:'英译本年份', kind:'译作类型', otherTitle:'英文书名', sourcePub:'出版资料',
     transBy:t => `${t} 译`, yearTag:y => `英译 ${y}`,
     gSteps:['<b>走动</b>：按 ↑ ↓（或 W S）前进后退，按 ← →（或拖动鼠标）转动视角。手机和平板请用右下角的按钮。',
       '<b>看书</b>：把鼠标指向身边的书，点击它（或按 Enter）翻开；点击远处的书会先走过去。点击作者名字可以看作者简介。',
-      '<b>找书</b>：用上方的搜索栏、左下角的小地图，或打开「书目」查看全部藏书。',
-      '<b>上课</b>：老师可以打开「课堂问答」，让全班分成两队比赛。'],
+      '<b>找书</b>：用上方的搜索栏、左下角的小地图，或打开「书目」查看全部藏书。'],
     gStart:'开始参观',
     catTitle:'馆藏书目', catLead:n => `共 ${n} 本。点击任何一本书，就会直接翻开。`, all:'全部',
-    qTitle:'课堂问答', qLead:'全班分成红、蓝两队，题目来自馆内的藏书。',
-    qRules:['两队轮流作答，每题四个选项。', '队伍讨论后说出答案，由老师点击选项。', '答对得 1 分，分数高的一队获胜。'],
-    qStart:n => `开始（${n} 题）`, teams:['红队', '蓝队'], qNum:(k, n) => `第 ${k} / ${n} 题`, qTurn:t => `${t}作答`,
-    qText:{author:t => `${t}的作者是谁？`, year:t => `${t}是哪一年出版的？`, genre:t => `${t}属于哪一类作品？`,
-      book:a => `以下哪一本书是${a}的作品？`},
-    qRight:t => `✓ 答对了！${t}得 1 分。`, qWrong:'✗ 答错了，正确答案已标出。', qNext:'下一题', qFinish:'看结果',
-    qWin:t => `${t}获胜！`, qTie:'平手！两队一样棒。', qAgain:'再玩一次', qClose:'回到文学馆',
     welcome:'按 ↑ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学简史…', view:'查看：',
     centreName:'马华文学简史与文学馆简介', centreWhere:'走廊尽头',
     details:'书籍资料', summary:'内容简介', author:'作者', genre:'类别', publisher:'出版社', year:'出版年份', series:'书系',
@@ -515,23 +488,15 @@ const TEXT = {
   },
   en: {
     langBtn:'中文', sub:'Centre publications and English translations', searchPh:'Search title, author…', none:'No matching books',
-    helpBtn:'How to use', catBtn:'Catalogue', quizBtn:'Class quiz',
+    helpBtn:'How to use', catBtn:'Catalogue',
     gTitle:'Welcome to the Literature Centre', gLead:'This is an online literature centre you can walk through. The left wall shows 10 books published by the Malaysian Chinese Literature Centre. The right wall shows 10 works of Malaysian Chinese literature that have been published in English.',
     translator:'Translator', pubEn:'Publisher', yearEn:'Year', kind:'Type', otherTitle:'Chinese title', sourcePub:'Publication record',
     transBy:t => `Translated by ${t}`, yearTag:y => String(y),
     gSteps:['<b>Walk</b>: press ↑ ↓ (or W S) to move and ← → (or drag the mouse) to look around. On a phone or tablet, use the buttons at the bottom right.',
       '<b>Read</b>: point at a book near you and click it (or press Enter) to open it. Click a book further away to walk to it first. Click the author\'s name to read about the author.',
-      '<b>Find</b>: use the search bar at the top, the minimap at the bottom left, or open the Catalogue to see every book.',
-      '<b>Teach</b>: teachers can open the Class quiz and let the class compete in two teams.'],
+      '<b>Find</b>: use the search bar at the top, the minimap at the bottom left, or open the Catalogue to see every book.'],
     gStart:'Start exploring',
     catTitle:'Book catalogue', catLead:n => `${n} books. Click any book to open it.`, all:'All',
-    qTitle:'Class quiz', qLead:'Split the class into a red team and a blue team. The questions come from the books in the Centre.',
-    qRules:['Teams take turns. Each question has four options.', 'The team agrees on an answer and the teacher clicks it.', 'A correct answer scores 1 point. The higher score wins.'],
-    qStart:n => `Start (${n} questions)`, teams:['Red team', 'Blue team'], qNum:(k, n) => `Question ${k} of ${n}`, qTurn:t => `${t} to answer`,
-    qText:{author:t => `Who wrote ${t}?`, year:t => `In which year was ${t} published?`, genre:t => `What kind of work is ${t}?`,
-      book:a => `Which of these books is by ${a}?`},
-    qRight:t => `✓ Correct! 1 point to the ${t}.`, qWrong:'✗ Not quite. The correct answer is marked.', qNext:'Next question', qFinish:'See the result',
-    qWin:t => `The ${t} wins!`, qTie:'It\'s a tie! Well played, both teams.', qAgain:'Play again', qClose:'Back to the Centre',
     welcome:'Press ↑ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the history of Mahua literature…', view:'View: ',
     centreName:'History of Mahua literature, and the Centre', centreWhere:'end of the corridor',
     details:'Book details', summary:'Summary', author:'Author', genre:'Genre', publisher:'Publisher', year:'Year', series:'Series',
@@ -1183,7 +1148,7 @@ const keys = {};
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;                  // typing in the search bar
   if (authorEl.classList.contains('show')) { if (e.code === 'Escape') closeAuthor(); return; }   // author box is on top
-  if (overlayOpen()) { if (e.code === 'Escape') closeOverlays(); return; }                       // guide / catalogue / quiz
+  if (overlayOpen()) { if (e.code === 'Escape') closeOverlays(); return; }                       // guide / catalogue
   if ((e.key === '/' || e.code === 'Slash') && !panelOpen) { qInput.focus(); e.preventDefault(); return; }
   // while the book is open, ← → turn its pages instead of the camera
   if (stage.classList.contains('show') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
@@ -1766,7 +1731,7 @@ document.addEventListener('click', e => {
 document.getElementById('authorClose').addEventListener('click', closeAuthor);
 authorEl.addEventListener('click', e => { if (e.target === authorEl) closeAuthor(); });   // click outside the box
 
-/* ---------------- Pop-up boxes: welcome guide, catalogue, class quiz ---------------- */
+/* ---------------- Pop-up boxes: welcome guide, catalogue ---------------- */
 const overlays = [...document.querySelectorAll('.overlay')];
 const overlayOpen = () => overlays.some(o => o.classList.contains('show'));
 function openOverlay(id){
@@ -1816,84 +1781,6 @@ catBody.addEventListener('click', e => {
 });
 document.getElementById('catBtn').addEventListener('click', () => { renderCat(); openOverlay('cat'); });
 
-// Class quiz: two teams take turns; questions are generated from the book data, so they are always correct
-const quizBody = document.getElementById('quizBody'), TEAM_CLASS = ['red', 'blue'];
-let quiz = null;                                   // {qs, k: question number, score: [red, blue], picked: option chosen}
-const mainTitle = it => it.title.split('：')[0];   // subtitles often name the author or genre, which would give the answer away
-function shuffle(a){
-  a = a.slice();
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-// the right answer plus up to three different wrong ones
-const options = (right, pool) => shuffle([right, ...shuffle([...new Set(pool)].filter(v => v !== right)).slice(0, 3)]);
-function buildQuestions(n){
-  const qs = [];
-  ITEMS.forEach((it, i) => {
-    // answers are kept as data (author string, year, genre, book number) and written out in the language chosen when shown
-    const title = mainTitle(it), authors = it.author.split('、'), giveaway = authors.some(a => it.title.includes(a));
-    if (!giveaway) qs.push({i, kind:'author', right:it.author, opts:options(it.author, ITEMS.map(x => x.author))});
-    if (!it.en)    // a translated work only records the year of its English edition, so it gets no year question
-      qs.push({i, kind:'year', right:it.year, opts:options(it.year, ITEMS.filter(x => !x.en).map(x => x.year)).sort((a, b) => a - b)});
-    if (!/诗|小说|散文|文集|论/.test(title))
-      qs.push({i, kind:'genre', right:it.genre, opts:options(it.genre, ITEMS.map(x => x.genre))});
-    if (!giveaway && authors.length === 1)
-      qs.push({i, kind:'book', right:i,
-        opts:options(i, ITEMS.map((x, j) => j).filter(j => !ITEMS[j].author.split('、').includes(it.author)))});
-  });
-  const used = new Set();                          // one question per book
-  return shuffle(qs).filter(q => !used.has(q.i) && used.add(q.i)).slice(0, n);
-}
-function scoreHTML(turn){
-  return `<div class="score">${TEAM_CLASS.map((c, j) => `<div class="team ${c} ${j === turn ? 'turn' : ''}">
-    <span>${L('teams')[j]}${j === turn ? ' ◀' : ''}</span><b>${quiz.score[j]}</b></div>`).join('')}</div>`;
-}
-function quizSetup(){
-  quiz = null;
-  quizBody.innerHTML = `<h2>${L('qTitle')}</h2><p class="lead">${L('qLead')}</p>
-    <ol class="steps">${L('qRules').map(s => `<li>${s}</li>`).join('')}</ol>
-    <div class="row"><button class="btn" data-n="6">${L('qStart')(6)}</button>
-      <button class="btn ghost" data-n="10">${L('qStart')(10)}</button></div>`;
-}
-function quizShow(){
-  const q = quiz.qs[quiz.k], turn = quiz.k % 2, done = quiz.picked !== null, team = L('teams')[turn];
-  const book = ITEMS[q.i];
-  const names = s => s.split('、').map(authorName).join(LANG === 'en' ? ', ' : '、');
-  const quizTitle = it => isEn(it) ? it.en.title.split(': ')[0] : `《${mainTitle(it)}》`;
-  const show = v => q.kind === 'genre' ? (LANG === 'en' ? GENRE_EN[v] || v : v) : q.kind === 'author' ? names(v)
-    : q.kind === 'book' ? quizTitle(ITEMS[v]) : String(v);
-  const ask = q.kind === 'book' ? names(book.author) : quizTitle(book);
-  const mark = (v, j) => !done ? '' : v === q.right ? 'ok' : j === quiz.picked ? 'bad' : '';
-  quizBody.innerHTML = `<h2>${L('qTitle')}</h2>${scoreHTML(done ? -1 : turn)}
-    <div class="qn">${L('qNum')(quiz.k + 1, quiz.qs.length)} · ${L('qTurn')(team)}</div>
-    <div class="qq">${esc(L('qText')[q.kind](ask))}</div>
-    <div class="opts">${q.opts.map((v, j) => `<button data-o="${j}" class="${mark(v, j)}" ${done ? 'disabled' : ''}>${'ABCD'[j]}. ${esc(show(v))}${
-      mark(v, j) === 'ok' ? ' ✓' : mark(v, j) === 'bad' ? ' ✗' : ''}</button>`).join('')}</div>
-    <div class="fb">${!done ? '' : (q.opts[quiz.picked] === q.right ? L('qRight')(team) : L('qWrong')) +
-      (LANG === 'zh' || isEn(book) ? `<br><span class="ph">${esc(bookName(book))}${LANG === 'zh' ? '：' : ': '}${esc(summaryOf(book))}</span>` : '')}</div>
-    ${done ? `<div class="row"><button class="btn" id="qNext">${quiz.k + 1 < quiz.qs.length ? L('qNext') : L('qFinish')}</button></div>` : ''}`;
-}
-function quizEnd(){
-  const [a, b] = quiz.score;
-  quizBody.innerHTML = `<h2>${L('qTitle')}</h2>${scoreHTML(-1)}
-    <div class="qq">${a === b ? L('qTie') : L('qWin')(L('teams')[a > b ? 0 : 1])}</div>
-    <div class="row"><button class="btn" id="qAgain">${L('qAgain')}</button>
-      <button class="btn ghost" data-close>${L('qClose')}</button></div>`;
-  quiz = null;
-}
-quizBody.addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.n) { quiz = {qs:buildQuestions(+b.dataset.n), k:0, score:[0, 0], picked:null}; quizShow(); }
-  else if (b.dataset.o && quiz && quiz.picked === null) {
-    quiz.picked = +b.dataset.o;
-    if (quiz.qs[quiz.k].opts[quiz.picked] === quiz.qs[quiz.k].right) quiz.score[quiz.k % 2]++;
-    quizShow();
-  }
-  else if (b.id === 'qNext') { quiz.k++; quiz.picked = null; quiz.k < quiz.qs.length ? quizShow() : quizEnd(); }
-  else if (b.id === 'qAgain') quizSetup();
-});
-document.getElementById('quizBtn').addEventListener('click', () => { if (!quiz) quizSetup(); openOverlay('quiz'); });   // a quiz in progress resumes
-
 /* ---------------- Language switch ---------------- */
 const langBtn = document.getElementById('langBtn');
 function applyLang(){
@@ -1902,7 +1789,6 @@ function applyLang(){
   document.getElementById('sub').textContent = L('sub');
   document.getElementById('bkDetails').textContent = L('details');
   document.getElementById('catBtn').textContent = L('catBtn');
-  document.getElementById('quizBtn').textContent = L('quizBtn');
   document.getElementById('helpBtn').setAttribute('aria-label', L('helpBtn'));
   document.getElementById('helpBtn').title = L('helpBtn');
   qInput.placeholder = L('searchPh');

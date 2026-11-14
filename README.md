@@ -1,101 +1,146 @@
 # Cultural Explorer — 马华文学馆
 
-Cultural Explorer is a browser-based 3D gallery introducing Malaysian Chinese literature through the publications of the Malaysian Chinese Literature Centre (马华文学馆). The repository is named `feedme`.
+Cultural Explorer is a browser-based 3D exhibition of Malaysian Chinese literature. Visitors can walk through a virtual gallery, discover books and their English editions, and explore the history of Mahua literature.
 
-Students and teachers can walk through a virtual exhibition, discover books, open animated book previews, and play a two-team classroom quiz.
+Built for the **SUC × FeedMe Startup Hackathon 2026**. The repository is named `feedme`.
 
-## Current features
+## Explore the gallery
 
-- A 3D entrance plaza and exhibition corridor built with Three.js.
-- 28 books across three series: MCLC Publications (6), Creative Writing Series (20), and MCLC Academic Series (2).
-- Embedded cover photographs, with generated covers as a fallback.
-- Animated flip-book previews containing titles, summaries, authors, publication years, genres, and publishers. These previews do not contain the full books.
-- A searchable catalogue with genre filters, plus a clickable minimap and automatic travel to exhibits.
-- An introduction to the Centre and its history, accessible from the end-wall signboard.
-- Chinese and English interface options. Book titles remain in Chinese; content translation is incomplete.
-- Clickable author names with links to their other books in the collection. Biographies are placeholders.
-- A red-team versus blue-team quiz with 6 or 10 questions generated from book metadata.
-- A first-visit guide, keyboard controls, mouse/touch interaction, and responsive interface layouts.
+The current exhibition displays **20 books across two walls**:
+
+| Wall | Collection |
+| --- | --- |
+| Left | 10 selected publications from the Malaysian Chinese Literature Centre |
+| Right | 10 works of Malaysian Chinese literature published in English translation |
+
+The source retains the Centre's larger publication list; `LOCAL_PICK` selects the 10 displayed on the left wall.
+
+### Features
+
+- A walkable 3D entrance and gallery with lighting, lanterns, display shelves, and book-cover photographs.
+- Animated flip-book previews with summaries and publication details.
+- English-edition information including translators, publishers, publication years, ISBNs, and source links.
+- Chinese and English interface options. Translated works show their English titles, summaries, and covers in English mode.
+- Search by Chinese or English title, author, Hanyu Pinyin, genre, year, series, translator, publisher, or ISBN.
+- A catalogue with genre filters for opening books directly, plus a clickable minimap and automatic travel through the gallery.
+- Author panels listing other displayed works by the same author.
+- A bilingual introduction to Mahua literature from 1919 onward, followed by the Centre's story and milestones.
+- A first-visit guide, keyboard controls, mouse and touch interaction, and responsive layouts.
+
+The flip books present information about each work; they do not contain the full literary texts.
+
+## Public demo
+
+[Open Cultural Explorer](https://cultural-explorer-roan.vercel.app/)
+
+The hosted demo is a deployment snapshot and may lag behind `main`. Use the local instructions below to inspect the repository version. QR images for the public address are in `qr/`.
 
 ## Run locally
 
-### Requirements
-
-- A modern browser with WebGL enabled.
-- Internet access to load Three.js r128 from cdnjs.
-- Git to clone the repository, or download its ZIP from GitHub.
-- Python 3 if using the local server below.
-
-The repository is private, so cloning requires a GitHub account with access.
+You need a modern browser with WebGL enabled. GitHub access is required to clone this private repository. Python 3 is needed only for the local-server command.
 
 ```bash
 git clone https://github.com/gohyixuan1701-ops/feedme.git
 cd feedme
-python3 -m http.server 8000 --bind 127.0.0.1
+python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-Open [Cultural Explorer locally](http://localhost:8000/cultural%20explorer.html).
+Open [http://localhost:8765/](http://localhost:8765/). The entry page redirects to `cultural explorer.html`.
 
-There is no package installation or build step. You can also open `cultural explorer.html` directly in a browser. Keep `covers.js` beside it so the cover photographs can load. Internet access is still required for Three.js.
+There is no package installation or build step. You can also open the app HTML file directly. Keep `three.min.js`, `covers.js`, and `covers-en.js` beside it.
+
+Three.js r128 is bundled locally, with cdnjs as a fallback if the local copy is missing. With all app files downloaded, the gallery does not require the CDN. External source links still require internet access.
 
 ## Controls
 
 | Action | Control |
 | --- | --- |
 | Walk forward / backward | `W` / `S` or up / down arrow keys |
-| Turn left / right | `A` / `D`, left / right arrow keys, or drag horizontally on the scene |
+| Turn left / right | `A` / `D`, left / right arrow keys, or horizontal dragging |
 | Move or turn on a touch screen | On-screen arrow buttons |
 | Open the nearby highlighted exhibit | `Enter`, `E`, or the view button |
-| Travel to an exhibit | Select a book in search, the catalogue, the minimap, or the 3D scene |
+| Open a book directly | Select it in the catalogue |
+| Travel to an exhibit | Select it in search, the minimap, or the scene |
 | Focus search | `/` while exploring |
-| Turn book pages | Left / right arrow keys or the book's page controls |
-| Close an active book or overlay | `Esc` or its close button |
+| Turn book pages | Left / right arrow keys, page buttons, or tapping a page |
+| Close the active book or overlay | `Esc` or its close control |
 | Reopen the welcome guide | `?` button |
 
-Search supports titles, authors, years, genres, and series. It normalizes case, full-width characters, spaces, and punctuation.
+Search normalizes case, full-width characters, spaces, and punctuation. Pinyin matching uses a character map maintained in the source.
 
-## Repository contents
+## Project structure
 
 ```text
 feedme/
-├── cultural explorer.html  # App markup, styles, book data, scene, and interaction logic
-├── covers.js               # Embedded cover photographs in window.COVERS
-├── BUSINESS_MODEL.md       # Proposed customers, pricing, revenue, and validation plan
-├── EVALUATION.md           # Development notes, reported checks, gaps, and next steps
-└── README.md               # Project overview and usage guide
+├── index.html                   # Hosting entry point
+├── cultural explorer.html       # App, styles, book data, history, and interactions
+├── three.min.js                 # Bundled Three.js r128
+├── covers.js                    # Chinese-edition cover photographs
+├── covers-en.js                 # English-edition cover photographs
+├── README.md                    # Project overview and usage
+├── JUDGING_CRITERIA.md           # Hackathon assessment rubric
+├── BUSINESS_MODEL.md             # Earlier business-model notes
+├── EVALUATION.md                 # Earlier development and evaluation notes
+├── business-plan/
+│   ├── BUSINESS_PLAN.md          # Detailed business plan
+│   ├── financials.js             # Financial assumptions and calculations
+│   ├── financials_output.txt     # Recorded calculation output
+│   └── VNV_REPORT.md             # Business-plan verification report
+└── qr/
+    ├── make_qr.py                # QR image generator
+    ├── cultural-explorer-qr.png
+    ├── cultural-explorer-qr-poster.png
+    └── VNV_REPORT.md             # Deployment and browser-check report
 ```
 
-The app uses HTML, CSS, vanilla JavaScript, Three.js r128, and the Canvas API. No backend, account system, or database is included. Language preference and welcome-guide completion are stored in browser local storage. Quiz scores are held in memory and are not saved after reload.
+The app uses HTML, CSS, vanilla JavaScript, Three.js, and the Canvas API. Language preference and welcome-guide completion are stored in browser local storage. No backend, account system, or database is included.
 
-## Editing content
+## Editing the exhibition
 
-- Edit `ITEMS` in `cultural explorer.html` to update books and their metadata. Exhibit positions are calculated from that list.
-- Edit `TYPES`, `GENRE_EN`, and `TEXT` to update series information, translated genres, and interface labels.
-- Update the Centre information in the same HTML file when its history or facilities change.
-- Cover photographs are stored as image data URLs in `covers.js`, keyed by each book's `cover` filename. Source comments refer to a generator named `make-covers.py`, but that script is not included in this repository.
+The app data and rendering logic live in `cultural explorer.html`:
 
-## Prototype limits
+| Data or setting | Purpose |
+| --- | --- |
+| `MCLC_BOOKS` | Centre publications and Chinese summaries |
+| `LOCAL_PICK` | Selects the 10 Centre publications displayed |
+| `TRANSLATED` | Translated works and their English-edition metadata |
+| `ITEMS` | Exhibition list generated from the two collections |
+| `AUTHOR_EN` | English names used when available |
+| `TYPES`, `GENRE_EN`, `TEXT` | Series information, translated genres, and interface labels |
+| `PINYIN` | Character readings used by Pinyin search |
+| `MAHUA`, `CENTRE` | Literature history and Centre information |
 
-- English summaries and author biographies contain placeholder text. English Centre content is incomplete, and Malay is not implemented.
-- The AI chat area is a future-feature label; no AI service is connected.
-- Quizzes test book metadata, rather than comprehension of the literary texts.
-- Lesson packs, printable worksheets, teacher dashboards, saved class results, subscriptions, and payments are proposed features rather than implemented functionality.
-- Full offline use requires bundling Three.js locally and changing its script reference.
-- No automated tests or CI configuration are included. `EVALUATION.md` records earlier browser checks; those results should be rechecked on target devices.
-- Some evaluation notes predate the cover-photo implementation. Use the current source as the reference for implemented behavior.
+Cover images are embedded as data URLs in `window.COVERS` and `window.COVERS_EN`. Match their keys to each book's `cover` or `en.cover` field.
 
-## Documentation and direction
+Source comments refer to `make-covers.py`, but that generator is not included in this repository.
 
-See [EVALUATION.md](EVALUATION.md) for development notes and [BUSINESS_MODEL.md](BUSINESS_MODEL.md) for the proposed school-licensing and sponsored-exhibition model. Pricing and adoption targets are proposals. The business document also notes that its cited market figures need confirmation against the original sources before external use.
+## Current limits
 
-Suggested priorities are replacing placeholder content, securing permission for literary excerpts, adding classroom lesson materials, testing real classroom devices, and publishing a hosted demo. A conventional static-site entry point would be `index.html`; the current entry point is `cultural explorer.html`.
+- The 10 selected Centre publications retain Chinese titles and summaries when English translations are unavailable.
+- Author biographies are not written yet; panels show an introduction-coming-soon notice and related works.
+- The AI question area is a future-feature label with no connected service.
+- Malay, full-text reading, lesson packs, teacher dashboards, subscriptions, and payments are not implemented.
+- Phone-sized browser checks are documented, but real-device and classroom validation remain necessary.
+- Verification reports refer to particular snapshots. Their results should be checked against the version being demonstrated.
 
-## Content sources and rights
+## Supporting documents
 
-Book metadata and cover photographs are attributed in the code to the Malaysian Chinese Literature Centre at Southern University College:
+- [Business plan](business-plan/BUSINESS_PLAN.md): target customers, proposed pricing, market analysis, costs, and roadmap.
+- [Financial calculations](business-plan/financials.js): run `node financials.js` from `business-plan/` using Node.js to reproduce the projections.
+- [Business-plan verification](business-plan/VNV_REPORT.md): arithmetic checks, source checks, and unresolved assumptions.
+- [Demo verification](qr/VNV_REPORT.md): recorded deployment checks and testing limits.
+- [Judging criteria](JUDGING_CRITERIA.md): hackathon scoring rubric.
+
+Pricing, adoption rates, and financial projections are proposals rather than measured customer results. Earlier root-level business and evaluation documents describe previous versions.
+
+## Sources and rights
+
+Centre publications and Chinese cover photographs are attributed to the Malaysian Chinese Literature Centre at Southern University College:
 
 - [Publications](https://www.southern.edu.my/mclc/chuban.php)
 - [About the Centre](https://www.southern.edu.my/mclc/about.php)
 - [Centre history](https://www.southern.edu.my/mclc/history/history.php)
 
-The repository does not include a licence file or documentation of permission to redistribute third-party covers or literary content. Confirm those permissions before broader publication or reuse.
+Translated works include publisher or edition-source links in their records. The literature-history section includes its own further-reading sources.
+
+No project licence file or written permission record for third-party covers and literary content is included. Confirm usage rights before broader redistribution.

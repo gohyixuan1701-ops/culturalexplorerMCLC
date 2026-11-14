@@ -556,9 +556,51 @@ if (!window.THREE) {   // three.js comes from the internet: say so when it canno
     无法载入 3D 引擎，请检查网络连接后重新整理页面。<br>The 3D engine could not be loaded. Check the internet connection and reload the page.</div>`);
   throw new Error('three.js not loaded');
 }
+/* ---------------- Device tier: decided before the renderer exists ---------------- */
+// Edge smoothing and the number of lights are fixed once the renderer and its shaders are built (changing the light count
+// later would rebuild every shader), so the device is sized up first. Force a tier with ?tier=low, ?tier=medium or ?tier=high.
+const QS = new URLSearchParams(location.search);
+const DEBUG = +QS.get('debug') || 0;   // ?debug=1 shows the performance overlay; ?debug=2 also waits for the graphics chip each frame
+const DEVICE = (() => {
+  const d = {touch:matchMedia('(pointer: coarse)').matches, shortSide:Math.min(screen.width, screen.height),
+    dpr:window.devicePixelRatio || 1, cores:navigator.hardwareConcurrency || 0, mem:navigator.deviceMemory || 0, gpu:''};   // 0: the browser does not say
+  try {                                                      // name of the graphics chip, read from a throwaway context
+    const gl = document.createElement('canvas').getContext('webgl'), info = gl.getExtension('WEBGL_debug_renderer_info');
+    d.gpu = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '').toLowerCase();
+    const lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();
+  } catch (e) {}
+  return d;
+})();
+function pickTier(d){
+  const few = (n, limit) => n > 0 && n <= limit;             // "known and small"
+  if (/swiftshader|llvmpipe|softpipe|software|basic render/.test(d.gpu)) return 'low';          // no graphics chip: the processor draws
+  if (d.touch && d.shortSide < 600) {                        // phone: low, unless it is clearly a flagship
+    const strong = /apple|adreno \(tm\) (6[4-9]|[78])\d|mali-g(7\d|[67]1\d|720)|immortalis|xclipse/.test(d.gpu);
+    return strong && !few(d.mem, 3) ? 'medium' : 'low';
+  }
+  if (d.touch)                                               // tablet
+    return few(d.mem, 3) || few(d.cores, 4) && !/apple/.test(d.gpu) || /mali-[t4]|adreno \(tm\) [1-5]\d\d|powervr/.test(d.gpu) ? 'low' : 'medium';
+  // desktop or laptop: go by the graphics chip when its name is recognised, otherwise by processor cores and memory
+  if (/\bhd graphics( [2-5]\d{3})?(?! \d)|\bgma\b|mobile intel|express chipset|radeon hd|geforce (gt )?[2-7]\d\dm?\b/.test(d.gpu)
+      || few(d.cores, 2) || few(d.mem, 2)) return 'low';
+  if (/\buhd graphics|\bhd graphics [56]\d\d\b|iris(\((r|tm)\))? (plus|pro)|vega [368]\b|radeon r[5-7]\b|radeon\(tm\) graphics|geforce (mx|gt )|mali|adreno|powervr/.test(d.gpu)
+      || few(d.cores, 4) || few(d.mem, 4) || !d.gpu && !d.cores) return 'medium';   // nothing known: stay in the middle
+  return 'high';
+}
+const TIER = ['low', 'medium', 'high'].includes(QS.get('tier')) ? QS.get('tier') : pickTier(DEVICE);
+// scale: most canvas pixels per screen pixel · lights: lamps that really light the room (the others only glow) ·
+// tex: size of the painted textures · detail: fine surface relief · fpsCap: frames per second limit on fast phone screens
+const QUALITY = {
+  high:   {scale:2,    lights:12, dust:420, aniso:8, tex:1,  detail:true,  fpsCap:0},
+  medium: {scale:1.5,  lights:7,  dust:260, aniso:4, tex:1,  detail:true,  fpsCap:0},
+  low:    {scale:1.25, lights:4,  dust:140, aniso:2, tex:.5, detail:false, fpsCap:60}
+}[TIER];
+const ANTIALIAS = TIER !== 'low' && DEVICE.dpr < 2;          // dense screens hide jagged edges by themselves
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({canvas, antialias:ANTIALIAS, stencil:false,
+  powerPreference:TIER === 'low' ? 'default' : 'high-performance'});
+let renderScale = Math.min(DEVICE.dpr, QUALITY.scale);
+renderer.setPixelRatio(renderScale);
 // colour-managed output with filmic tone mapping: lights blend and roll off like a camera, not like a 1990s game
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
@@ -569,7 +611,7 @@ const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 130);
 const EYE = 1.6, Z_START = 10, HALF_W = 2.5, LEN_FRONT = 4, WALL_H = 3.6;
 // corridor grows with the collection, plus an empty stretch before the end-wall signboard
 const LAST_BOOK_Z = ITEMS[ITEMS.length - 1].z;
-const LEN_BACK = LAST_BOOK_Z - 12, Z_END = LEN_BACK + 3;
+const LEN_BACK = LAST_BOOK_Z - 4.2, Z_END = LEN_BACK + 2.6;   // the corridor ends just past the last book: only standing room before the end wall
 const corridorLen = LEN_FRONT - LEN_BACK, midZ = (LEN_FRONT + LEN_BACK) / 2;
 camera.position.set(0, EYE, Z_START);
 
@@ -581,11 +623,14 @@ function resize(){
 addEventListener('resize', resize); resize();
 
 /* ---------------- Building blocks ---------------- */
-const MAX_ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-// A texture painted on a canvas; rx / ry > 0 make it repeat
+const MAX_ANISO = Math.min(QUALITY.aniso, renderer.capabilities.getMaxAnisotropy());
+// A texture painted on a canvas; rx / ry > 0 make it repeat. draw() always works in w × h units:
+// on the low tier the larger canvases are made half size and the drawing is scaled to fit.
 function canvasTex(w, h, draw, rx = 0, ry = 0){
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  draw(c.getContext('2d'), w, h);
+  const s = w * h > 20000 ? QUALITY.tex : 1;
+  const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+  const g = c.getContext('2d'); g.scale(c.width / w, c.height / h);
+  draw(g, w, h);
   const t = new THREE.CanvasTexture(c); t.anisotropy = MAX_ANISO; t.encoding = THREE.sRGBEncoding;
   if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); }
   return t;
@@ -600,11 +645,50 @@ const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 function add(geo, mat, x, y, z, parent = scene){
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m;
 }
-// Many copies of one shape in a single draw call: list = [[x, y, z], ...]
+// Where a part sits, as one matrix: position, then turn (radians), then size
+const _obj = new THREE.Object3D(), _m = new THREE.Matrix4();
+function at(x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1){
+  _obj.position.set(x, y, z); _obj.rotation.set(rx, ry, rz); _obj.scale.set(sx, sy, sz); _obj.updateMatrix(); return _obj.matrix.clone();
+}
+// Many copies of one shape in a single draw call: list = [[x, y, z], ...] or a list of matrices from at()
 function copies(geo, mat, list){
-  const m = new THREE.InstancedMesh(geo, mat, list.length), o = new THREE.Object3D();
-  list.forEach(([x, y, z], i) => { o.position.set(x, y, z); o.updateMatrix(); m.setMatrixAt(i, o.matrix); });
+  const m = new THREE.InstancedMesh(geo, mat, list.length);
+  list.forEach((p, i) => m.setMatrixAt(i, p.isMatrix4 ? p : at(p[0], p[1], p[2])));
   m.frustumCulled = false; scene.add(m); return m;
+}
+// Several shapes joined into one, so they are drawn with one call.
+// parts = [[shape, matrix, faces to leave out, picture area, colour], ...]; only shape and matrix are needed.
+// Faces of a box: 0 +x, 1 -x, 2 +y, 3 -y, 4 +z, 5 -z. Picture area [u0, v0, u1, v1] squeezes the shape's picture into one cell
+// of a shared picture. Colour paints the part (for paintMat, which reads its colours from the shape).
+// (Written by hand: the BufferGeometryUtils helper is not part of three.min.js.)
+function merge(parts){
+  const pos = [], nor = [], uv = [], col = [], idx = [], v = new THREE.Vector3(), nm = new THREE.Matrix3(); let base = 0;
+  const painted = parts.some(part => part[4]);
+  parts.forEach(([geo, m, skip = [], cell = [0, 0, 1, 1], color]) => {
+    const p = geo.attributes.position, n = geo.attributes.normal, t = geo.attributes.uv, index = geo.index && geo.index.array;
+    nm.getNormalMatrix(m);
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(m); pos.push(v.x, v.y, v.z);
+      v.fromBufferAttribute(n, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z);
+      uv.push(cell[0] + t.getX(i) * (cell[2] - cell[0]), cell[1] + t.getY(i) * (cell[3] - cell[1]));
+      if (painted) color ? col.push(color.r, color.g, color.b) : col.push(1, 1, 1);
+    }
+    const runs = geo.groups.length ? geo.groups.filter((g, k) => !skip.includes(k)) : [{start:0, count:index ? index.length : p.count}];
+    runs.forEach(r => { for (let j = r.start; j < r.start + r.count; j++) idx.push(base + (index ? index[j] : j)); });
+    base += p.count;
+  });
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  if (painted) out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  out.setIndex(idx); return out;
+}
+// A box whose front (+z) face takes its own material: two draw calls in place of six. Materials: [sides, front]
+function faceBox(w, h, d){
+  const g = box(w, h, d), i = Array.from(g.index.array);
+  g.setIndex([...i.slice(0, 24), ...i.slice(30, 36), ...i.slice(24, 30)]);
+  g.clearGroups(); g.addGroup(0, 30, 0); g.addGroup(30, 6, 1); return g;
 }
 // Fine random strokes (wood grain) and dots (plaster, stone) painted over a canvas
 function grain(g, w, h, n, color, len){
@@ -645,10 +729,21 @@ const timberTex = canvasTex(256, 512, (g, w, h) => {
   g.fillStyle = '#3d2415'; g.fillRect(0, 0, w, h);
   grain(g, w, h, 900, '#170b05', 130); grain(g, w, h, 500, '#7a4c2b', 90);
 }, 1, 1);
-const timber = std({map:timberTex, roughness:.46, envMapIntensity:.75});
-const brass = std({color:0xc9a04e, metalness:.9, roughness:.3});
+// Fine surface detail (high and medium tiers), done with pictures and no extra shapes: the timber's own grain is also used
+// as relief, and one shared strip of streaks varies how glossy timber and brass are, so reflections break up like on real wood and brushed metal.
+const fineTex = !QUALITY.detail ? null : canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#e4e4e4'; g.fillRect(0, 0, w, h);
+  grain(g, w, h, 1400, '#6e6e6e', 110); grain(g, w, h, 700, '#ffffff', 80);
+}, 1, 1);
+const timber = std(Object.assign({map:timberTex, roughness:.46, envMapIntensity:.75},
+  fineTex && {roughness:.5, roughnessMap:fineTex, bumpMap:timberTex, bumpScale:.004}));   // base gloss raised to offset the streaks: same shine on average
+const brass = std(Object.assign({color:0xc9a04e, metalness:.9, roughness:.3},
+  fineTex && {roughness:.33, roughnessMap:fineTex, bumpMap:fineTex, bumpScale:.0015}));
 const lacquer = std({color:0x8e2418, roughness:.32, envMapIntensity:.9});
 const frameMat = brass;
+// For small parts in several colours: the colour is stored in the shape (see merge), so one material and one draw call do for all
+const paintMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:.5, envMapIntensity:.5});
+const DARK = C(0x2a160c), GILT = C(0xd9ae58);
 
 /* ---------------- Corridor: floor, carpet, walls, ceiling ---------------- */
 // Timber floor: planks run down the corridor, joints wrap so the pattern repeats without a seam
@@ -699,24 +794,56 @@ const panelTex = canvasTex(256, 256, (g, w, h) => {
   g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.6)'; g.strokeRect(22, 26, w - 44, h - 52);
   g.strokeStyle = 'rgba(255,220,170,.16)'; g.strokeRect(26, 30, w - 52, h - 60);
 }, corridorLen / .9, 1);
-const panelMat = std({map:panelTex, roughness:.5, envMapIntensity:.6});
-const ceilMat = std({color:0x1c140e, roughness:1, envMapIntensity:.1});
+const panelMat = std(Object.assign({map:panelTex, roughness:.5, envMapIntensity:.6},
+  QUALITY.detail && {bumpMap:panelTex, bumpScale:.006}));     // the painted panel borders also stand out as relief
+// Coffered ceiling: the panel in each bay is painted (dark ground, gilt border, a roundel), as the ceilings of old halls are.
+// The picture repeats once per panel; its edges are lined up to hide under the beams and purlins.
+const cofferTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#19201d'; g.fillRect(0, 0, w, h); speckle(g, w, h, 1800, ['#090d0b', '#2e3b36']);
+  g.strokeStyle = 'rgba(196,154,74,.55)'; g.lineWidth = 3; g.strokeRect(24, 24, w - 48, h - 48);
+  g.lineWidth = 1.5; g.strokeRect(34, 34, w - 68, h - 68);
+  [[46, 46], [w - 46, 46], [46, h - 46], [w - 46, h - 46]].forEach(([x, y]) => { g.strokeRect(x - 7, y - 7, 14, 14); });   // corner knots
+  g.translate(w / 2, h / 2);
+  g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 54, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, 62, 0, Math.PI * 2); g.stroke();
+  for (let k = 0; k < 8; k++) {                              // eight petals, red and gilt in turn
+    g.rotate(Math.PI / 4); g.fillStyle = k % 2 ? 'rgba(150,44,34,.6)' : 'rgba(196,154,74,.5)';
+    g.beginPath(); g.ellipse(0, -30, 9, 21, 0, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = 'rgba(210,170,86,.75)'; g.beginPath(); g.arc(0, 0, 9, 0, Math.PI * 2); g.fill();
+}, 4, corridorLen / SPACING);
+cofferTex.offset.y = -(((-4 - LEN_BACK) / SPACING) % 1);    // a beam hangs every SPACING metres, counted from z = -4
+const ceilMat = std({map:cofferTex, roughness:1, envMapIntensity:.1});
+// Fret band (回纹) under the cornice
+const fretTex = canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#2a1410'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#b08a48'; g.lineWidth = 7;
+  g.beginPath(); g.moveTo(0, 100); g.lineTo(w, 100);
+  g.moveTo(104, 100); g.lineTo(104, 30); g.lineTo(30, 30); g.lineTo(30, 77); g.lineTo(80, 77); g.lineTo(80, 53); g.lineTo(54, 53); g.stroke();
+  g.fillStyle = '#b08a48'; g.fillRect(0, 5, w, 5); g.fillRect(0, h - 10, w, 5);
+}, corridorLen / .34, 1);
 // dark strip where the floor meets the wall (stands in for ambient shadow)
 const edgeTex = canvasTex(64, 8, (g, w, h) => {
   const grd = g.createLinearGradient(0, 0, w, 0); grd.addColorStop(0, 'rgba(0,0,0,.7)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = grd; g.fillRect(0, 0, w, h);
 });
 const edgeMat = new THREE.MeshBasicMaterial({map:edgeTex, transparent:true, depthWrite:false, side:THREE.DoubleSide});
+const trims = [];                                          // all the long timber runs: one shape, one draw call
 [-1, 1].forEach(s => {
   const wall = add(new THREE.PlaneGeometry(corridorLen, WALL_H), wallMat, s * HALF_W, WALL_H / 2, midZ);
   wall.rotation.y = -s * Math.PI / 2;
   add(box(.04, .95, corridorLen), panelMat, s * (HALF_W - .02), .475, midZ);          // wainscot
-  add(box(.045, .05, corridorLen), timber, s * (HALF_W - .0225), .975, midZ);         // dado rail
-  add(box(.05, .14, corridorLen), timber, s * (HALF_W - .025), .07, midZ);            // skirting board
-  add(box(.2, .24, corridorLen), timber, s * (HALF_W - .1), WALL_H - .12, midZ);      // cornice beam
+  trims.push([box(.045, .05, corridorLen), at(s * (HALF_W - .0225), .975, midZ)],     // dado rail
+    [box(.05, .14, corridorLen), at(s * (HALF_W - .025), .07, midZ)],                 // skirting board
+    [box(.2, .24, corridorLen), at(s * (HALF_W - .1), WALL_H - .12, midZ)]);          // cornice beam
   const edge = add(new THREE.PlaneGeometry(.7, corridorLen), edgeMat, s * (HALF_W - .35), .004, midZ);
   edge.rotation.x = -Math.PI / 2; edge.scale.x = -s;
 });
+add(merge(trims), timber, 0, 0, 0);
+add(merge([-1.25, 0, 1.25].map(x => [box(.1, .1, corridorLen), at(x, WALL_H - .05, midZ)])),          // purlins: with the beams they frame the ceiling panels
+  std({map:timberTex, roughness:.9, envMapIntensity:.15}), 0, 0, 0);                                  // matt, so their long undersides do not flare
+add(merge([-1, 1].map(s => [new THREE.PlaneGeometry(corridorLen, .34), at(s * (HALF_W - .008), 3.19, midZ, 0, -s * Math.PI / 2)])),
+  std(Object.assign({map:fretTex, roughness:.55, envMapIntensity:.4}, QUALITY.detail && {bumpMap:fretTex, bumpScale:.004})), 0, 0, 0);
 const ceil = add(new THREE.PlaneGeometry(HALF_W * 2, corridorLen), ceilMat, 0, WALL_H, midZ);
 ceil.rotation.x = Math.PI / 2;
 
@@ -729,6 +856,13 @@ copies(box(.12, WALL_H, .26), timber, bays.map(([k, z]) => [pilX(k), WALL_H / 2,
 copies(box(.16, .24, .32), timber, bays.map(([k, z]) => [pilX(k), .12, z]));            // base
 copies(box(.16, .16, .34), timber, bays.map(([k, z]) => [pilX(k), WALL_H - .32, z]));   // capital
 copies(box(.125, .03, .265), brass, bays.map(([k, z]) => [pilX(k), 2.2, z]));           // brass band
+// Carved braces (雀替) where every beam meets the wall, on both sides
+const braceShape = new THREE.Shape();
+braceShape.moveTo(0, 0); braceShape.lineTo(.8, 0); braceShape.lineTo(.8, -.05);
+braceShape.quadraticCurveTo(.56, -.055, .46, -.17); braceShape.quadraticCurveTo(.44, -.24, .36, -.25);
+braceShape.quadraticCurveTo(.3, -.36, .2, -.37); braceShape.lineTo(.2, -.47); braceShape.lineTo(0, -.47); braceShape.closePath();
+const BRACE_GEO = new THREE.ExtrudeGeometry(braceShape, {depth:.05, bevelEnabled:false, curveSegments:5}); BRACE_GEO.translate(0, 0, -.025);
+copies(BRACE_GEO, timber, bays.flatMap(([k, z]) => [at(-HALF_W, WALL_H - .2, z), at(HALF_W, WALL_H - .2, z, 0, Math.PI)]));
 
 /* ---------------- Lanterns and light ---------------- */
 const lanternTex = canvasTex(128, 128, (g, w, h) => {
@@ -738,32 +872,54 @@ const lanternTex = canvasTex(128, 128, (g, w, h) => {
   g.strokeStyle = 'rgba(120,34,12,.5)'; g.lineWidth = 2;
   for (let x = 0; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
 });
-const LANTERN_GEO = new THREE.SphereGeometry(.2, 24, 16), CAP_GEO = new THREE.CylinderGeometry(.085, .12, .06, 16);
-const TASSEL_GEO = new THREE.CylinderGeometry(.012, .028, .3, 8), CORD_GEO = new THREE.CylinderGeometry(.006, .006, 1, 6);
+// Palace lantern: a paper drum, dark caps with gilt rims, a bead and a long tassel (and short tassels round the rim on the
+// finer tiers). The shapes are made once per cord length and shared. Each lantern is three meshes in a group that sways, plus
+// its glow. (They are not drawn as copies of one mesh: a swaying copy would have to be sent to the graphics chip again every frame.)
 const capMat = std({color:0x2a160c, roughness:.4}), tasselMat = std({color:0xb02a1c, roughness:.8});
-const lanterns = [];
+const lanterns = [], lanternShapes = {}, paperMats = {};
+function lanternShape(drop){                                // parts are placed below the hook the cord hangs from
+  if (lanternShapes[drop]) return lanternShapes[drop];
+  const y = -drop, ring = new THREE.TorusGeometry(.078, .009, 6, 16), flat = Math.PI / 2, no = undefined;
+  const trim = merge([
+    [new THREE.CylinderGeometry(.006, .006, 1, 6), at(0, y / 2, 0, 0, 0, 0, 1, drop, 1), [], no, DARK],        // cord
+    [new THREE.CylinderGeometry(.06, .086, .05, 14), at(0, y - .005, 0), [], no, DARK],                        // top cap
+    [new THREE.CylinderGeometry(.086, .06, .05, 14), at(0, y - .475, 0), [], no, DARK],                        // bottom cap
+    [ring, at(0, y - .03, 0, flat), [], no, GILT], [ring, at(0, y - .45, 0, flat), [], no, GILT],             // gilt rims
+    [new THREE.SphereGeometry(.024, 8, 6), at(0, y - .52, 0), [], no, GILT]]);                                 // bead above the tassel
+  const tassels = [[new THREE.CylinderGeometry(.012, .03, .3, 8), at(0, y - .69, 0)]];
+  if (QUALITY.detail) for (let k = 0; k < 6; k++)
+    tassels.push([new THREE.CylinderGeometry(.004, .01, .13, 5), at(Math.sin(k * Math.PI / 3) * .08, y - .56, Math.cos(k * Math.PI / 3) * .08)]);
+  const paper = merge([[new THREE.LatheGeometry([[.07, -.45], [.135, -.415], [.185, -.345], [.208, -.24], [.185, -.135], [.135, -.065], [.07, -.03]]
+    .map(([r, h]) => new THREE.Vector2(r, h)), QUALITY.detail ? 20 : 12), at(0, y, 0)]]);
+  return lanternShapes[drop] = {trim, tassel:merge(tassels), paper};
+}
 // A hanging lantern: (x, yTop, z) is where the cord meets the ceiling, drop is how far the lantern hangs below
 function makeLantern(x, yTop, z, drop, tint = 0xffffff, halo = 0xffb060){
-  const grp = new THREE.Group(); grp.position.set(x, yTop, z);
-  const cord = add(CORD_GEO, capMat, 0, -drop / 2, 0, grp); cord.scale.y = drop;
-  const body = add(LANTERN_GEO, new THREE.MeshBasicMaterial({map:lanternTex, color:tint}), 0, -drop - .22, 0, grp); body.scale.y = 1.15;
-  add(CAP_GEO, capMat, 0, -drop - .01, 0, grp);
-  const foot = add(CAP_GEO, capMat, 0, -drop - .43, 0, grp); foot.rotation.x = Math.PI;
-  add(TASSEL_GEO, tasselMat, 0, -drop - .61, 0, grp);
+  const grp = new THREE.Group(), shape = lanternShape(drop); grp.position.set(x, yTop, z);
+  add(shape.trim, paintMat, 0, 0, 0, grp);
+  const tassel = add(shape.tassel, tasselMat, 0, 0, 0, grp);
+  add(shape.paper, paperMats[tint] || (paperMats[tint] = new THREE.MeshBasicMaterial({map:lanternTex, color:tint, side:THREE.DoubleSide})), 0, 0, 0, grp);
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:halo, transparent:true, opacity:.55,
     blending:THREE.AdditiveBlending, depthWrite:false}));
-  glow.position.y = -drop - .22; glow.scale.setScalar(1.5); grp.add(glow);
-  scene.add(grp); lanterns.push({grp, glow, phase:Math.random() * 6.3}); return grp;
+  glow.position.y = -drop - .24; glow.scale.setScalar(1.5); grp.add(glow);
+  scene.add(grp); lanterns.push({grp, glow, tassel, phase:Math.random() * 6.3});
 }
 scene.add(new THREE.HemisphereLight(0xffe9c4, 0x2a2018, 0.24));
-bays.filter(([k]) => (k + 2) % 5 === 0).forEach(([k, z]) => {        // one lantern and one light every 7 m
+// Lamps. A lamp is a place light shines from; the scene has over a dozen. Every real light costs time on every lit pixel, so only a fixed
+// number of real lights exist (QUALITY.lights) and they are handed to the lamps that matter most from where you stand (see assignLamps).
+// A lamp without a light still glows: its lantern, window or bulb is drawn bright with a halo. It only stops lighting the walls.
+const lampSites = [];
+function lamp(color, power, reach, x, y, z, outdoors = false){
+  lampSites.push({color:new THREE.Color(color), power, reach, pos:new THREE.Vector3(x, y, z), outdoors, rank:0});
+}
+bays.filter(([k]) => (k + 2) % 5 === 0).forEach(([k, z]) => {        // one lantern and one lamp every 7 m
   makeLantern(0, WALL_H - .2, z, .35);
-  const l = new THREE.PointLight(0xffd3a0, 1.0, 13); l.position.set(0, 2.75, z); scene.add(l);
+  lamp(0xffd3a0, 1.0, 13, 0, 2.75, z);
 });
 
 // Dust drifting in the lamp light
 const dust = (() => {
-  const n = 420, pos = new Float32Array(n * 3);
+  const n = QUALITY.dust, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     pos[i*3] = (Math.random() - .5) * HALF_W * 1.8; pos[i*3+1] = .3 + Math.random() * 3; pos[i*3+2] = LEN_FRONT - Math.random() * corridorLen;
   }
@@ -811,9 +967,16 @@ add(new THREE.PlaneGeometry(2.14, 1.28), std({map:inkTex, roughness:.9, envMapIn
   add(new THREE.PlaneGeometry(.42, 1.68), std({map:tex, roughness:.8, envMapIntensity:.2}), s * 1.62, 1.5, LEN_BACK + .045);
 });
 // Console table with two porcelain vases
-add(box(2.2, .06, .42), timber, 0, .72, LEN_BACK + .3);
-[[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([a, b]) => add(box(.06, .7, .06), timber, a * 1.02, .35, LEN_BACK + .3 + b * .15));
-add(box(2.0, .08, .04), timber, 0, .62, LEN_BACK + .46);
+const TZ = LEN_BACK + .3;                                  // the table stands against the end wall
+add(merge([[box(2.2, .06, .44), at(0, .72, TZ)], [box(.07, .06, .44), at(-1.085, .775, TZ)], [box(.07, .06, .44), at(1.085, .775, TZ)],   // top with upturned ends
+  [box(2.0, .1, .03), at(0, .64, TZ + .17)], [box(2.0, .1, .03), at(0, .64, TZ - .17)],                                                 // aprons
+  ...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([a, b]) => [box(.06, .69, .06), at(a * .98, .345, TZ + b * .16)]),                         // legs
+  [box(.04, .05, .32), at(-.98, .16, TZ)], [box(.04, .05, .32), at(.98, .16, TZ)], [box(1.96, .04, .04), at(0, .16, TZ)]]), timber, 0, 0, 0);   // stretchers
+add(merge(['mclc', 'translated', 'wenchuang'].map((k, n) => [box(.3 - n * .02, .042, .21 - n * .01),                                    // a pile of three books
+  at(-.3, .771 + n * .042, TZ + .01, 0, [.12, -.16, .3][n]), [], undefined, C(TYPES[k].color).multiplyScalar(.75)])), paintMat, 0, 0, 0);
+add(merge([[new THREE.LatheGeometry([[.001, .777], [.05, .779], [.084, .805], [.092, .842], [.079, .868], [.089, .882], [.07, .886], [.001, .866]]   // incense burner
+    .map(([r, y]) => new THREE.Vector2(r, y)), 18), at(.3, 0, TZ)],
+  ...[0, 1, 2].map(k => [new THREE.CylinderGeometry(.013, .008, .03, 6), at(.3 + Math.sin(k * 2.094) * .05, .764, TZ + Math.cos(k * 2.094) * .05)])]), brass, 0, 0, 0);
 const vaseGeo = new THREE.LatheGeometry([[.001, 0], [.07, 0], [.085, .03], [.12, .14], [.125, .2], [.1, .28], [.055, .34], [.045, .38], [.065, .42], [.06, .425]]
   .map(([r, y]) => new THREE.Vector2(r, y)), 28);
 [[-.75, 0xe9eef0], [.75, 0x9fc4ad]].forEach(([x, color]) => {
@@ -873,16 +1036,20 @@ const trees = add(new THREE.CylinderGeometry(95, 95, 13, 48, 1, true),
 trees.renderOrder = -1;
 // Stone lamp posts around the plaza
 const postMat = std({color:0x5d5348, roughness:.85}), lampGlass = new THREE.MeshBasicMaterial({color:0xffc980});
-const capGeo = new THREE.ConeGeometry(.32, .22, 4); capGeo.rotateY(Math.PI / 4);
-[[-6, 3], [6, 3], [-6, 9.5], [6, 9.5]].forEach(([x, dz]) => {
-  add(box(.4, .2, .4), postMat, x, .1, FZ + dz); add(box(.18, 1.7, .18), postMat, x, 1.05, FZ + dz);
-  add(box(.42, .06, .42), postMat, x, 1.93, FZ + dz); add(box(.3, .38, .3), lampGlass, x, 2.15, FZ + dz);
-  add(capGeo, postMat, x, 2.45, FZ + dz);
+// Stone lantern, six-sided: base, shaft, flared seat, a light box with a post at each corner, a spreading roof and a finial
+const hex = (top, bottom, h) => new THREE.CylinderGeometry(top, bottom, h, 6);
+const POST_GEO = merge([[hex(.27, .31, .14), at(0, .07, 0)], [hex(.09, .12, 1.3), at(0, .79, 0)], [hex(.3, .13, .16), at(0, 1.52, 0)],
+  ...[0, 1, 2, 3, 4, 5].map(k => [box(.04, .36, .04), at(Math.sin(k * Math.PI / 3) * .215, 1.78, Math.cos(k * Math.PI / 3) * .215, 0, k * Math.PI / 3)]),
+  [hex(.47, .47, .035), at(0, 1.98, 0)], [hex(.07, .45, .3), at(0, 2.145, 0)], [new THREE.SphereGeometry(.07, 10, 8), at(0, 2.34, 0)]]);
+const postAt = [[-6, 3], [6, 3], [-6, 9.5], [6, 9.5]].map(([x, dz]) => [x, 0, FZ + dz]);
+copies(POST_GEO, postMat, postAt);
+copies(merge([[hex(.2, .2, .36), at(0, 1.78, 0)]]), lampGlass, postAt);
+postAt.forEach(([x, , z]) => {
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xffa850, transparent:true, opacity:.6,
     blending:THREE.AdditiveBlending, depthWrite:false}));
-  halo.position.set(x, 2.15, FZ + dz); halo.scale.setScalar(1.8); scene.add(halo);
+  halo.position.set(x, 1.78, z); halo.scale.setScalar(1.8); scene.add(halo);
 });
-[-1, 1].forEach(s => { const l = new THREE.PointLight(0xffb060, .6, 9); l.position.set(s * 6, 2.3, FZ + 6); scene.add(l); });
+[-1, 1].forEach(s => lamp(0xffb060, .6, 9, s * 6, 2.3, FZ + 6, true));
 
 // Facade wall with a doorway (built from three blocks), stone base and top cornice
 const facadeTex = canvasTex(256, 256, (g, w, h) => {
@@ -898,8 +1065,12 @@ const sideW = (FACADE_W - DOOR_W) / 2;
 add(box(DOOR_W, FACADE_H - DOOR_H, .4), facadeMat, 0, DOOR_H + (FACADE_H - DOOR_H) / 2, FZ);
 add(box(FACADE_W + .6, .4, 1), lacquer, 0, FACADE_H, FZ + .2);
 // Door frame
-[-1, 1].forEach(s => add(box(.12, DOOR_H, .5), frameMat, s * (DOOR_W / 2 + .06), DOOR_H / 2, FZ));
-add(box(DOOR_W + .24, .12, .5), frameMat, 0, DOOR_H + .06, FZ);
+add(merge([[box(.12, DOOR_H, .5), at(-DOOR_W / 2 - .06, DOOR_H / 2, FZ)], [box(.12, DOOR_H, .5), at(DOOR_W / 2 + .06, DOOR_H / 2, FZ)],
+  [box(DOOR_W + .24, .12, .5), at(0, DOOR_H + .06, FZ)]]), frameMat, 0, 0, 0);
+// Drum stones (抱鼓石) either side of the door: a block, a slab and an upright stone drum
+add(merge([-1, 1].flatMap(s => [[box(.36, .34, .56), at(s * 1.34, .17, FZ + .52)], [box(.42, .06, .62), at(s * 1.34, .37, FZ + .52)],
+  [new THREE.CylinderGeometry(.3, .3, .17, 24), at(s * 1.34, .7, FZ + .52, 0, 0, Math.PI / 2)],
+  [new THREE.CylinderGeometry(.11, .11, .21, 16), at(s * 1.34, .7, FZ + .52, 0, 0, Math.PI / 2)]])), stoneMat, 0, 0, 0);
 // Red pillars on stone drums, carrying a lacquered beam
 [-1, 1].forEach(s => {
   add(new THREE.CylinderGeometry(.2, .22, 4.36, 28), lacquer, s * 2.45, 2.18, FZ + .45);
@@ -914,28 +1085,39 @@ roofShape.quadraticCurveTo(1.3, 4.4, 0, 5.2); roofShape.closePath();
 const tileMat = std({color:0x2c4640, roughness:.3, envMapIntensity:1});
 const roof = add(new THREE.ExtrudeGeometry(roofShape, {depth:7.8, bevelEnabled:false, curveSegments:16}), tileMat, 3.9, 0, FZ + .2);
 roof.rotation.y = -Math.PI / 2;
-copies(box(.07, .08, .7), lacquer, Array.from({length:25}, (_, i) => [-3.6 + i * .3, 4.4, FZ + 2.22]));
+// Bracket sets (斗拱) standing on the beam and carrying the canopy: blocks and arms in two tiers, one arm reaching forward
+copies(merge([[box(.2, .1, .22), at(0, .05, 0)], [box(.5, .08, .12), at(0, .14, 0)], [box(.12, .08, .5), at(0, .14, .12)],
+  ...[-.19, 0, .19].map(x => [box(.11, .07, .15), at(x, .215, 0)]), [box(.11, .07, .13), at(0, .215, .3)],
+  [box(.78, .08, .12), at(0, .29, 0)], ...[-.33, 0, .33].map(x => [box(.11, .07, .15), at(x, .365, 0)])]),
+  tileMat, [-1.9, -.95, 0, .95, 1.9].map(x => [x, 4.61, FZ + .45]));
 const tileEnd = new THREE.CylinderGeometry(.06, .06, .05, 16); tileEnd.rotateX(Math.PI / 2);
-copies(tileEnd, brass, Array.from({length:39}, (_, i) => [-3.8 + i * .2, 4.545, FZ + 2.66]));
-// Lattice windows glowing from inside
-const latticeTex = canvasTex(256, 256, (g, w, h) => {
+const doorFittings = [                                      // small parts round the door: left out from far away on the low tier
+  copies(box(.07, .08, .7), lacquer, Array.from({length:25}, (_, i) => [-3.6 + i * .3, 4.4, FZ + 2.22])),
+  copies(tileEnd, brass, Array.from({length:39}, (_, i) => [-3.8 + i * .2, 4.545, FZ + 2.66]))];
+// Lattice windows glowing from inside: lit paper behind a real timber lattice (seven bars each way and a diamond)
+const latticeMat = new THREE.MeshBasicMaterial({map:canvasTex(256, 256, (g, w, h) => {
   const grd = g.createRadialGradient(w/2, h/2, 10, w/2, h/2, w * .75);
   grd.addColorStop(0, '#ffd898'); grd.addColorStop(1, '#d9772c'); g.fillStyle = grd; g.fillRect(0, 0, w, h);
-  g.strokeStyle = '#2a160c'; g.lineWidth = 7;
-  for (let p = 0; p <= w; p += 42.6) { g.beginPath(); g.moveTo(p, 0); g.lineTo(p, h); g.moveTo(0, p); g.lineTo(w, p); g.stroke(); }
-  g.lineWidth = 6; g.beginPath(); g.moveTo(w/2, 22); g.lineTo(w - 22, h/2); g.lineTo(w/2, h - 22); g.lineTo(22, h/2); g.closePath(); g.stroke();
-  g.lineWidth = 16; g.strokeRect(0, 0, w, h);
-});
-const latticeMat = new THREE.MeshBasicMaterial({map:latticeTex});
+  speckle(g, w, h, 1200, ['#fff0c8', '#b8641f']);                                // paper fibres
+})});
+const latticeBars = [];
 [-1, 1].forEach(s => {
-  add(box(2.1, 2.1, .08), timber, s * 4.15, 2.35, FZ + .2);
-  add(new THREE.PlaneGeometry(1.9, 1.9), latticeMat, s * 4.15, 2.35, FZ + .245);
-  const l = new THREE.PointLight(0xffb060, .45, 5); l.position.set(s * 4.15, 2.3, FZ + 1.2); scene.add(l);
+  const cx = s * 4.15, cy = 2.35, z = FZ + .262;
+  add(box(2.1, 2.1, .08), timber, cx, cy, FZ + .2);
+  add(new THREE.PlaneGeometry(1.9, 1.9), latticeMat, cx, cy, FZ + .245);
+  for (let i = 0; i <= 6; i++) {
+    const o = -.95 + i * 1.9 / 6, t = i % 6 ? .034 : .08;                         // the outer bars are the frame: wider
+    latticeBars.push([box(t, 1.9, .03), at(cx + o, cy, z)], [box(1.9, t, .03), at(cx, cy + o, z)]);
+  }
+  [[1, 1], [-1, 1], [-1, -1], [1, -1]].forEach(([a, b]) =>
+    latticeBars.push([box(1.113, .036, .034), at(cx + a * .3935, cy + b * .3935, z + .004, 0, 0, -a * b * Math.PI / 4)]));
+  lamp(0xffb060, .45, 5, s * 4.15, 2.3, FZ + 1.2, true);
 });
+add(merge(latticeBars), capMat, 0, 0, 0);
 // Red lanterns hanging from the canopy, either side of the door
 [-1, 1].forEach(s => {
   makeLantern(s * 1.5, 4.36, FZ + .55, 1.2, 0xff6a4a, 0xff5a30);
-  const glow = new THREE.PointLight(0xff6a3a, .7, 5); glow.position.set(s * 1.5, 2.75, FZ + 1); scene.add(glow);
+  lamp(0xff6a3a, .7, 5, s * 1.5, 2.75, FZ + 1, true);
 });
 // Signboard above the door
 const signTex = canvasTex(1024, 256, (g, w, h) => {
@@ -948,15 +1130,36 @@ const signTex = canvasTex(1024, 256, (g, w, h) => {
   g.font = '30px "Microsoft YaHei", "Noto Sans SC", sans-serif'; g.fillStyle = '#d9b25f';
   g.fillText('马 华 文 学 馆', w/2, 212);
 });
-const signBoard = new THREE.Mesh(box(4.2, 1.1, .12), [
-  frameMat, frameMat, frameMat, frameMat, std({map:signTex, roughness:.45, emissive:0xffffff, emissiveMap:signTex, emissiveIntensity:.25}), frameMat]);
+const signBoard = new THREE.Mesh(faceBox(4.2, 1.1, .12),
+  [frameMat, std({map:signTex, roughness:.45, emissive:0xffffff, emissiveMap:signTex, emissiveIntensity:.25})]);
 signBoard.position.set(0, 3.75, FZ + .28); scene.add(signBoard);
-const signLight = new THREE.PointLight(0xffe0a8, 1.1, 7); signLight.position.set(0, 4.1, FZ + 1.6); scene.add(signLight);
+lamp(0xffe0a8, 1.1, 7, 0, 4.1, FZ + 1.6, true);
 // Same signboard on the end wall of the corridor, with its own light
 const endSign = signBoard.clone(); endSign.position.set(0, 2.82, LEN_BACK + .12); endSign.scale.setScalar(.82); scene.add(endSign);
-endSign.material = signBoard.material.map(m => m.clone());     // own materials so it can glow on its own
-const endSignFace = endSign.material[4];
-const endSignLight = new THREE.PointLight(0xffe0a8, 1.1, 6); endSignLight.position.set(0, 2.6, LEN_BACK + 1.8); scene.add(endSignLight);
+endSign.material = [frameMat, signBoard.material[1].clone()];  // own face material so it can glow on its own
+const endSignFace = endSign.material[1];
+lamp(0xffe0a8, 1.1, 6, 0, 2.6, LEN_BACK + 1.8);
+
+// The real lights: a fixed set, so the shaders never have to be rebuilt. Each frame they go to the lamps that count most.
+if (DEBUG && +QS.get('lights')) QUALITY.lights = +QS.get('lights');   // for measuring only: ?debug=1&lights=16
+const lampLights = Array.from({length:Math.min(QUALITY.lights, lampSites.length)}, () => {
+  const l = new THREE.PointLight(0xffffff, 0, 1); scene.add(l); return l;
+});
+const lampOrder = lampSites.slice();
+function assignLamps(){
+  const p = camera.position;
+  // How much a lamp counts: its distance from you, measured in its own reach. Lamps on the other side of the facade count as
+  // further away: outdoor lamps once you are well inside, corridor lamps while you stand out on the plaza with the door shut.
+  const inside = THREE.MathUtils.clamp((FZ - p.z) / 4, 0, 1), outside = THREE.MathUtils.clamp((p.z - FZ - 4) / 2, 0, 1);
+  lampSites.forEach(s => { s.rank = s.pos.distanceTo(p) / s.reach + (s.outdoors ? inside : outside); });
+  lampOrder.sort((a, b) => a.rank - b.rank);
+  const cut = lampOrder.length > lampLights.length ? lampOrder[lampLights.length].rank : Infinity;   // the first lamp that gets no light
+  lampLights.forEach((l, k) => {
+    const s = lampOrder[k];
+    l.position.copy(s.pos); l.color.copy(s.color); l.distance = s.reach;
+    l.intensity = s.power * THREE.MathUtils.smoothstep(cut - s.rank, 0, .3);   // a lamp about to lose its light dims to zero first, so nothing pops
+  });
+}
 
 // Double door that swings inward (pivots at the door jambs)
 const doorTex = canvasTex(256, 800, (g, w, h) => {
@@ -969,10 +1172,17 @@ const doorTex = canvasTex(256, 800, (g, w, h) => {
   }
 });
 const doorMat = std({map:doorTex, roughness:.4, envMapIntensity:.8});
+// Brass studs: real domes set over the painted ones, so they catch the lantern light. From far away on the low tier they are
+// left out and the painted studs underneath show instead.
+const STUD_GEO = new THREE.SphereGeometry(.044, 10, 4, 0, Math.PI * 2, 0, Math.PI / 2); STUD_GEO.rotateX(Math.PI / 2); STUD_GEO.scale(1, 1, .55);
 const leaves = [-1, 1].map(s => {
   const pivot = new THREE.Group(); pivot.position.set(s * DOOR_W / 2, 0, FZ);
   add(box(DOOR_W / 2, DOOR_H, .08), doorMat, -s * DOOR_W / 4, DOOR_H / 2, 0, pivot);
-  add(new THREE.TorusGeometry(.07, .015, 10, 24), frameMat, -s * (DOOR_W / 2 - .12), 1.25, .06, pivot);   // door knocker
+  const studs = new THREE.InstancedMesh(STUD_GEO, brass, 21), w = DOOR_W / 2;   // same places as on the door picture (256 × 800)
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++)
+    studs.setMatrixAt(r * 3 + c, at(-s * w / 2 + ((60 + c * 68) / 256 - .5) * w, (1 - (100 + r * 100) / 800) * DOOR_H, .04));
+  studs.frustumCulled = false; pivot.add(studs); doorFittings.push(studs);
+  doorFittings.push(add(new THREE.TorusGeometry(.07, .015, 10, 24), frameMat, -s * (DOOR_W / 2 - .12), 1.25, .06, pivot));   // door knocker
   scene.add(pivot); return {pivot, s};
 });
 let doorOpen = 0;
@@ -996,16 +1206,23 @@ function wrapWords(g, text, maxW){
   }
   if (line) lines.push(line); return lines;
 }
+// The pressed joint of a hardcover, beside the spine: a dark groove with a thin light edge (g works in w x h units)
+function hinge(g, w, h){
+  const x = w * .075, t = w * .007;
+  g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, 0, t, h);
+  g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(x + t, 0, t * .7, h);
+}
 // Book cover drawn in the series colour (laid out at 320×400, drawn at 512×640).
 // Chinese edition: series name, title, author, year. English edition of a translated work: English title, author, translator.
 const SERIF = '"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif';
 function drawCover(g, item){
   const t = TYPES[item.type], en = isEn(item), w = 320, h = 400;
-  g.setTransform(1.6, 0, 0, 1.6, 0, 0);
+  g.setTransform(g.canvas.width / w, 0, 0, g.canvas.height / h, 0, 0);   // the canvas is 512×640, or half that on the low tier
   const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, t.color); grd.addColorStop(1, '#14100c');
   g.fillStyle = grd; g.fillRect(0, 0, w, h);
   speckle(g, w, h, 2500, ['#000', '#fff']);                                     // cloth texture
   g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 22, h);                    // book spine shade
+  hinge(g, w, h);
   g.strokeStyle = '#d9b25f'; g.lineWidth = 4; g.strokeRect(34, 16, w - 50, h - 32);
   g.textAlign = 'center'; g.textBaseline = 'middle'; const cx = (34 + w - 16) / 2;
   g.font = `16px ${en ? SERIF : CJK}`; g.fillStyle = '#e6cf98'; g.fillText(en ? t.en : t.label, cx, 44);
@@ -1034,10 +1251,12 @@ function drawCover(g, item){
   }
 }
 const portraitTex = item => canvasTex(512, 640, g => drawCover(g, item));
-// Brass caption plate under the shelf: author, year, genre
-function drawPlate(g, item){
-  const w = 512, h = 78;
-  g.setTransform(1, 0, 0, 1, 0, 0);
+// Brass caption plate under the shelf: author, year, genre. All plates share one picture, 4 across in rows of 128 px:
+// plate i is painted into its own cell, on a margin in the plate's own colours so that nothing dark bleeds in from far away.
+function drawPlate(g, item, i){
+  const w = 512, h = 78, k = g.canvas.width / 2048;          // the shared picture is 2048 px wide, or half that on the low tier
+  g.setTransform(k, 0, 0, k, i % 4 * w * k, ((i >> 2) * 128 + 25) * k);
+  g.fillStyle = '#e2c276'; g.fillRect(0, -25, w, 64); g.fillStyle = '#a8823a'; g.fillRect(0, 39, w, 64);
   const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#e2c276'); grd.addColorStop(1, '#a8823a');
   g.fillStyle = grd; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(60,40,10,.6)'; g.lineWidth = 3; g.strokeRect(4, 4, w - 8, h - 8);
   g.fillStyle = '#2a1a08'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `26px ${CJK}`;
@@ -1049,74 +1268,113 @@ const pagesMat = std({roughness:.9, envMapIntensity:.2, map:canvasTex(64, 64, (g
   g.fillStyle = '#efe6d0'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(120,100,70,.35)';
   for (let x = 0; x < w; x += 3) g.fillRect(x, 0, 1, h);
 })});
-const BOOK_GEO = box(.78, 1.0, .09), BOARD_GEO = box(1.5, 2.4, .05), CLOTH_GEO = new THREE.PlaneGeometry(1.26, 1.9);
-const SHELF_GEO = box(1.0, .045, .34), LIP_GEO = box(1.0, .03, .02), PLATE_GEO = new THREE.PlaneGeometry(.66, .1);
+// Every kind of exhibit part is drawn once for all books (instancing) and placed with the exhibit's matrix:
+// origin on the wall at floor level, +z pointing into the corridor.
+const EX_M = ITEMS.map(it => at(it.side * HALF_W, 0, it.z, 0, -it.side * Math.PI / 2));
 const RAIL_H = box(1.3, .02, .012), RAIL_V = box(.02, 1.94, .012);
-const LAMP_GEO = new THREE.CylinderGeometry(.03, .03, .7, 14), ARM_GEO = new THREE.CylinderGeometry(.012, .012, .3, 6);
-const BULB_GEO = box(.62, .012, .03), BULB_MAT = new THREE.MeshBasicMaterial({color:0xfff0c8});
-const WASH_GEO = new THREE.PlaneGeometry(1.5, 2.3), HALO_GEO = new THREE.PlaneGeometry(1.9, 2.2);
+const EX_TIMBER = merge([[box(1.5, 2.4, .05), at(0, 1.5, .025)],                    // display board
+  [box(1.0, .045, .34), at(0, 1.02, .2)], [box(1.0, .03, .02), at(0, 1.058, .36)],     // shelf and its lip
+  [box(1.56, .06, .035), at(0, 2.7, .0525)], [box(1.56, .06, .035), at(0, .3, .0525)],   // moulded frame round the board: top, bottom,
+  [box(.06, 2.34, .035), at(-.75, 1.5, .0525)], [box(.06, 2.34, .035), at(.75, 1.5, .0525)],   // left, right
+  ...[-.4, .4].flatMap(x => [[box(.045, .07, .24), at(x, .9625, .15)], [box(.045, .07, .13), at(x, .8925, .095)]])]);   // stepped brackets under the shelf
+const EX_CLOTH = merge([[new THREE.PlaneGeometry(1.26, 1.9), at(0, 1.6, .052)]]);
+const EX_FRAME = merge([[RAIL_H, at(0, 2.56, .056)], [RAIL_H, at(0, .64, .056)], [RAIL_V, at(-.64, 1.6, .056)], [RAIL_V, at(.64, 1.6, .056)],
+  [new THREE.CylinderGeometry(.012, .012, .3, 6), at(0, 2.64, .19, Math.PI / 2)]]);  // fine brass: frame round the cloth, arm of the picture light
+const EX_LAMP = merge([[new THREE.CylinderGeometry(.03, .03, .7, 14), at(0, 2.62, .34, 0, 0, Math.PI / 2)]]);   // picture light above the board
+const EX_BULB = merge([[box(.62, .012, .03), at(0, 2.6, .35)]]);
+const EX_WASH = merge([[new THREE.PlaneGeometry(1.5, 2.3), at(0, 1.62, .06)]]);
+const BULB_MAT = new THREE.MeshBasicMaterial({color:0xfff0c8});
 const WASH_MAT = new THREE.MeshBasicMaterial({transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
   map:canvasTex(256, 256, (g, w, h) => {                   // soft cone of light falling from the picture lamp
     const grd = g.createRadialGradient(w/2, h * .3, 0, w/2, h * .3, w * .62);
     grd.addColorStop(0, 'rgba(255,214,150,.32)'); grd.addColorStop(.55, 'rgba(255,200,130,.1)'); grd.addColorStop(1, 'rgba(255,200,130,0)');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
   })});
-// one cloth and one book-binding material per series
-const clothMat = {}, bindMat = {};
-Object.entries(TYPES).forEach(([k, t]) => {
-  clothMat[k] = new THREE.MeshStandardMaterial({color:C(t.color).multiplyScalar(.3), roughness:1, envMapIntensity:.1});
-  bindMat[k] = new THREE.MeshStandardMaterial({color:C(t.color).multiplyScalar(.75), roughness:.6, envMapIntensity:.4});
-});
+copies(EX_TIMBER, timber, EX_M);
+const exFrame = copies(EX_FRAME, brass, EX_M);
+copies(EX_LAMP, brass, EX_M); copies(EX_BULB, BULB_MAT, EX_M); copies(EX_WASH, WASH_MAT, EX_M);
+// cloth inset and book binding: one material each, tinted per copy with the series colour
+const seriesTint = (mesh, k) => ITEMS.forEach((it, i) => mesh.setColorAt(i, C(TYPES[it.type].color).multiplyScalar(k)));
+seriesTint(copies(EX_CLOTH, new THREE.MeshStandardMaterial({roughness:1, envMapIntensity:.1}), EX_M), .3);
 
-const exhibits = [];
-ITEMS.forEach((item, i) => {
-  const grp = new THREE.Group();                            // origin: on the wall, at floor level; +z points into the corridor
-  grp.position.set(item.side * HALF_W, 0, item.z);
-  grp.rotation.y = -item.side * Math.PI / 2;
+// The book: two boards a little larger than the page block, a rounded spine, and the cover picture on the front board.
+// Its own axes: x across the cover (spine at -x), y up, z through the book (front cover at +z).
+const BOOK_W = .78, BOOK_H = 1, BOOK_T = .09, BOARD_T = .008;
+const SPINE_GEO = (() => {
+  const n = QUALITY.detail ? 6 : 3, pos = [], nor = [], uv = [], idx = [];
+  for (let ends = 0; ends < 2; ends++)                       // first the curved face, then the flat top and bottom ends
+    for (let k = 0; k <= n; k++) {
+      const a = -Math.PI / 2 + Math.PI * k / n, len = Math.hypot(Math.cos(a), .6 * Math.sin(a));
+      [-1, 1].forEach(s => {
+        pos.push(-BOOK_W / 2 - .014 * Math.cos(a), s * BOOK_H / 2, BOOK_T / 2 * Math.sin(a)); uv.push(k / n, (s + 1) / 2);
+        if (ends) nor.push(0, s, 0);
+        else nor.push(-Math.cos(a) / len, 0, .6 * Math.sin(a) / len);   // shaded rounder than it is built: a soft highlight across the spine
+      });
+    }
+  const e = (n + 1) * 2;
+  for (let k = 0; k < n; k++) { const b = k * 2; idx.push(b, b + 2, b + 1, b + 2, b + 3, b + 1); }
+  for (let k = 1; k < n; k++) idx.push(e + 1, e + k * 2 + 1, e + k * 2 + 3, e, e + k * 2 + 2, e + k * 2);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); return g;
+})();
+const boardZ = BOOK_T / 2 - BOARD_T / 2;
+const BIND_GEO = merge([[box(BOOK_W, BOOK_H, BOARD_T), at(0, 0, boardZ), [4]],     // front board: its front face is the cover picture
+  [box(BOOK_W, BOOK_H, BOARD_T), at(0, 0, -boardZ)], [SPINE_GEO, at(0, 0, 0)]]);
+const PAGES_GEO = (() => {                                   // page block, set in from the board edges; only the three faces you can see
+  const g = box(BOOK_W - .014, BOOK_H - .024, BOOK_T - BOARD_T * 2), t = g.attributes.uv;
+  for (let i = 8; i < 16; i++) t.setXY(i, t.getY(i), t.getX(i));   // top and bottom: page lines run along the covers
+  return merge([[g, at(-.005, 0, 0), [1, 4, 5]]]);
+})();
+const COVER_GEO = merge([[new THREE.PlaneGeometry(BOOK_W, BOOK_H), at(0, 0, BOOK_T / 2)]]);
+const bookBind = copies(BIND_GEO, new THREE.MeshStandardMaterial({roughness:.6, envMapIntensity:.4}), EX_M);
+const bookPages = copies(PAGES_GEO, pagesMat, EX_M);
+seriesTint(bookBind, .75);
 
-  // Display board: timber, with a cloth inset in the series colour and a thin brass frame
-  add(BOARD_GEO, timber, 0, 1.5, .025, grp);
-  add(CLOTH_GEO, clothMat[item.type], 0, 1.6, .052, grp);
-  [-1, 1].forEach(s => { add(RAIL_H, brass, 0, 1.6 + s * .96, .056, grp); add(RAIL_V, brass, s * .64, 1.6, .056, grp); });
-  add(WASH_GEO, WASH_MAT, 0, 1.62, .06, grp);
-  // Halo behind the book, lit when this is the nearest exhibit
-  const glow = add(HALO_GEO, new THREE.MeshBasicMaterial({map:glowTex, color:0xffd27a, transparent:true, opacity:0,
-    depthWrite:false, blending:THREE.AdditiveBlending}), 0, 1.6, .068, grp);
-  // Shelf, and the book leaning back on it
-  add(SHELF_GEO, timber, 0, 1.02, .2, grp); add(LIP_GEO, timber, 0, 1.058, .36, grp);
+// The cover is the only part each book draws by itself (every book has its own picture)
+const exhibits = ITEMS.map((item, i) => {
   const cover = portraitTex(item);
   const coverMat = std({map:cover, roughness:.75, envMapIntensity:.12, emissive:0xffffff, emissiveMap:cover, emissiveIntensity:.3});
-  const lean = new THREE.Group(); lean.position.set(0, 1.045, .24); lean.rotation.x = -.13; grp.add(lean);
-  // box faces: +x fore-edge, -x spine, +y / -y page edges, +z front cover, -z back cover
-  const book = add(BOOK_GEO, [pagesMat, bindMat[item.type], pagesMat, pagesMat, coverMat, bindMat[item.type]], 0, .5, .045, lean);
-  book.userData.index = i;
-  // Brass caption plate under the shelf
-  const plate = canvasTex(512, 78, g => drawPlate(g, item));
-  add(PLATE_GEO, std({map:plate, metalness:.5, roughness:.4}), 0, .84, .053, grp);
-  // Picture light above the board
-  const lampBar = add(LAMP_GEO, brass, 0, 2.62, .34, grp); lampBar.rotation.z = Math.PI / 2;
-  const lampArm = add(ARM_GEO, brass, 0, 2.64, .19, grp); lampArm.rotation.x = Math.PI / 2;
-  add(BULB_GEO, BULB_MAT, 0, 2.6, .35, grp);
-  // Floating marker above the book (the loop moves it around y = 1.12 inside this holder)
-  const holder = new THREE.Group(); holder.position.y = 1.2; grp.add(holder);
-  const marker = add(new THREE.OctahedronGeometry(.1), new THREE.MeshBasicMaterial({color:0xd89a2c, transparent:true, opacity:0}), 0, 1.12, .42, holder);
-  scene.add(grp);
-
-  exhibits.push({item, grp, art:book, cover, plate, coverMat, glow, marker});
+  const mesh = new THREE.Mesh(COVER_GEO, coverMat); mesh.matrixAutoUpdate = false; mesh.userData.index = i; scene.add(mesh);
+  return {item, cover, coverMat, mesh, plateLang:LANG};
 });
+// Stand book i on its shelf, leaning back; wide stretches it to the shape of its cover photo (1: the drawn cover)
+const LEAN = at(0, 1.045, .24, -.13);
+function placeBook(i, wide = 1){
+  _m.multiplyMatrices(EX_M[i], LEAN).multiply(at(0, .5, BOOK_T / 2, 0, 0, 0, wide, 1, 1));
+  bookBind.setMatrixAt(i, _m); bookPages.setMatrixAt(i, _m);
+  bookBind.instanceMatrix.needsUpdate = bookPages.instanceMatrix.needsUpdate = true;
+  exhibits[i].mesh.matrix.copy(_m); exhibits[i].mesh.matrixWorldNeedsUpdate = true;
+}
+ITEMS.forEach((it, i) => placeBook(i));
+
+// Brass caption plates: all painted into one picture (see drawPlate) and joined into one shape placed straight in the room
+const plateTex = canvasTex(2048, 1024, g => {
+  ITEMS.forEach((item, i) => drawPlate(g, item, i));
+});
+const PLATE_GEO = new THREE.PlaneGeometry(.66, .1);
+add(merge(ITEMS.map((item, i) => {
+  const u = i % 4 / 4, top = ((i >> 2) * 128 + 25) / 1024;
+  return [PLATE_GEO, new THREE.Matrix4().multiplyMatrices(EX_M[i], at(0, .84, .053)), [], [u, 1 - top - 78 / 1024, u + .25, 1 - top]];
+})), std({map:plateTex, metalness:.5, roughness:.4}), 0, 0, 0);
+
 // Repaint a book on the wall for the language chosen: its real cover when there is one (see coverOf), otherwise the
-// drawn cover; then the caption plate.
+// drawn cover; then its caption plate, if the language changed since that was painted.
+const plateG = plateTex.image.getContext('2d');
 function paintExhibit(i){
   const ex = exhibits[i], it = ex.item, c = ex.cover.image, g = c.getContext('2d');
   const img = coverOf(it);
   if (img) {
     g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(img, 0, 0, c.width, c.height);
-    const shade = g.createLinearGradient(0, 0, 40, 0); shade.addColorStop(0, 'rgba(0,0,0,.4)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = shade; g.fillRect(0, 0, 40, c.height);   // spine shade
-    ex.art.scale.x = 1 / coverRatio(img) / .78;            // the book shape (BOOK_GEO) is .78 wide and 1 tall
-  } else { drawCover(g, it); ex.art.scale.x = 1; }
+    const sw = c.width * 40 / 512;                           // spine shade: 40 px on the full-size (512 px wide) cover
+    const shade = g.createLinearGradient(0, 0, sw, 0); shade.addColorStop(0, 'rgba(0,0,0,.4)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = shade; g.fillRect(0, 0, sw, c.height);
+    hinge(g, c.width, c.height);
+    placeBook(i, 1 / coverRatio(img) / BOOK_W);              // the book is built BOOK_W wide and 1 tall
+  } else { drawCover(g, it); placeBook(i); }
   ex.cover.needsUpdate = true;
-  drawPlate(ex.plate.image.getContext('2d'), it); ex.plate.needsUpdate = true;
+  if (ex.plateLang !== LANG) { ex.plateLang = LANG; drawPlate(plateG, it, i); plateTex.needsUpdate = true; }
+  wake();                                                    // if the loop is asleep (a box covers the scene), draw this change once
 }
 // Wall titles by the door, in both languages: which books hang on which wall
 // (each sits midway between two wall pilasters, which stand at different places on the two walls)
@@ -1132,6 +1390,37 @@ function paintExhibit(i){
   })}), 0, 2.05, .052, grp);
   scene.add(grp);
 });
+
+// One halo behind the book and one floating marker above it, moved to whichever book is active
+// (as the highlight light below already does), in place of one hidden pair per book.
+const activeSpot = new THREE.Group(); scene.add(activeSpot);
+const halo = add(new THREE.PlaneGeometry(1.9, 2.2), new THREE.MeshBasicMaterial({map:glowTex, color:0xffd27a, transparent:true, opacity:0,
+  depthWrite:false, blending:THREE.AdditiveBlending}), 0, 1.6, .068, activeSpot);
+const marker = add(new THREE.OctahedronGeometry(.1), new THREE.MeshBasicMaterial({color:0xd89a2c, transparent:true, opacity:0}), 0, 2.32, .42, activeSpot);
+halo.visible = marker.visible = false;
+let spotAt = -1;                                             // the book the halo and marker are at
+
+// Low tier: small parts cannot be made out from far away, so beyond 14 m they are left out: the thin brass frames and lamp arms
+// of the exhibits, lantern tassels, and the fittings round the door. Checked four times a second, not every frame.
+const FINE_REACH = 14;
+let fineCheckedAt = -1e9, fineRun = '';
+function hideFarDetail(now){
+  if (TIER !== 'low' || now - fineCheckedAt < 250) return;
+  fineCheckedAt = now;
+  const p = camera.position, near = (x, z) => Math.hypot(x - p.x, z - p.z) < FINE_REACH;
+  // the exhibits stand in a row, so the near ones are one run of copies: that run is moved to the front of the list and only it is drawn
+  let a = 0, b = ITEMS.length;
+  while (a < b && !near(ITEMS[a].side * HALF_W, ITEMS[a].z)) a++;
+  while (b > a && !near(ITEMS[b - 1].side * HALF_W, ITEMS[b - 1].z)) b--;
+  if (fineRun !== a + '-' + b) {
+    fineRun = a + '-' + b;
+    for (let i = a; i < b; i++) exFrame.setMatrixAt(i - a, EX_M[i]);
+    exFrame.count = b - a; exFrame.visible = b > a; exFrame.instanceMatrix.needsUpdate = true;
+  }
+  lanterns.forEach(l => { l.tassel.visible = near(l.grp.position.x, l.grp.position.z); });
+  const atDoor = near(0, FZ);
+  doorFittings.forEach(o => { o.visible = atDoor; });
+}
 // One spotlight that follows the active book (cheaper than a light per book)
 const highlight = new THREE.PointLight(0xffe0a8, 0, 3.5); scene.add(highlight);
 
@@ -1187,7 +1476,8 @@ viewBtn.addEventListener('click', () => { if (nearest >= 0) openPanel(nearest); 
 let signActive = false;   // true when standing at the end-wall signboard
 
 const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
-const pickables = [...exhibits.map(x => x.art), endSign];    // what a click or the cursor can land on
+const pickables = [...exhibits.map(x => x.mesh), bookBind, endSign];   // what a click or the cursor can land on: covers, book bodies, the end signboard
+const bookOf = hit => hit.object === bookBind ? hit.instanceId : hit.object.userData.index;   // boards and spines are one shape for all books: the copy number is the book
 // The View button follows the mouse: it offers the book the cursor points at, if that book is one of the
 // five nearest in front of you or the five nearest behind you. With no mouse (touch screens) there is no cursor
 // to follow, so the button offers the book you are standing next to, as before.
@@ -1226,7 +1516,7 @@ canvas.addEventListener('pointerup', e => {
   const hit = ray.intersectObjects(pickables)[0];
   if (!hit) return;
   if (hit.object === endSign) { signActive ? openCentre() : travelToSign(); return; }
-  const idx = hit.object.userData.index;
+  const idx = bookOf(hit);
   if (idx === nearest || nearSet().includes(idx)) { cancelTravel(); openPanel(idx); }   // a book near you opens where you stand
   else travelTo(idx);                                                                 // a far one: walk there first
 });
@@ -1294,7 +1584,7 @@ map.addEventListener('click', e => {
   const {z, idx} = mapPick(e);
   let best = idx;
   if (best < 0) { best = 0; ITEMS.forEach((it, i) => { if (Math.abs(it.z - z) < Math.abs(ITEMS[best].z - z)) best = i; }); }
-  if (idx < 0 && z < LAST_BOOK_Z - 3) travelToSign();       // clicked the empty end of the corridor
+  if (idx < 0 && z < LAST_BOOK_Z - 1.5) travelToSign();     // clicked the end of the corridor
   else if (idx >= 0 || Math.abs(ITEMS[best].z - z) < 2) travelTo(best);
   else return;
   map.classList.remove('big'); setMapHover(-1);
@@ -1839,10 +2129,98 @@ function drawMap(){
   mg.moveTo(0, -7); mg.lineTo(-5, 5); mg.lineTo(5, 5); mg.closePath(); mg.fill(); mg.restore();
 }
 
+/* ---------------- Performance overlay (only with ?debug=1) ---------------- */
+// Shows what the scene costs: frames per second, time per frame, draw calls, triangles, and what is held in graphics memory.
+const perf = !DEBUG ? null : (() => {
+  const el = document.createElement('pre'); el.id = 'dbg';
+  el.style.cssText = 'position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:8;margin:0;padding:6px 9px;border-radius:8px;' +
+    'background:rgba(0,0,0,.74);color:#9dff9d;font:11px/1.45 ui-monospace,Consolas,monospace;pointer-events:none';
+  document.body.appendChild(el);
+  const gl = renderer.getContext(), px = new Uint8Array(4);
+  let n = 0, t0 = performance.now(), last = t0, work = 0, worst = 0;
+  const stats = {};
+  window.__perf = stats;                                       // the same numbers, for test scripts
+  return {
+    note:'',                                                   // extra line set by the loop (render scale changes, sleeping)
+    sleeping(){ stats.asleep = true; el.textContent = el.textContent.replace(/\nasleep.*$/, '') + '\nasleep: the scene is covered, nothing is drawn'; },
+    frame(start){                                              // call right after renderer.render(); start = time at the top of the frame
+      if (DEBUG > 1) gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // blocks until the graphics chip has finished
+      const now = performance.now(); n++; work += now - start; worst = Math.max(worst, start - last); last = start;
+      stats.asleep = false; stats.frames = (stats.frames || 0) + 1;
+      if (now - t0 < 500) return;
+      const r = renderer.info, span = now - t0;
+      Object.assign(stats, {tier:TIER, pixelRatio:renderer.getPixelRatio(), width:canvas.width, height:canvas.height, lights:lampLights.length + 1,
+        fps:n * 1000 / span, frameMs:span / n, worstMs:worst, workMs:work / n, calls:r.render.calls, triangles:r.render.triangles,
+        geometries:r.memory.geometries, textures:r.memory.textures, programs:r.programs.length});
+      el.textContent = `tier ${TIER}${QS.get('tier') === TIER ? ' (forced)' : ''} · scale ${stats.pixelRatio.toFixed(2)} · ${canvas.width}×${canvas.height}\n` +
+        `${DEVICE.gpu.replace(/angle \(|direct3d.*|\(0x.*/g, '').slice(0, 44) || 'gpu unknown'}\n` +
+        `${DEVICE.touch ? 'touch' : 'mouse'} · cores ${DEVICE.cores || '?'} · mem ${DEVICE.mem || '?'} · dpr ${DEVICE.dpr} · aa ${ANTIALIAS ? 'on' : 'off'}\n` +
+        `${stats.fps.toFixed(0)} fps · frame ${stats.frameMs.toFixed(1)} ms (worst ${worst.toFixed(0)})\n` +
+        `${DEBUG > 1 ? 'cpu+gpu' : 'cpu'} ${stats.workMs.toFixed(2)} ms\n` +
+        `calls ${stats.calls} · tris ${stats.triangles} · lights ${stats.lights}\n` +
+        `geo ${stats.geometries} · tex ${stats.textures} · prog ${stats.programs}` + (this.note ? '\n' + this.note : '');
+      n = 0; work = 0; worst = 0; t0 = now;
+    }
+  };
+})();
+
+/* ---------------- Frame pacing and the safety net ---------------- */
+// Safety net: when frames stay slow, the scene is drawn with fewer pixels. The scale only ever steps down (never below 1),
+// and only after two slow 2-second windows in a row, so it cannot flip back and forth.
+const SLOW_MS = 20, guard = {t0:0, frames:0, slow:0, quietUntil:6000};   // slow = under 50 frames a second; the first seconds (loading) do not count
+function watchFrameTime(now){
+  if (!guard.t0 || now < guard.quietUntil) { guard.t0 = now; guard.frames = 0; return; }
+  guard.frames++;
+  if (now - guard.t0 < 2000) return;
+  guard.slow = (now - guard.t0) / guard.frames > SLOW_MS ? guard.slow + 1 : 0;
+  guard.t0 = now; guard.frames = 0;
+  if (guard.slow < 2 || renderScale <= 1) return;
+  renderScale = Math.max(1, renderScale - .25); renderer.setPixelRatio(renderScale);
+  guard.slow = 0; guard.quietUntil = now + 4000;             // let the new size settle before judging again
+  if (perf) perf.note = `scale lowered to ${renderScale.toFixed(2)} (frames were slow)`;
+}
+let vsyncMs = 1000 / 60, lastRaf = 0, frameDue = 0;          // vsyncMs: the screen's refresh interval, the shortest gap seen between callbacks
+
+/* ---------------- Sleeping while the scene cannot be seen ---------------- */
+// An open book, the Centre's introduction, the author box, the guide, the catalogue and the quiz each cover the whole scene
+// (it only shows dimmed and blurred behind them), so drawing it again and again shows nothing new. The loop stops, and starts
+// again when the box closes or the tab comes back. Whatever changes the picture meanwhile asks for one frame with wake().
+const covering = [stage, authorEl, ...overlays];
+const sceneCovered = () => covering.some(el => el.classList.contains('show'));
+let rafId = 0, oneMore = true;                               // oneMore: draw one frame although the scene is covered
+function wake(){ oneMore = true; if (!rafId) rafId = requestAnimationFrame(tick); }
+{
+  const watcher = new MutationObserver(wake);                // a box opened, closed, or was shown again (the camera may have jumped behind it)
+  covering.forEach(el => watcher.observe(el, {attributes:true, attributeFilter:['class']}));
+}
+document.addEventListener('visibilitychange', wake);
+addEventListener('resize', wake);                            // a resized canvas is blank until it is drawn again
+
 /* ---------------- Loop ---------------- */
 const clock = new THREE.Clock();
-function tick(){
-  const dt = Math.min(clock.getDelta(), .05), time = clock.elapsedTime;
+let simTime = 0;                                             // scene time: stands still while the loop sleeps, so motion carries on where it stopped
+const lampsFor = new THREE.Vector3(1e9, 0, 0);               // where you stood when the lights were last handed out
+const mapSeen = {x:1e9, z:0, yaw:0, nearest:-2, hover:-2};   // what the minimap last showed
+let viewText = '', cursorNow = '';
+function showView(text){ if (text !== viewText) viewBtn.textContent = viewText = text; viewBtn.classList.add('show'); }   // the page is only touched when the label changes
+function tick(now){
+  rafId = 0;
+  if (document.hidden) return;                               // tab in the background: visibilitychange wakes the loop
+  const covered = sceneCovered();
+  if (covered && !oneMore) return;
+  if (covered) lastRaf = 0;
+  else {
+    rafId = requestAnimationFrame(tick);
+    if (lastRaf && now - lastRaf > 4) vsyncMs = Math.min(vsyncMs, now - lastRaf);
+    lastRaf = now;
+    if (QUALITY.fpsCap && vsyncMs < 11.8) {                  // low tier on a 90 / 120 Hz screen: draw about 60 times a second (less heat, longer battery)
+      if (now < frameDue - 2) return;
+      frameDue = Math.max(frameDue + 1000 / QUALITY.fpsCap, now);
+    }
+  }
+  oneMore = false;
+  const frameStart = performance.now();
+  const dt = Math.min(clock.getDelta(), .05), time = simTime += dt;
   dir = btnDir || ((keys.ArrowUp || keys.KeyW) ? -1 : (keys.ArrowDown || keys.KeyS) ? 1 : 0);
   const kTurn = turnDir || ((keys.ArrowLeft || keys.KeyA) ? 1 : (keys.ArrowRight || keys.KeyD) ? -1 : 0);
   if (dir || kTurn) cancelTravel();                         // any manual control stops the glide
@@ -1885,10 +2263,11 @@ function tick(){
     if (ptrOn && !panelOpen) {
       ray.setFromCamera(mouse, camera);
       const hit = ray.intersectObjects(pickables)[0];
-      if (hit) { onSign = hit.object === endSign; if (!onSign) over = hit.object.userData.index; }
+      if (hit) { onSign = hit.object === endSign; if (!onSign) over = bookOf(hit); }
     }
     if (over >= 0 && nearSet().includes(over)) best = over;
-    canvas.style.cursor = over >= 0 || onSign ? 'pointer' : '';   // every book and the signboard can be clicked
+    const cursor = over >= 0 || onSign ? 'pointer' : '';         // every book and the signboard can be clicked
+    if (cursor !== cursorNow) canvas.style.cursor = cursorNow = cursor;
   } else {
     // touch: the book closest to ~1.5 m ahead of you, from either side
     let bestD = Infinity;
@@ -1908,32 +2287,46 @@ function tick(){
     if (focus >= 0) best = focus;                               // the book you walked to stays highlighted
   }
   nearest = travel >= 0 ? travel : best;                        // a book you are walking to is always shown
-  exhibits.forEach((ex, i) => {
-    const on = i === nearest, pulse = .5 + .5 * Math.sin(time * 4);
-    ex.glow.material.opacity += ((on ? .35 + .25 * pulse : 0) - ex.glow.material.opacity) * .15;
-    ex.marker.material.opacity += ((on ? 1 : 0) - ex.marker.material.opacity) * .15;
-    ex.marker.rotation.y = time * 2; ex.marker.position.y = 1.12 + Math.sin(time * 3) * .05;
-    ex.coverMat.emissiveIntensity = on ? .45 + .1 * pulse : .3;
-  });
+  // the halo and marker sit at the active book; when another book becomes active they jump there and fade in again
+  if (nearest >= 0 && nearest !== spotAt) {
+    if (spotAt >= 0) exhibits[spotAt].coverMat.emissiveIntensity = .3;
+    spotAt = nearest;
+    activeSpot.position.set(ITEMS[spotAt].side * HALF_W, 0, ITEMS[spotAt].z); activeSpot.rotation.y = -ITEMS[spotAt].side * Math.PI / 2;
+    halo.material.opacity = marker.material.opacity = 0;
+  }
+  const on = nearest >= 0, pulse = .5 + .5 * Math.sin(time * 4), ease = 1 - Math.exp(-dt * 9.75);   // same pace as 15% a frame at 60 fps, on any screen
+  halo.material.opacity += ((on ? .35 + .25 * pulse : 0) - halo.material.opacity) * ease;
+  marker.material.opacity += ((on ? 1 : 0) - marker.material.opacity) * ease;
+  halo.visible = marker.visible = on || marker.material.opacity > .01;      // not drawn at all once faded out
+  marker.rotation.y = time * 2; marker.position.y = 2.32 + Math.sin(time * 3) * .05;
+  if (spotAt >= 0) exhibits[spotAt].coverMat.emissiveIntensity = on ? .45 + .1 * pulse : .3;
   // the signboard becomes active in the empty stretch after the last book
-  signActive = nearest < 0 && camera.position.z < LAST_BOOK_Z - 2;
+  signActive = nearest < 0 && camera.position.z < Z_END + .8;
   endSignFace.emissiveIntensity = signActive ? .45 + .15 * Math.sin(time * 4) : .25;
   if (nearest >= 0) {
     const it = ITEMS[nearest];
     highlight.position.set(it.side * (HALF_W - .8), 2.6, it.z); highlight.intensity = .9;
-    viewBtn.textContent = L('view') + bookName(it);
-    viewBtn.classList.add('show');
+    showView(L('view') + bookName(it));
   } else if (signActive) {
-    viewBtn.textContent = L('view') + L('centreName');
-    viewBtn.classList.add('show'); highlight.intensity = 0;
+    showView(L('view') + L('centreName')); highlight.intensity = 0;
   } else { viewBtn.classList.remove('show'); highlight.intensity = 0; }
 
+  const p = camera.position;
+  if (p.distanceToSquared(lampsFor) > 1e-4) { lampsFor.copy(p); assignLamps(); }   // you moved: hand the lights out again
+  hideFarDetail(now);
   animateScene(time);
-  drawMap();
+  // the minimap is redrawn only when something on it changed: where you stand, where you look, the active book, the book under the cursor
+  if (Math.abs(p.x - mapSeen.x) > .02 || Math.abs(p.z - mapSeen.z) > .02 || Math.abs(yaw - mapSeen.yaw) > .01
+      || nearest !== mapSeen.nearest || mapHover !== mapSeen.hover) {
+    mapSeen.x = p.x; mapSeen.z = p.z; mapSeen.yaw = yaw; mapSeen.nearest = nearest; mapSeen.hover = mapHover;
+    drawMap();
+  }
   renderer.render(scene, camera);
-  requestAnimationFrame(tick);
+  if (perf) perf.frame(frameStart);
+  if (covered) { guard.t0 = 0; if (perf) perf.sleeping(); }   // that was the one frame: asleep until wake()
+  else watchFrameTime(now);
 }
-tick();
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>

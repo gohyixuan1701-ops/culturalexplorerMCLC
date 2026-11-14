@@ -87,6 +87,52 @@ Checked in the browser at 1366×768 and at phone size (375×812): layout, search
 
 Not done on purpose: English summaries, English text for the Centre's history, and author biographies are placeholders (lorem), as agreed for the hackathon.
 
+### Fifth round: performance, and a richer 3D model
+
+Goal: the scene must run smoothly on phones and on PCs, and look richer, with every feature kept.
+
+The version before this round is kept as the git tag `backup-before-perf-pass` (the 28-book version). The work was then moved on top of the 20-book, two-wall version (commit `d7229ef`), so the "before" numbers below are that version with only the measuring overlay added.
+
+How to look at the numbers yourself: add `?debug=1` to the address for an overlay (tier, frames per second, time per frame, draw calls, triangles, textures). Add `?tier=low`, `?tier=medium` or `?tier=high` to force a quality level.
+
+| Area | Change |
+|---|---|
+| Quality levels | The page sizes up the device before it builds the scene (touch or mouse, screen size, pixel density, processor cores, memory, name of the graphics chip) and picks low, medium or high. Each level sets the drawing resolution, edge smoothing, number of real lights, dust, and texture size |
+| Safety net | If frames stay under 50 a second for 4 seconds, the scene is drawn with fewer pixels, one step at a time, never below the screen's own size. It only ever steps down, so it cannot flicker between sizes |
+| Phones with fast screens | On the low level, drawing is held to about 60 frames a second on 90 and 120 Hz screens, to save battery and heat |
+| Draw calls | Each exhibit used to be about 21 separate draw calls. Now each kind of part (boards, cloth, brass frames, lamps, book bodies) is drawn once for all books, the caption plates share one picture and one shape, and one halo and one marker move to the active book |
+| Lights | The scene has 13 lamps but only 12, 7 or 4 real lights (high, medium, low), plus the book spotlight. The lights go to the lamps nearest to you and fade as they change hands. Lamps without a light still glow |
+| Idle work | The minimap is redrawn only when something on it changes. Nothing is drawn while a book, the catalogue, the guide or the author box covers the scene, or while the tab is in the background |
+| Books | Hardcover shape: two boards, a page block set in from the edges, a rounded spine, a pressed joint on the cover |
+| Corridor | Painted coffered ceiling with purlins, a carved brace where every beam meets the wall, a fret band under the cornice, palace lanterns with gilt rims and tassels, a moulded frame and brackets on every display board, relief on the wall panelling |
+| Entrance | Real brass studs on the doors, timber lattices in front of the lit windows, bracket sets under the canopy, drum stones beside the door, six-sided stone lanterns |
+| End wall | The empty 12 m of corridor after the last books is gone (4 m of standing room is left). Console table with upturned ends, a pile of books and an incense burner |
+
+Measured on a laptop with AMD Radeon 780M graphics, in Chrome, at the entrance (the most expensive view):
+
+| | Before | After |
+|---|---|---|
+| **High**, 1440×900 at 2× density: draw calls | 553 | 134 |
+| triangles | 20,178 | 32,448 |
+| shader programs / textures | 16 / 63 | 23 / 47 |
+| real lights | 15 | 13 |
+| frames per second (time per frame) | 90 to 95 (10.5 to 11.1 ms) | 134 to 136 (7.4 to 7.5 ms) |
+| **Medium** (forced), 1440×900 at 1.5×: draw calls | 553 | 134 |
+| processor time per frame | 4.6 ms | 2.4 ms |
+| frames per second | 120 | 120 |
+| **Low**, phone size 390×844 at 3× density, processor slowed 4×: draw calls | 549 | 125 |
+| triangles | 20,150 | 29,100 |
+| shader programs / textures | 16 / 62 | 19 / 45 |
+| frames per second (time per frame) | 40 to 43 (24 ms) | 60, the cap (16.7 ms) |
+
+Targets: high at most 200 draw calls (134: met); low at most 150 draw calls and 150,000 triangles, and 16.7 ms a frame (125, 29,100 and 16.7 ms: met). On the high level this laptop's screen refreshes faster than its graphics chip can draw 2880×1800, so the frame rate is not locked to the screen; it is above 120.
+
+Checked in the browser on every level, and at phone size upright and sideways: walking with keys and on-screen buttons, clicking a far book (walks there and opens), clicking a near book by its cover and by its spine, the View button, search in Chinese and pinyin, minimap, catalogue, author box, language switch (covers and plates repaint), end signboard, guide. All passed, with no errors in the console. Opening and closing 10 books left the graphics memory unchanged (98 shapes, 47 textures). The quality-level choice was tested against 46 typical devices.
+
+One thing tried and taken back: drawing all swaying lanterns as copies of one mesh. Every moving copy has to be sent to the graphics chip again each frame, and when the chip was the bottleneck that cost 3 to 8 ms a frame. Each lantern is now a small group of three meshes that sways as a whole.
+
+Not checked: a real phone or tablet, Safari on iPhone, and an old classroom PC. The phone numbers above come from Chrome's phone emulation on a laptop, which slows the processor but not the graphics chip. To check a real device, open the page with `?debug=1`, walk the corridor, and read the tier and frames per second; if it is under 50, try `?tier=low`.
+
 ## 3. Evaluation
 
 ### Strengths

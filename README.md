@@ -8,11 +8,12 @@ A browser-based Malaysian Chinese literature prototype by **Cultural Explorer**,
 | --- | --- | --- |
 | Standalone 3D literature gallery | [Open the gallery](https://cultural-explorer-roan.vercel.app/) | 20 exhibits: 10 selected Centre publications and 10 English translations |
 | Library catalogue | [Browse the catalogue](https://mahua-literature-library.thngyh.chatgpt.site/) | 38 bibliographic records, filters, author information, and a local bookshelf |
-| Gallery bundled with the catalogue | [Enter the bundled gallery](https://mahua-literature-library.thngyh.chatgpt.site/gallery/) | The catalogue's separate 20-exhibit gallery snapshot |
 
 Both deployments are publicly accessible without login. The repository itself is private. A public demo is not evidence of customer adoption, institutional endorsement, or content-rights clearance.
 
-**Source status:** this documentation was reviewed against `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef` and the catalogue source published from Sites commit `dda10f1916b65587d19fa9ecd6a95c17eff832a9`. The `library/` source is introduced in [PR #1](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/1); it was not yet merged into `main` at that review. Use a checkout containing `library/` for the catalogue instructions below.
+All catalogue “3D gallery” buttons open the standalone Vercel gallery above. The former catalogue `/gallery/` address redirects there, so visitors use one current gallery.
+
+**Source status:** the catalogue and documentation are included in `main` following [PR #3](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/3). This link update builds on `main` at `3b685cc48f2c4a289a2e8379f60fb5bfbeb2ae07`; the standalone gallery runtime is unchanged.
 
 ## What is implemented
 
@@ -34,13 +35,13 @@ Both deployments are publicly accessible without login. The repository itself is
 - A browser-local saved bookshelf. These are personal bookmarks, not borrowing records or saved classroom results.
 - A manual three-page feature board: collection overview, 3D visit, and English translations. Buttons, position dots, arrow keys, and touch swipes switch pages. The layout calculates a shared height across the pages and languages.
 - Larger readable type and touch targets; the full formal wordmark uses bold, seal-coloured M/C/L/C initials; the credit reads `by Cultural Explorer`.
-- Book-detail and source dialogs, the bundled gallery, and bilingual FeedMe Hackathon/mock-up terms in the footer.
+- Book-detail and source dialogs, direct links to the standalone gallery, and bilingual FeedMe Hackathon/mock-up terms in the footer.
 
 See [catalogue setup and editing](library/README.md) and [current project status](PROJECT_STATUS.md).
 
 ## Run locally
 
-Requirements: GitHub repository access, Python 3 for the local server, and a modern browser. WebGL is required for the galleries. Node.js is used only for the optional logic and financial checks.
+Requirements: GitHub repository access, Python 3 for the local server, and a modern browser. WebGL is required for the gallery. Node.js is used only for the optional logic and financial checks.
 
 ```bash
 git clone https://github.com/gohyixuan1701-ops/culturalexplorerMCLC.git
@@ -51,15 +52,9 @@ python3 -m http.server 8765 --bind 127.0.0.1
 Open:
 
 - [Standalone gallery](http://localhost:8765/) — `index.html` redirects to `cultural explorer.html`.
-- [Catalogue](http://localhost:8765/library/dist/) — requires a checkout containing `library/`.
-- [Bundled gallery](http://localhost:8765/library/dist/gallery/).
+- [Catalogue](http://localhost:8765/library/dist/).
 
-If your checkout does not contain the catalogue yet:
-
-```bash
-git fetch origin feat/mclc-library-mockup-20261114
-git switch --track origin/feat/mclc-library-mockup-20261114
-```
+The catalogue's gallery links open the public standalone gallery and require internet access. To work on the gallery locally, use the root address above.
 
 There is no dependency-installation or build step. Serve the catalogue over HTTP because it fetches `books.json`; opening its HTML directly from the filesystem is insufficient. The standalone gallery can also be opened directly with its three companion JavaScript files beside it.
 
@@ -96,7 +91,7 @@ The catalogue checks exercise application logic with a simulated document. They 
 | Close a book or overlay | Escape or its close control |
 | Reopen the welcome guide | ? button |
 
-The standalone gallery uses a language toggle. The catalogue uses a globe menu; its bundled gallery retains its own gallery controls.
+The standalone gallery uses a language toggle. The catalogue uses a globe menu and links directly to that gallery.
 
 ## Source structure
 
@@ -118,7 +113,7 @@ culturalexplorerMCLC/
 │       ├── books.json
 │       ├── author-profiles.js
 │       ├── assets/               # 38 JPEG covers and favicon
-│       └── gallery/              # Separate bundled gallery snapshot
+│       └── gallery/              # Legacy address redirects to the standalone gallery
 ├── PROJECT_STATUS.md             # Current feature and verification scope
 ├── BUSINESS_MODEL.md             # Proposal summary; links to detailed plan
 ├── EVALUATION.md                 # Current assessment and historical development log
@@ -131,7 +126,7 @@ culturalexplorerMCLC/
 
 The standalone data is in `cultural explorer.html`: `MCLC_BOOKS`, `LOCAL_PICK`, `TRANSLATED`, `AUTHOR_EN`, `TEXT`, `PINYIN`, `MAHUA`, and `CENTRE`. Cover data is in `window.COVERS` / `window.COVERS_EN`. Comments mention `make-covers.py`, which is not included.
 
-The catalogue uses `library/dist/books.json`, `author-profiles.js`, and JPEG files in `assets/`. The two gallery copies and catalogue data are **not automatically synchronized**. Changing root gallery data does not update the catalogue or its bundled gallery. See [the catalogue README](library/README.md) before updating them.
+The catalogue uses `library/dist/books.json`, `author-profiles.js`, and JPEG files in `assets/`. Its gallery buttons link directly to `https://cultural-explorer-roan.vercel.app/`; `library/dist/gallery/index.html` redirects old links to the same destination. The older companion JavaScript files in that directory are retained but no longer loaded. Catalogue book data is **not automatically synchronized** with root gallery data. See [the catalogue README](library/README.md) before updating records.
 
 Pushing to GitHub does not automatically publish either demo:
 

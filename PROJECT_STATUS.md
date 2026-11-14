@@ -5,26 +5,27 @@ This status separates the standalone gallery from the catalogue and preserves th
 ## Reviewed sources
 
 - Standalone gallery and existing documents: `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef`.
-- Catalogue runtime: published Sites source `dda10f1916b65587d19fa9ecd6a95c17eff832a9`, introduced into GitHub through [PR #1](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/1).
-- The catalogue had not been merged into `main` at the review base. This PR contains its `library/` source and the documentation refresh.
+- Catalogue runtime: standalone-routing Sites source `46ddaa86e15644bef2452c0b1365a787e0e2d0f9`. The initial catalogue was introduced into GitHub through [PR #1](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/1).
+- The catalogue and documentation were merged through [PR #3](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/3), at `3b685cc48f2c4a289a2e8379f60fb5bfbeb2ae07`.
+- Subsequent routing update: all catalogue gallery buttons open the standalone Vercel gallery. The legacy `/gallery/` address redirects there; the embedded snapshot is no longer served.
 
 The standalone UI currently says “The Digital Malaysian Chinese Literature Centre”. The catalogue wordmark is “Malaysian Chinese Literature Center”, with bold, seal-coloured M/C/L/C initials and `by Cultural Explorer`. These are separate runtime snapshots.
 
 ## Implemented behavior
 
-| Capability | Standalone gallery | Catalogue and bundled gallery |
+| Capability | Standalone gallery | Catalogue |
 | --- | --- | --- |
-| Public entry | [Vercel](https://cultural-explorer-roan.vercel.app/) | [Catalogue](https://mahua-literature-library.thngyh.chatgpt.site/) / [bundled gallery](https://mahua-literature-library.thngyh.chatgpt.site/gallery/) |
-| Displayed collection | 20 exhibits: 10 selected Centre records + 10 translations | 38 catalogue records: 28 Centre records + 10 translations; 20 exhibits in its bundled gallery |
-| Wall arrangement | Mirrored positions on both walls | Older bundled gallery snapshot; not automatically updated from root |
+| Public entry | [Vercel](https://cultural-explorer-roan.vercel.app/) | [Catalogue](https://mahua-literature-library.thngyh.chatgpt.site/); gallery buttons open Vercel |
+| Displayed collection | 20 exhibits: 10 selected Centre records + 10 translations | 38 catalogue records: 28 Centre records + 10 translations |
+| Wall arrangement | Mirrored positions on both walls | Uses the standalone gallery |
 | Discovery | In-gallery catalogue, search including supported Pinyin, minimap, auto-travel | Search, genre/collection/edition filters, sorting, pagination, grid/list views |
-| Language control | Chinese/English toggle | Globe menu with Chinese/EN options; separate gallery toggle |
+| Language control | Chinese/English toggle | Globe menu with Chinese/EN options; the linked gallery has its own toggle |
 | Book content | Cover, summary, metadata, edition sources | Cover, summary, metadata, edition sources; no full texts |
 | Author information | Introduction-coming-soon notice and related displayed works | 28 cards; 7 sourced profiles, others with labelled catalogue years/genres |
 | Personal bookmarks | None | Local browser bookshelf; no account or cross-device sync |
 | Feature board | None | 3 manual bilingual pages; buttons, dots, arrows, swipes; shared height measured across all pages/languages |
-| Gallery reading on phones | Portrait single-page reading and long-page scrolling in current root app | Embedded gallery is a separate earlier snapshot; do not assume root phone fixes are present |
-| First-visit guide | Included | Included in bundled gallery |
+| Gallery reading on phones | Portrait single-page reading and long-page scrolling in current root app | Uses the standalone gallery |
+| First-visit guide | Included | Available in the linked gallery |
 | Class quiz | Removed | Not included |
 | AI questions | Future-feature label only | No connected AI service |
 | Teacher tools, subscriptions, payments, lending, saved class results, Malay | Not implemented | Not implemented |
@@ -54,6 +55,6 @@ No new browser session, rendered-layout measurement, device-performance test, re
 
 1. Test both public experiences on actual Android and iOS browsers, including browser text enlargement and orientation changes.
 2. Check globe-menu selection, all feature pages at equal dimensions, long book details, author sources, and bookmarks after reload.
-3. Test the standalone gallery's walking and phone flip-book controls; separately check the bundled gallery before relying on the same behavior.
+3. Test the standalone gallery's walking and phone flip-book controls, catalogue gallery links, and redirect from old gallery bookmarks.
 4. Scan the existing QR images from a real print/projected slide and test venue Wi-Fi/mobile data.
 5. Obtain content permissions and collect customer/pilot evidence before claiming institutional support, classroom effectiveness, or commercial traction.

@@ -1,5 +1,11 @@
 # Catalogue verification and validation
 
+## Standalone gallery routing update
+
+All five catalogue gallery entry points now use `https://cultural-explorer-roan.vercel.app/`. The former `/gallery/` page redirects to that address with JavaScript and an HTML refresh; a visible link remains as a fallback. The script URL is versioned to refresh cached catalogue code.
+
+Published source commit: `46ddaa86e15644bef2452c0b1365a787e0e2d0f9` in the managed Sites repository. The existing catalogue logic check now expects the standalone destination and passes. All five link destinations, redirect/fallback source, and JavaScript syntax were checked; the standalone address returned HTTP 200. A new browser/device acceptance pass is not claimed. The snapshot checks below describe the earlier bundled-gallery version.
+
 ## Scope
 
 Catalogue runtime source: `dda10f1916b65587d19fa9ecd6a95c17eff832a9` in the managed Sites source repository. GitHub source is introduced through [PR #1](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/1).

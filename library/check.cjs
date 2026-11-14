@@ -30,7 +30,7 @@ const run=code=>vm.runInContext(code,context);
  run("state.lang='en';bookDetails(data.books.find(b=>b.title==='湖面如镜'))");assert.ok(node('#bookDetails').innerHTML.includes('Lake Like a Mirror'),'English detail title');assert.ok(node('#bookDetails').innerHTML.includes('9781846276903'),'detail ISBN');
  run("state.lang='zh';bookDetails(data.books.find(b=>b.title==='湖面如镜'))");assert.ok(node('#bookDetails').innerHTML.includes('作品简介'),'Chinese details');
  run('renderAuthors()');assert.ok(node('#books').innerHTML.includes('data-author='),'author directory');
- run("state.lang='en';setFeature(1)");assert.ok(node('#introTitle').innerHTML.includes('Step inside'),'gallery feature');assert.ok(node('#featureAction').innerHTML.includes('href="gallery/"'),'gallery destination');
+ run("state.lang='en';setFeature(1)");assert.ok(node('#introTitle').innerHTML.includes('Step inside'),'gallery feature');assert.ok(node('#featureAction').innerHTML.includes('href="https://cultural-explorer-roan.vercel.app/"'),'gallery destination');
  run("setFeature(2);openFeatureCollection('translations')");assert.equal(run('matchingBooks().length'),10,'featured translations destination');
  run('setFeature(3)');assert.equal(run('featureIndex'),0,'next feature wraps to first');
  run('setFeature(-1)');assert.equal(run('featureIndex'),2,'previous feature wraps to last');

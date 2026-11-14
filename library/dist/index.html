@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="styles.css?v=uniform-panels-1">
   <script src="author-profiles.js" defer></script>
-  <script src="app.js?v=uniform-panels-1" defer></script>
+  <script src="app.js?v=standalone-gallery-1" defer></script>
 </head>
 <body>
   <a class="skip" href="#catalogue" data-t="skip">Skip to catalogue</a>
@@ -34,7 +34,7 @@
         <div id="categories" class="categories"></div>
         <div class="filter-group"><h3 data-t="collection">COLLECTION</h3><div id="collections"></div></div>
         <div class="filter-group"><label for="edition" data-t="edition">EDITION LANGUAGE</label><select id="edition"><option value="all" data-t="anyLanguage">All editions</option><option value="zh" data-t="chineseEdition">Chinese editions</option><option value="en" data-t="englishEdition">English translations</option></select></div>
-        <div class="gallery-card"><svg><use href="#i-gallery"/></svg><span class="eyebrow" data-t="beyond">BEYOND THE BOOKSHELF</span><h3 data-t="galleryTitle">Step into the stories.</h3><p data-t="galleryCopy">Walk through our 3D gallery and explore 20 selected works.</p><a href="gallery/" data-t="enterGallery">Enter 3D gallery ↗</a><span class="gallery-lines" aria-hidden="true"></span></div>
+        <div class="gallery-card"><svg><use href="#i-gallery"/></svg><span class="eyebrow" data-t="beyond">BEYOND THE BOOKSHELF</span><h3 data-t="galleryTitle">Step into the stories.</h3><p data-t="galleryCopy">Walk through our 3D gallery and explore 20 selected works.</p><a href="https://cultural-explorer-roan.vercel.app/" data-t="enterGallery">Enter 3D gallery ↗</a><span class="gallery-lines" aria-hidden="true"></span></div>
       </aside>
       <section class="catalogue-main" aria-labelledby="sectionTitle">
         <div class="section-heading"><div><div class="breadcrumb"><span data-t="library">Library</span><span>/</span><span id="breadcrumbCurrent" data-t="allBooks">All books</span></div><h2 id="sectionTitle" data-t="allBooks">All books</h2></div><span class="collection-tag" data-t="curated">Curated with care. Collected for discovery.</span></div>
@@ -47,7 +47,7 @@
         <div class="catalogue-footnote"><span class="dot"></span><span data-t="footnote">Explore book summaries and publication details. Full literary texts are not included.</span></div>
       </section>
     </div>
-    <section class="closing"><span class="closing-mark">文</span><div><h2 data-t="closingTitle">Our stories deserve a place to live.</h2><p data-t="closingCopy">Preserving Malaysian Chinese literature, one book and one reader at a time.</p></div><a href="gallery/"><span data-t="discoverGallery">Discover the 3D gallery</span><span>↗</span></a></section>
+    <section class="closing"><span class="closing-mark">文</span><div><h2 data-t="closingTitle">Our stories deserve a place to live.</h2><p data-t="closingCopy">Preserving Malaysian Chinese literature, one book and one reader at a time.</p></div><a href="https://cultural-explorer-roan.vercel.app/"><span data-t="discoverGallery">Discover the 3D gallery</span><span>↗</span></a></section>
   </main>
   <footer><a href="./" class="footer-brand">MCLC <span>马华文学馆</span></a><p data-t="footer">A Cultural Explorer catalogue prototype · Collection from the Malaysian Chinese Literature Center and published English editions.</p><button class="text-button" id="sources" data-t="sources">About the collection ↗</button><div class="footer-legal"><p data-t="teamCredit">Team Cultural Explorer · A mock-up for the FeedMe Hackathon.</p><button class="text-button" id="terms" data-t="termsLink">T&C · Mock-up notice ↗</button></div></footer>
   <dialog id="bookDialog" aria-labelledby="bookDialogTitle"><button class="dialog-close" aria-label="Close book details" data-close="bookDialog">×</button><div id="bookDetails"></div></dialog>

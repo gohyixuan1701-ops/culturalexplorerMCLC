@@ -163,9 +163,9 @@ Limits of this round:
 
 Still not tested: a real phone, iPhone Safari, WeChat's built-in browser, slow mobile data, and scanning the printed or projected code with a camera. Step 1 of the team checklist in section 5 should now include opening the history book at the end of the corridor and turning through its pages.
 
-## Update: mirrored walls, books on the end table, brand name (14 November 2026, working copy after `5ca9b4c`)
+## Update: mirrored walls, books on the end table, brand name (14 November 2026, commit `da6d849`)
 
-These changes are in the working copy only. They are **not committed and not redeployed**: the public address still serves `cee6240`.
+These changes are committed as `da6d849` and pushed to `main`. They are **not redeployed**: pushing does not update the public address, which was fetched after the push and still serves the earlier version (vases on the table, staggered walls, old brand). The checks below were run on the local server only.
 
 | # | Change | Why | Checked |
 |---|---|---|---|

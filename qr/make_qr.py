@@ -1,4 +1,4 @@
-# Makes the QR code for the public Cultural Explorer address, then reads it back to confirm it decodes to the same address.
+# Makes the QR code for the public address of The Digital Malaysian Chinese Literature Centre, then reads it back to confirm it decodes to the same address.
 import sys, qrcode
 from qrcode.constants import ERROR_CORRECT_Q
 from PIL import Image, ImageDraw, ImageFont
@@ -22,7 +22,11 @@ def font(size, names=("msyhbd.ttc", "msyh.ttc", "arialbd.ttf", "arial.ttf")):
     return ImageFont.load_default()
 def centre(text, y, f, fill="black"):
     w = d.textlength(text, font=f); d.text(((W - w) / 2, y), text, font=f, fill=fill)
-centre("Cultural Explorer 马华文学馆", 50, font(56))
+TITLE = "The Digital Malaysian Chinese Literature Centre"
+size = 56                                             # the title is long: use the largest size that leaves a margin each side
+while d.textlength(TITLE, font=font(size)) > W - 80: size -= 1
+centre(TITLE, 32, font(size))
+centre("马华文学馆", 96, font(44))
 centre("Scan to walk in  扫码参观", img.height + 160, font(44))
 centre(URL.replace("https://", ""), img.height + 235, font(36, ("consola.ttf", "arial.ttf")), "#444444")
 poster.save("qr/cultural-explorer-qr-poster.png")

@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cultural Explorer</title>
+<title>The Digital Malaysian Chinese Literature Centre</title>
+<meta property="og:title" content="The Digital Malaysian Chinese Literature Centre">
 <style>
   /* ---------- Design tokens ----------
      One theme (dark, to sit on the 3D scene), one accent (brass gold, taken from the scene's brass fittings).
@@ -20,6 +21,7 @@
     --chip-leg:#a5583b;
   }
   *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}   /* stop phones inflating text on their own */
   html,body{margin:0;height:100%;background:#0d0b09;color:var(--ink);font-family:var(--ui);
     overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-font-smoothing:antialiased}
   button{font-family:inherit;color:inherit}
@@ -131,6 +133,14 @@
   .fbook{position:relative;width:calc(var(--pw) * 2);height:var(--ph);perspective:2000px;
     font-size:calc(var(--pw) / 15);transition:transform .9s cubic-bezier(.4,.1,.2,1)}
   .fbook.closed{transform:translateX(calc(var(--pw) * -.5))}   /* closed: centre the cover */
+  /* upright phone: the spread is twice the screen width and slides, so one page at a time is centred and large enough to read */
+  .fbook.one{transform:translateX(calc(var(--pw) * -.5))} .fbook.one.left{transform:translateX(calc(var(--pw) * .5))}
+  /* a page whose text cannot fit (small screens, or a browser that enlarges small text) scrolls inside the page instead of spilling over it */
+  .pg.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}
+  .pg.scroll .num{position:static;margin-top:1em}
+  /* only the turning leaves animate inside the book. Without this, the reduced-motion rule at the end of this sheet turns every property of
+     every element into a (very short) transition, so the text is still at its old size when fitPages() measures the pages. */
+  .fbook *{transition-property:transform}
   #stage.show .fbook{animation:bookIn .7s cubic-bezier(.2,.8,.3,1)}
   @keyframes bookIn{from{opacity:0;scale:.55;translate:0 60px}}
   .leaf,.base{position:absolute;top:0;left:var(--pw);width:var(--pw);height:100%}
@@ -233,10 +243,14 @@
     #viewBtn{bottom:158px;max-width:calc(100vw - 32px)}
     #map{--mh:128px} #map.big{--mh:min(360px, calc(100vh - 110px))}
     .arrow{width:54px;height:54px}
-    #authorBox,.box{padding:26px 20px 22px} }
+    #authorBox,.box{padding:26px 20px 22px}
+    .bk-ctrl{max-width:calc(100% - 12px)} #pgInfo{min-width:0;flex:1 1 auto} }   /* the page bar stays on screen: a long page name wraps */
   /* phones: the brand shrinks to its seal and the tools tighten, so both still share the top row */
   @media (max-width:560px){ .hud-title{padding:0 4px} .hud-title > div{display:none} }
-  @media (max-width:400px){ .tool{padding:0 10px;font-size:13px} }
+  @media (max-width:400px){ .tool{padding:0 10px;font-size:13px}
+    .bk-ctrl button{padding:0 10px} #pgInfo{font-size:12.5px} }
+  /* phone held sideways: the pages are small, so the history text keeps a readable size and the page scrolls (see fitPages) */
+  @media (max-height:520px){ .pg .txt.sm,.pg dl.sm{font-size:max(.74em,12px)} .pg .txt.xs,.pg dl.xs{font-size:max(.64em,12px)} }
   @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
 </style>
 </head>
@@ -1731,11 +1745,14 @@ const stage = document.getElementById('stage'), fbook = document.getElementById(
 const pgPrev = document.getElementById('pgPrev'), pgNext = document.getElementById('pgNext'), pgInfo = document.getElementById('pgInfo');
 let PAGE_NAMES = [];
 let pageLeaves = [], flipped = 0;
+let onePage = false, showLeft = false;   // one-page mode (upright phone), and whether the left page of the open spread is the one in view
 let bookRatio = 1.25;   // page height ÷ width; a book opened with its cover photo takes the photo's shape
 
 function sizeBook(){
   // the book sits in the middle of the whole screen
-  let pw = Math.max(130, Math.min(300, (innerWidth - 40) / 2, (innerHeight - 150) / bookRatio)), pad = 0;
+  onePage = innerWidth < 760 && innerHeight > innerWidth;      // upright phone: show one page at a time
+  let pw = onePage ? Math.max(200, Math.min(420, innerWidth - 28, (innerHeight - 170) / bookRatio))
+                   : Math.max(130, Math.min(300, (innerWidth - 40) / 2, (innerHeight - 150) / bookRatio)), pad = 0;
   // only when the details bar is open and the screen is too narrow for both, the book moves aside just enough
   if (innerWidth >= 900 && panel.classList.contains('open')) {
     const free = innerWidth - panel.offsetWidth;             // room left of the details bar
@@ -1745,6 +1762,17 @@ function sizeBook(){
   }
   stage.style.paddingRight = pad + 'px';
   fbook.style.setProperty('--pw', pw + 'px'); fbook.style.setProperty('--ph', pw * bookRatio + 'px');
+  fbook.classList.toggle('one', onePage); fbook.classList.toggle('left', onePage && showLeft && flipped > 0);
+  fitPages();
+}
+// Any page whose content is taller than the page (or runs into the page number) becomes scrollable
+function fitPages(){
+  fbook.querySelectorAll('.pg').forEach(p => {
+    p.classList.remove('scroll');
+    const num = p.querySelector('.num');
+    const bottom = Math.max(0, ...[...p.children].filter(c => c !== num && getComputedStyle(c).position !== 'absolute').map(c => c.offsetTop + c.offsetHeight));
+    if (p.scrollHeight > p.clientHeight + 1 || (num && bottom > num.offsetTop)) p.classList.add('scroll');
+  });
 }
 addEventListener('resize', sizeBook);
 
@@ -1822,9 +1850,9 @@ function showBook(pages, sourceNote, names, ratio = 1.25){
   pageLeaves = [...fbook.querySelectorAll('.leaf')];
   pageLeaves.forEach((lf, k) => lf.addEventListener('click', e => {
     if (e.target.closest('.au')) return;                               // author name: opens the author box, no page turn
-    lf.classList.contains('flipped') ? turn(-1) : turn(1);
+    onePage ? turn(1) : lf.classList.contains('flipped') ? turn(-1) : turn(1);   // one page at a time: a tap always goes on
   }));
-  flipped = 0; sizeBook(); layoutLeaves();
+  flipped = 0; showLeft = false; sizeBook(); layoutLeaves();
   stage.classList.remove('show'); void stage.offsetWidth;            // restart the entrance animation
   stage.classList.add('show'); stage.setAttribute('aria-hidden', 'false');
 }
@@ -1983,13 +2011,18 @@ function layoutLeaves(active = -1){
     lf.classList.toggle('flipped', k < flipped);
     lf.style.zIndex = k === active ? 50 : k < flipped ? 10 + k : 10 + pageLeaves.length - k;
   });
-  fbook.classList.toggle('closed', flipped === 0);
-  pgPrev.disabled = flipped === 0; pgNext.disabled = flipped === pageLeaves.length;
+  fbook.classList.toggle('closed', flipped === 0); fbook.classList.toggle('left', onePage && showLeft && flipped > 0);
+  pgPrev.disabled = flipped === 0; pgNext.disabled = flipped === pageLeaves.length && !(onePage && showLeft);
   pgInfo.textContent = PAGE_NAMES[flipped];
 }
 let settleTimer;
 function turn(d){
+  if (onePage) {   // reading order on a phone: left page of the spread, then its right page, then the leaf turns
+    if (d > 0 && showLeft) { showLeft = false; layoutLeaves(); return; }
+    if (d < 0 && !showLeft && flipped > 0) { showLeft = true; layoutLeaves(); return; }
+  }
   const n = flipped + d; if (n < 0 || n > pageLeaves.length) return;
+  showLeft = d > 0;                                    // a leaf turned forward shows its back (the left page) first
   const active = d > 0 ? flipped : n;                  // the leaf that is moving
   flipped = n; layoutLeaves(active);
   clearTimeout(settleTimer); settleTimer = setTimeout(() => layoutLeaves(), 1100);

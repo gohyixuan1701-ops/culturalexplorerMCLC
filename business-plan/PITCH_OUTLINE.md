@@ -1,6 +1,7 @@
 # Restructured pitch: Chinese studies and research membership
 
 Reference deck: https://canva.link/hbtbbd8u39r9h41 (16 pages).
+Use [PITCH_SPEAKER_NOTES.md](PITCH_SPEAKER_NOTES.md) for the revised script. Older presenter notes inside Canva were not writable through the available tools and still describe the retired model.
 Use the formal name “Malaysian Chinese Literature Center” and team “Cultural Explorer”.
 
 The audience and access model are team direction. Survey figures below are transcribed from the existing pitch charts, not newly retrieved Forms responses. Keep that provenance visible; see [SURVEY_EVIDENCE.md](SURVEY_EVIDENCE.md).

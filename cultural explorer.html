@@ -146,6 +146,11 @@
   .cover{background-size:100% 100%;border-radius:2px 6px 6px 2px;
     box-shadow:inset 6px 0 10px rgba(0,0,0,.45),inset -1px 0 0 rgba(255,255,255,.2)}
   .fbook.closed .leaf:first-child .cover{box-shadow:inset 6px 0 10px rgba(0,0,0,.45),10px 14px 30px rgba(0,0,0,.6)}
+  /* real cover photo: fills the cover, with the spine shade drawn over it */
+  .cover.photo{background:#1a1410}
+  .cover.photo img{display:block;width:100%;height:100%;object-fit:cover}
+  .cover.photo::after{content:"";position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 6px 0 10px rgba(0,0,0,.45),inset -1px 0 0 rgba(255,255,255,.2)}
   .seal{border:2px solid #b0362a;color:#b0362a;padding:.7em .5em;font:1.05em/1.3 "KaiTi","STKaiti","Kaiti SC",serif;display:inline-block;
     writing-mode:vertical-rl;letter-spacing:.25em;transform:rotate(-4deg);margin-top:35%}
   .pg .pl{font-size:.7em;color:#8b7355;letter-spacing:.2em}
@@ -297,6 +302,8 @@
 /* ---------------- Content (edit here) ---------------- */
 // Book collection of 马华文学馆 (source: southern.edu.my/mclc/chuban.php).
 // Titles, authors, years and series follow that page; summaries are short paraphrases.
+// cover: file name of the book's cover photo on that website. The photos are kept, shrunk, in covers.js
+// (made by make-covers.py: run it again after adding a book). A book without a photo shows the drawn cover.
 const SOURCE_URL = 'https://www.southern.edu.my/mclc/chuban.php';
 const TYPES = {
   mclc:     {label:'马华文学馆出版品', en:'MCLC Publications', color:'#8e2418', pub:'南方学院马华文学馆',
@@ -307,62 +314,62 @@ const TYPES = {
              pubEn:'Southern University College & Malaysian Chinese Literature Centre'}
 };
 const ITEMS = [
-  {type:'mclc', title:'跳蚤', author:'商晚筠', year:2003, genre:'小说集',
+  {type:'mclc', title:'跳蚤', author:'商晚筠', year:2003, genre:'小说集', cover:'2003.jpg',
    summary:'商晚筠的小说集，收入两篇生前未发表的遗作，以及她在台湾与马华文坛引起关注的中、短篇代表作。'},
-  {type:'mclc', title:'等待一棵无花果树', author:'黄远雄', year:2007, genre:'诗集',
+  {type:'mclc', title:'等待一棵无花果树', author:'黄远雄', year:2007, genre:'诗集', cover:'2007.jpg',
    summary:'黄远雄继《致时间书》十二年后的诗集，共123首新诗，行吟于都市之间；附张锦忠、沙禽序文及张光达评论。'},
-  {type:'mclc', title:'诗图志', author:'辛金顺', year:2009, genre:'诗集',
+  {type:'mclc', title:'诗图志', author:'辛金顺', year:2009, genre:'诗集', cover:'2009.jpg',
    summary:'辛金顺的第三本诗集，分三辑：童年书写、对消逝事物的追念，以及情诗。'},
-  {type:'mclc', title:'记忆书册', author:'辛金顺', year:2010, genre:'诗集',
+  {type:'mclc', title:'记忆书册', author:'辛金顺', year:2010, genre:'诗集', cover:'2010.8.jpg',
    summary:'辛金顺第四本诗集，共72首，从家族记忆写到吉兰丹地方志与北京，附陈大为的诗评。'},
-  {type:'mclc', title:'青天白日凉飕飕', author:'陈政欣', year:2010, genre:'小说集',
+  {type:'mclc', title:'青天白日凉飕飕', author:'陈政欣', year:2010, genre:'小说集', cover:'2010.jpg',
    summary:'陈政欣参与“驻馆作家计划”后由文学馆出版，曾获双福文学奖；以黑色幽默与魔幻手法书写马华政治与商场。'},
-  {type:'mclc', title:'做脸', author:'陈政欣', year:2016, genre:'微型小说',
+  {type:'mclc', title:'做脸', author:'陈政欣', year:2016, genre:'微型小说', cover:'zuolian_cover.jpg',
    summary:'陈政欣以寓言式的微型小说探索科幻、魔幻与政治讽刺，并收入他对微型小说的翻译、评介与思考。'},
-  {type:'wenchuang', title:'重返诗钞', author:'王润华', year:2014, genre:'诗集',
+  {type:'wenchuang', title:'重返诗钞', author:'王润华', year:2014, genre:'诗集', cover:'2014 prof wong.jpg',
    summary:'王润华回望家国、故乡与热带雨林的诗集，被诗人称为最后一次“重返”。'},
-  {type:'wenchuang', title:'即将远行', author:'何启良', year:2014, genre:'诗集',
+  {type:'wenchuang', title:'即将远行', author:'何启良', year:2014, genre:'诗集', cover:'2014 prof ho.jpg',
    summary:'何启良继《渡海以后》的诗集，围绕告别、出走与归来，以向天地报恩为线索。'},
-  {type:'wenchuang', title:'养死一瓶乳酸菌', author:'许通元', year:2014, genre:'诗集',
+  {type:'wenchuang', title:'养死一瓶乳酸菌', author:'许通元', year:2014, genre:'诗集', cover:'2014. Mr Kho.jpg',
    summary:'许通元的第一本诗集，延续他小说中的魔幻与写实，风格荒诞、戏谑而富想象。'},
-  {type:'wenchuang', title:'黑光白影', author:'冼文光', year:2015, genre:'诗集',
+  {type:'wenchuang', title:'黑光白影', author:'冼文光', year:2015, genre:'诗集', cover:'978-983-2453-48-2.jpg',
    summary:'艺术创作者冼文光的诗集，以跳跃的意识与文字趣味，写流离的身世与异域经验。'},
-  {type:'wenchuang', title:'聆听陌地声', author:'蔡志礼', year:2015, genre:'诗集',
+  {type:'wenchuang', title:'聆听陌地声', author:'蔡志礼', year:2015, genre:'诗集', cover:'978-983-2453-49-9.jpg',
    summary:'蔡志礼中年重拾诗笔之作，部分写于法国波尔多，记录在熟悉与陌生之间的漫游与追问。'},
-  {type:'wenchuang', title:'小曼诗藏', author:'小曼', year:2015, genre:'诗集',
+  {type:'wenchuang', title:'小曼诗藏', author:'小曼', year:2015, genre:'诗集', cover:'978-983-2453-50-5.jpg',
    summary:'小曼停笔多年后的结集，诗风带古典婉约色彩，书写远游、异乡与内心体验。'},
-  {type:'wenchuang', title:'重返马来亚', author:'王润华', year:2017, genre:'诗集',
+  {type:'wenchuang', title:'重返马来亚', author:'王润华', year:2017, genre:'诗集', cover:'978-983-2453-56-7.jpg',
    summary:'王润华回到历史中的马来亚与淡马锡，书写英殖民、日据战争与树木河流，唤起共同记忆。'},
-  {type:'wenchuang', title:'诗路', author:'淡莹', year:2017, genre:'诗集',
+  {type:'wenchuang', title:'诗路', author:'淡莹', year:2017, genre:'诗集', cover:'978-983-2453-57-4.jpg',
    summary:'淡莹的诗集，主张以凝炼的语言与精确的意象写诗，呈现她的写诗历程与人生道路。'},
-  {type:'wenchuang', title:'一世情缘·美丽与哀愁', author:'黄郁兰', year:2017, genre:'诗集',
+  {type:'wenchuang', title:'一世情缘·美丽与哀愁', author:'黄郁兰', year:2017, genre:'诗集', cover:'978-983-2453-58-1.jpg',
    summary:'黄郁兰的诗集，关怀自然环境与人道精神，书写文明与自然之间的冲突与和谐。'},
-  {type:'wenchuang', title:'背景音乐', author:'邢诒旺', year:2017, genre:'诗集',
+  {type:'wenchuang', title:'背景音乐', author:'邢诒旺', year:2017, genre:'诗集', cover:'978-983-2453-59-8.jpg',
    summary:'邢诒旺“诗画相生”的诗集，融合音乐、图像与散文元素，书中插图全以手机绘成。'},
-  {type:'wenchuang', title:'褪色', author:'黄琦旺', year:2017, genre:'散文集',
+  {type:'wenchuang', title:'褪色', author:'黄琦旺', year:2017, genre:'散文集', cover:'978-983-2453-62-8.jpg',
    summary:'黄琦旺的散文集，三辑十五篇，追忆兄长与城市往昔，也有自我反思与人物空间的记录。'},
-  {type:'wenchuang', title:'相思难渡', author:'冯白羽', year:2019, genre:'诗集',
+  {type:'wenchuang', title:'相思难渡', author:'冯白羽', year:2019, genre:'诗集', cover:'2019.png',
    summary:'冯白羽的第一本诗集，收32首诗，每首各藏一则故事，由林建国、林幸谦作序。'},
-  {type:'wenchuang', title:'一座城市布置系统的陷阱来进行残酷的背叛', author:'胡清朝', year:2021, genre:'诗集',
+  {type:'wenchuang', title:'一座城市布置系统的陷阱来进行残酷的背叛', author:'胡清朝', year:2021, genre:'诗集', cover:'huqingchao_cover.jpg',
    summary:'胡清朝的首本诗集，收入九十年代至今的91首诗，从浪漫理想写到现实、生死与人生感悟。'},
-  {type:'wenchuang', title:'声声慢：黄荟如作品集 2013-2023', author:'黄荟如', year:2023, genre:'散文与小说',
+  {type:'wenchuang', title:'声声慢：黄荟如作品集 2013-2023', author:'黄荟如', year:2023, genre:'散文与小说', cover:'huangruhui.png',
    summary:'黄荟如十年间的散文与小说合集，四辑以《声声慢》词句命名，书写寻觅、孤独与生命的荒芜。'},
-  {type:'wenchuang', title:'木麻黄摇摇：邢诒旺诗集', author:'邢诒旺', year:2023, genre:'诗集',
+  {type:'wenchuang', title:'木麻黄摇摇：邢诒旺诗集', author:'邢诒旺', year:2023, genre:'诗集', cover:'muma.png',
    summary:'邢诒旺的新诗集，围绕家乡、政治与疾病三个主题，另附一组译诗。'},
-  {type:'wenchuang', title:'舌挑新山：许通元散文集', author:'许通元', year:2023, genre:'散文集',
+  {type:'wenchuang', title:'舌挑新山：许通元散文集', author:'许通元', year:2023, genre:'散文集', cover:'xinshan.png',
    summary:'许通元书写新山美食的散文集，借食物串起友情、家人、文人往来与地方记忆。'},
-  {type:'wenchuang', title:'琢：黄益启短篇小说集', author:'黄益启', year:2023, genre:'小说集',
+  {type:'wenchuang', title:'琢：黄益启短篇小说集', author:'黄益启', year:2023, genre:'小说集', cover:'zu.png',
    summary:'黄益启的第一本小说集，收十篇短篇与一篇微型小说，具较强的实验性。'},
-  {type:'wenchuang', title:'南方文学之旅诗文集', author:'王润华、许通元、曾繁靖、蔡志礼', year:2024, genre:'诗文集',
+  {type:'wenchuang', title:'南方文学之旅诗文集', author:'王润华、许通元、曾繁靖、蔡志礼', year:2024, genre:'诗文集', cover:'nanfangwenxue.png',
    pub:'南方大学学院中华语言文化学院、马华文学馆',
    summary:'“南方文学之旅”朗诵活动的诗文选集，收入新马及多国作家作品，推动多语文学交流。'},
-  {type:'wenchuang', title:'夕惕斋诗稿', author:'覃勓温', year:2024, genre:'诗集',
+  {type:'wenchuang', title:'夕惕斋诗稿', author:'覃勓温', year:2024, genre:'诗集', cover:'xiyi.png',
    summary:'覃勓温的首部诗集，上辑现代诗、下辑古典诗，写于2016至2023年间。'},
-  {type:'wenchuang', title:'女儿红', author:'余历雄、余正心', year:2025, genre:'诗集',
+  {type:'wenchuang', title:'女儿红', author:'余历雄、余正心', year:2025, genre:'诗集', cover:'nverhong.png',
    summary:'余历雄三十年诗作的结集，并附女儿余正心的诗选与父亲的评述。'},
-  {type:'academic', title:'从婆罗洲到世界华文文学：李永平的文学行旅', author:'王润华、许通元、锺怡慧', year:2020, genre:'论文集',
+  {type:'academic', title:'从婆罗洲到世界华文文学：李永平的文学行旅', author:'王润华、许通元、锺怡慧', year:2020, genre:'论文集', cover:'Cover li yong ping Final-1.jpg',
    summary:'“李永平专题作家展”后编成的论文集，收入新马学者对李永平小说的研究，并附书目资料。'},
-  {type:'academic', title:'橡胶树寓言', author:'王润华', year:2024, genre:'散文、诗与论述',
+  {type:'academic', title:'橡胶树寓言', author:'王润华', year:2024, genre:'散文、诗与论述', cover:'xiangjiaoshu.png',
    summary:'王润华以橡胶树为母题的散文、诗与学术论述合集，连结南洋书写与后殖民论述。'}
 ];
 // Place books automatically: alternate left / right, evenly spaced down the corridor
@@ -395,7 +402,7 @@ const TEXT = {
     welcome:'按 ↑ 或 W 走进大门', going:'前往', goingCentre:'前往马华文学馆简介…', view:'查看：',
     centreName:'马华文学馆简介与历史', centreWhere:'走廊尽头',
     details:'书籍资料', summary:'内容简介', author:'作者', genre:'类别', publisher:'出版社', year:'出版年份', series:'书系',
-    by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', end:'完',
+    by:a => `${a} 著`, source:'资料来源', sourceName:'马华文学馆出版品', coverCredit:'封面图片来自马华文学馆网站', end:'完',
     bookPages:['封面', '扉页', '简介 · 资料', '完'], centrePages:['封面', '简介 · 缘起', '馆藏 · 馆舍', '历史 1997-2014', '历史 2015-2025'],
     chat:'<em>即将推出：</em>向 AI 提问关于这本书的问题。',
     authorTitle:'作者简介', authorNote:'（示例文字，作者资料待补充）', authorWorks:'馆藏作品',
@@ -422,7 +429,7 @@ const TEXT = {
     welcome:'Press ↑ or W to walk in through the door', going:'Going to ', goingCentre:'Going to the Centre…', view:'View: ',
     centreName:'About the Centre and its history', centreWhere:'end of the corridor',
     details:'Book details', summary:'Summary', author:'Author', genre:'Genre', publisher:'Publisher', year:'Year', series:'Series',
-    by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', end:'The end',
+    by:a => `by ${a}`, source:'Source', sourceName:'MCLC publications page', coverCredit:'Cover photo from the MCLC website', end:'The end',
     bookPages:['Cover', 'Title page', 'Summary · Details', 'The end'], centrePages:['Cover', 'About · Origin', 'Collection · Facilities', 'History 1997-2014', 'History 2015-2025'],
     chat:'<em>Coming next:</em> ask a question about this book (AI chat).',
     authorTitle:'About the author', authorNote:'(Placeholder text. Author details to be added.)', authorWorks:'Works in this collection',
@@ -1228,7 +1235,7 @@ function openPanel(i){
       <dt>${L('year')}</dt><dd>${it.year}</dd>
       <dt>${L('series')}</dt><dd>${esc(typeLabel(t))}</dd></dl>
     <p style="font-size:13px;color:var(--muted)">${L('source')}：<a href="${SOURCE_URL}" target="_blank" rel="noopener"
-      style="color:var(--gold)">${L('sourceName')}</a></p>
+      style="color:var(--gold)">${L('sourceName')}</a><span id="coverCredit" ${it.coverImg ? '' : 'hidden'}> · ${L('coverCredit')}</span></p>
     <div class="ask">${L('chat')}</div>`;
   panel.scrollTop = 0;
   openBook(i);
@@ -1247,10 +1254,11 @@ const stage = document.getElementById('stage'), fbook = document.getElementById(
 const pgPrev = document.getElementById('pgPrev'), pgNext = document.getElementById('pgNext'), pgInfo = document.getElementById('pgInfo');
 let PAGE_NAMES = [];
 let pageLeaves = [], flipped = 0;
+let bookRatio = 1.25;   // page height ÷ width; a book opened with its cover photo takes the photo's shape
 
 function sizeBook(){
   // the book sits in the middle of the whole screen
-  let pw = Math.max(130, Math.min(300, (innerWidth - 40) / 2, (innerHeight - 150) / 1.25)), pad = 0;
+  let pw = Math.max(130, Math.min(300, (innerWidth - 40) / 2, (innerHeight - 150) / bookRatio)), pad = 0;
   // only when the details bar is open and the screen is too narrow for both, the book moves aside just enough
   if (innerWidth >= 900 && panel.classList.contains('open')) {
     const free = innerWidth - panel.offsetWidth;             // room left of the details bar
@@ -1259,18 +1267,54 @@ function sizeBook(){
     if (over > 0) pad = over * 2;
   }
   stage.style.paddingRight = pad + 'px';
-  fbook.style.setProperty('--pw', pw + 'px'); fbook.style.setProperty('--ph', pw * 1.25 + 'px');
+  fbook.style.setProperty('--pw', pw + 'px'); fbook.style.setProperty('--ph', pw * bookRatio + 'px');
 }
 addEventListener('resize', sizeBook);
 
+// Real cover photos come from covers.js, a separate file so that this page stays small. It is loaded once the scene is up.
+// Each photo is painted over the drawn cover of its book on the wall, and shown when the book is opened.
+// Without covers.js, or for a book that has no photo in it, the drawn cover stays.
+// (The photos sit inside covers.js, not in picture files, so that the page also works when opened by double-click:
+// a browser does not let a 3D scene use picture files from the disk or from another website.)
+const coverPhoto = it => `<img src="${it.coverImg.src}" alt="${esc(it.title)}" draggable="false">`;
+const coverRatio = img => Math.min(1.65, Math.max(1.2, img.naturalHeight / img.naturalWidth));   // book takes the photo's shape (the 28 photos run from 1.29 to 1.63)
+function applyCovers(){
+  const photos = window.COVERS || {};
+  ITEMS.forEach((it, i) => {
+    if (!photos[it.cover]) return;
+    const img = new Image();
+    img.onload = () => {
+      it.coverImg = img;
+      // wall: paint the photo over the whole drawn cover, shade the spine, and make the book as wide as the photo needs
+      const ex = exhibits[i], c = ex.cover.image, g = c.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(img, 0, 0, c.width, c.height);
+      const shade = g.createLinearGradient(0, 0, 40, 0); shade.addColorStop(0, 'rgba(0,0,0,.4)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = shade; g.fillRect(0, 0, 40, c.height);
+      ex.cover.needsUpdate = true;
+      ex.art.scale.x = 1 / coverRatio(img) / .78;          // the book shape (BOOK_GEO) is .78 wide and 1 tall
+      if (current !== i) return;
+      // this book is already open with the drawn cover: swap the photo in where it is
+      const face = fbook.querySelector('.cover');
+      if (face) { face.classList.add('photo'); face.style.backgroundImage = ''; face.innerHTML = coverPhoto(it); }
+      bookRatio = coverRatio(img); sizeBook();
+      const credit = document.getElementById('coverCredit'); if (credit) credit.hidden = false;
+    };
+    img.src = photos[it.cover];
+  });
+}
+{ const s = document.createElement('script'); s.src = 'covers.js'; s.onload = applyCovers; document.head.appendChild(s); }
+
 function openBook(i){
   const it = ITEMS[i], t = TYPES[it.type];
-  const coverURL = exhibits[i].cover.image.toDataURL();   // same cover as on the wall
+  const photo = it.coverImg;                               // set once the real cover photo is ready
+  const coverFace = photo ? `<div class="face cover photo">${coverPhoto(it)}</div>`
+    : `<div class="face cover" style="background-image:url(${exhibits[i].cover.image.toDataURL()})"></div>`;   // same cover as on the wall
+  const ratio = photo ? coverRatio(photo) : 1.25;
   const pub = esc(typePub(it, t)), label = esc(typeLabel(t));
   const summary = LANG === 'en' ? `<span class="ph">${L('phNote')}</span> ${LOREM.split('. ')[0]}.` : esc(it.summary);
   // each leaf has a front (right-hand page) and a back (left-hand page once turned)
   const pages = [
-    [`<div class="face cover" style="background-image:url(${coverURL})"></div>`,
+    [coverFace,
      `<div class="face back pg l"><div class="seal">马华文学馆<br>藏书</div></div>`],
     [`<div class="face pg r"><div class="pl">${label}</div><div class="pt">${esc(it.title)}</div>
         <div class="pa">${L('by')(authorLinks(it.author))}</div><div class="py">${it.year}</div><div class="pp">${pub}</div></div>`,
@@ -1281,11 +1325,11 @@ function openBook(i){
         <div class="num">3</div></div>`,
      `<div class="face back pg l"><div class="seal" style="margin-top:45%">马华文学馆</div></div>`]
   ];
-  showBook(pages, `${L('source')}：${L('sourceName')}`, L('bookPages'));
+  showBook(pages, `${L('source')}：${L('sourceName')}`, L('bookPages'), ratio);
 }
 // Build any flip book: pages = [[right-page HTML, left-page HTML (back of the leaf)], ...]
-function showBook(pages, sourceNote, names){
-  PAGE_NAMES = names;
+function showBook(pages, sourceNote, names, ratio = 1.25){
+  PAGE_NAMES = names; bookRatio = ratio;
   fbook.innerHTML = `<div class="base"><div class="face pg r"><div class="pt" style="margin-top:40%">${L('end')}</div>
       <div class="py">${sourceNote}</div></div></div>` +
     pages.map(([f, b]) => `<div class="leaf">${f}${b}</div>`).join('');

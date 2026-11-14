@@ -9,6 +9,12 @@ The former `/gallery/` address redirects to the standalone gallery. The catalogu
 
 The public URL retains its original slug. Visible English wording uses “Malaysian Chinese literature” and the formal institutional name. The header displays the full name once, with bold, seal-coloured M/C/L/C initials and a smaller `by Cultural Explorer` credit.
 
+## Audience and membership
+
+For Chinese studies and Malaysian Chinese literature research, including undergraduates, lecturers, postgraduate students, scholars and others needing literary documents/references. Planned free membership grants free-level content only; paid membership grants all platform content. The free collection, fee and billing terms remain to be defined.
+
+The current public catalogue has no membership accounts, payment or enforced content permissions. See the [business model](../BUSINESS_MODEL.md) for the proposed service and its implementation boundary.
+
 ## Features
 
 - **38 records** and cover images: 28 Centre publications + 10 published English translations. Edition records can refer to overlapping literary works.

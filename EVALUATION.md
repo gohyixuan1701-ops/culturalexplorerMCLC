@@ -1,9 +1,9 @@
 # Cultural Explorer: evaluation and business notes
 
 Project: Malaysian Chinese Literature Center (马华文学馆), by team Cultural Explorer.
-Goal: help the younger generation discover and inherit Malaysian Chinese culture through an interactive digital literature centre that teachers can use in class.
+Goal: support Chinese studies and Malaysian Chinese literature research for undergraduates, lecturers, postgraduates, scholars and other users who need literary documents and references.
 
-Current-status review: `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef`, plus the catalogue runtime from Sites source `dda10f1916b65587d19fa9ecd6a95c17eff832a9` in PR #1. See [PROJECT_STATUS.md](PROJECT_STATUS.md). The development rounds below are historical records; old counts, quiz features, placeholder descriptions and frame rates apply only to those rounds. Financial assumptions are not measured business results.
+Current-status review: `main` at `492bc68544ba548f3ae8bd2571dcf08e1e6d3a6b`; catalogue routing source `46ddaa86e15644bef2452c0b1365a787e0e2d0f9`. See [PROJECT_STATUS.md](PROJECT_STATUS.md). The development rounds below are historical records; old counts, quiz features, placeholder descriptions and frame rates apply only to those rounds. The school-focused commercial assumptions are retired; the current direction is free/paid membership, described below.
 
 ## 1. Current implementation
 
@@ -13,8 +13,8 @@ Current-status review: `main` at `189e0790d3866b469a0591a71ddc87fc99ade5ef`, plu
 - The separate catalogue in `library/` has all 38 records, 28 author cards (7 sourced profiles), grid/list browsing, filters, sorting, pagination and a local bookshelf.
 - Catalogue UI: globe language choices, three manually paged feature panels with shared-height sizing, larger type/touch targets, and FeedMe Hackathon/mock-up terms.
 - Public demos are linked in the [README](README.md). Three.js is bundled locally, with a CDN fallback when the local file is missing.
-- The class quiz was removed. Full texts, lesson packs, teacher dashboards, saved class results, payments, Malay and connected AI are not implemented.
-- The catalogue's bundled gallery is a separate older copy; standalone phone-book and mirrored-wall updates do not automatically reach it.
+- The class quiz was removed. Full texts, membership accounts/enforcement, payments, citation export, Malay and connected AI are not implemented.
+- All catalogue gallery links now open the standalone Vercel gallery. The old catalogue gallery address redirects there.
 
 ## 2. Historical development rounds
 
@@ -150,66 +150,32 @@ Not checked: a real phone or tablet, Safari on iPhone, and an old classroom PC. 
 
 | Gap | Why it matters |
 | --- | --- |
-| No full texts, permitted excerpts, lesson packs, quiz or saved class results | The proposed school licence requires teaching value that has not been implemented or demonstrated |
+| No full texts, permission-cleared document library or citation export | Research depth and repeat usefulness still need validation |
 | Rights and partnership status are unconfirmed | A public mock-up and source attribution do not establish permission or endorsement |
-| No recorded customer/pilot evidence | Willingness to use/pay and educational effectiveness remain untested |
+| Survey verification and research-task evidence incomplete | Existing chart feedback is exploratory; research usefulness, paid conversion and retention remain untested |
 | Coverage differs by experience | The gallery exhibits 20 records; the catalogue contains 38; untranslated records remain Chinese |
 | Author coverage is partial | Seven catalogue profiles have sources; the root gallery still uses introduction notices |
-| Gallery/data copies diverge | Root, catalogue JSON and bundled gallery are maintained separately |
+| Data copies can diverge | Root gallery data and catalogue JSON still require separate maintenance |
 | Real-device and visual acceptance remains incomplete | Earlier browser logs are snapshot-specific; current catalogue geometry/gestures need a recorded pass |
-| No Malay, teacher backend, account sync, lending or payments | These remain roadmap work |
+| No membership accounts, entitlement enforcement, payment or account sync | Required before operating the proposed paid membership |
 
 ## 4. Next steps
 
 1. Validate both public experiences on actual devices, including text enlargement, the language menu, feature-panel height, long details and gallery page controls.
 2. Obtain written content permissions and complete missing translations/profiles with sources.
-3. Run teacher/student discovery trials with the currently available browsing experience; do not promise a quiz that is absent.
-4. Confirm demand before implementing permission-cleared excerpts, lessons, assessment and teacher results.
+3. Observe research tasks with Chinese Studies undergraduates, lecturers and postgraduates using the current catalogue/gallery.
+4. Reconcile the unchanged survey and confirm demand for permission-cleared research documents and excerpts.
 5. Establish a repeatable data/gallery synchronization and deployment process.
-6. Validate prices, adoption assumptions and paid workflows before treating forecasts as traction.
+6. Define free-level content and the full paid collection; validate price, conversion, retention and server-enforced membership before selling access.
 
 The gallery link and bundled engine already exist; they are no longer future implementation tasks.
 
-## 5. Business plan sketch
+## 5. Current business direction
 
-**Superseded.** This first sketch used assumed numbers. Use [BUSINESS_MODEL.md](BUSINESS_MODEL.md), which has sourced market figures and a reasoned price. The text below is kept only as a record.
+The primary audience is people engaged in Chinese studies and Malaysian Chinese literature research, including undergraduates, lecturers, postgraduates, scholars and others needing related documents.
 
-### Customer and problem
-- **Who pays:** schools (Chinese primary schools, Chinese independent secondary schools, national schools with Chinese classes), and the associations and foundations that fund Chinese education.
-- **Who uses:** Chinese-language and literature teachers, and their students.
-- **Problem:** Malaysian Chinese literature is in the syllabus but the material is text on paper. The only literature centre is one room in Johor that most students will never visit.
+Free members access only free-level content. Paid members access all content offered by the platform. Pricing, billing and the content boundary remain undecided; accounts, payment and access enforcement are not shipped.
 
-### Product
-A virtual literature centre that a teacher projects in class or assigns as homework, with a ready-made lesson for each exhibit.
+The former school-licence sketch and financial projections are retired. Use [BUSINESS_MODEL.md](BUSINESS_MODEL.md) and the [detailed plan](business-plan/BUSINESS_PLAN.md). Existing survey chart figures and their unverified Forms status are recorded in [SURVEY_EVIDENCE.md](business-plan/SURVEY_EVIDENCE.md).
 
-### Revenue streams
-| Stream | How it works |
-|---|---|
-| School licence | Yearly fee per school for the lesson packs, quizzes and teacher dashboard. The walk-through stays free as the showcase. |
-| Sponsored exhibition rooms | A foundation, clan association or publisher pays to add a themed room (an author, a festival, a dialect group). |
-| Custom virtual museums | Build the same thing for other small museums and cultural centres that cannot afford their own. |
-| Grants | Cultural and education grants to cover the first year's content work. |
-
-### Revenue expectation (illustration only)
-Formula: schools signed × yearly licence fee + rooms sponsored × fee per room.
-
-| Scenario | Schools signed | Licence per school per year | Sponsored rooms | Fee per room | Yearly revenue |
-|---|---|---|---|---|---|
-| Year 1 pilot | 10 | RM 1,000 | 1 | RM 5,000 | RM 15,000 |
-| Year 2 | 50 | RM 1,000 | 3 | RM 5,000 | RM 65,000 |
-| Year 3 | 150 | RM 1,000 | 6 | RM 5,000 | RM 180,000 |
-
-All four inputs are **assumptions** chosen to show the model. Before the pitch, replace them with numbers you can defend: ask two or three teachers what their school pays for digital teaching material today.
-
-Market size for the slide: Malaysia has roughly 1,300 Chinese primary schools and about 60 Chinese independent secondary schools. These figures are from memory and **unverified**; check them against Ministry of Education and Dong Zong sources before quoting.
-
-### Costs
-Hosting is close to free at this size (one static page). The real costs are content work (writing lessons, translation, permissions) and school outreach.
-
-### Risks
-| Risk | Response |
-|---|---|
-| Copyright on covers and excerpts | Partner with the Centre and publishers; start with summaries and author-approved excerpts |
-| Schools have little budget | Lead with sponsors and grants so pilot schools pay nothing in year 1 |
-| Teachers do not adopt it | Build lessons that fit one 30-minute period and need no preparation |
-
+Historical development rounds in section 2 record older technical features, including the removed quiz. They do not define the current target audience or commercial roadmap.

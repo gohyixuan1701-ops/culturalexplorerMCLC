@@ -31,7 +31,7 @@ The script uses a simulated document. Its pass message explicitly excludes brows
 
 - Rendered dimensions, including equal carousel height after fonts load, or absence of overlaps on every viewport.
 - Actual globe-menu clicks, keyboard focus, swipes, modal scrolling, or browser text-enlargement behavior.
-- Real Android/iOS/Safari/WeChat compatibility, graphics performance, or classroom usability.
+- Real Android/iOS/Safari/WeChat compatibility, graphics performance, or research-workflow usability.
 - User adoption, educational effectiveness, official endorsement or rights clearance.
 
 User-supplied phone screenshots exposed earlier catalogue layout defects. Fixes include an intrinsic-height header, larger typography/touch targets, separate book-art/text tracks, and measured shared carousel height. These are implemented changes, not a completed real-device acceptance pass.

@@ -362,3 +362,17 @@ footer>.text-button{font-size:1rem}
  .feature-board .art-label small{writing-mode:horizontal-tb;margin:0;font-size:.875rem;letter-spacing:.05em}
  .feature-board .art-caption{grid-column:1;grid-row:3;position:static;transform:none;margin:0;padding:0;max-width:100%;font-size:1rem;line-height:1.8}
 }
+
+/* Shared seal colour and a larger formal name. */
+:root{--seal-colour:#9b543e}
+.seal{color:var(--seal-colour);border-color:var(--seal-colour)}
+.brand-type .brand-title{font-size:1.375rem;line-height:1.5}
+.brand-title b{color:var(--seal-colour);font-size:inherit}
+/* The measured maximum includes every page in both languages. */
+.feature-board .intro{min-height:var(--feature-slide-height,450px)}
+.feature-measure{position:absolute;top:0;left:0;width:100%;display:grid;visibility:hidden;pointer-events:none;z-index:-1}
+.feature-measure>.intro{grid-area:1/1;align-self:start;width:100%;min-height:0!important;height:auto!important}
+@media(max-width:600px){
+ .brand-type .brand-title{font-size:1.25rem}
+ .feature-board .hero-books img:nth-child(2){max-height:244px}
+}

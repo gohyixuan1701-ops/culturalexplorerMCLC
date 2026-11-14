@@ -2,7 +2,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const nodes=new Map();
-function node(selector){if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',hidden:false,dataset:{},classList:{toggle(){},add(){},remove(){}},setAttribute(){},removeAttribute(){},addEventListener(){},scrollIntoView(){}});return nodes.get(selector);}
+function node(selector){if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',hidden:false,dataset:{},classList:{toggle(){},add(){},remove(){}},querySelector:node,setAttribute(){},removeAttribute(){},addEventListener(){},scrollIntoView(){}});return nodes.get(selector);}
 const dataset=JSON.parse(fs.readFileSync('dist/books.json','utf8'));
 const context={document:{querySelector:node,querySelectorAll:()=>[],documentElement:{},addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},fetch:async()=>({ok:true,json:async()=>dataset}),console,setTimeout,clearTimeout};
 vm.createContext(context);

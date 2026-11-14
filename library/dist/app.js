@@ -60,6 +60,43 @@ const FEATURE_SLIDES=[
   en:{eyebrow:'MALAYSIAN CHINESE LITERATURE IN ENGLISH',title:'Local stories.<br>New perspectives.',description:'Explore 10 published English translations of Malaysian Chinese literature. Meet the authors and translators bringing these stories to new readers.',note:'10 English editions · Fiction, poetry & essays',button:'Browse English translations →',caption:'Across languages, the stories continue.'},
   zh:{eyebrow:'马华文学 · 英译专题',title:'本土故事，<br>跨越语言相遇。',description:'从小说、诗歌到散文，探索 10 部已出版英文译作，认识让马华故事走向更多读者的作家与译者。',note:'10 部英文译作 · 小说、诗歌与散文',button:'浏览英文翻译作品 →',caption:'跨越语言，让故事继续流传。'}}
 ];
+function populateFeatureSlide(root,slide,lang){
+ const copy=slide[lang],find=selector=>root.querySelector(selector);
+ find('#featureEyebrow').textContent=copy.eyebrow;
+ find('#introTitle').innerHTML=copy.title;
+ find('#featureDescription').textContent=copy.description;
+ find('#featureNote').textContent=copy.note;
+ find('#featureCaption').textContent=copy.caption;
+ find('#featureAction').innerHTML=slide.action==='gallery'?`<a class="primary" href="gallery/">${copy.button}</a>`:`<a class="primary" href="#catalogue" data-feature-action="${slide.action}">${copy.button}</a>`;
+ find('#heroBooks').innerHTML=slide.covers.map(title=>data.books.find(b=>b.title===title)).filter(Boolean).map(b=>`<img src="${esc(b.image)}" alt="" width="110" height="160">`).join('');
+}
+let featureMeasureFrame=0;
+function measureFeatureSlides(){
+ if(!data)return;
+ const board=$('#features'),source=$('#featureSlide'),host=document.createElement('div'),copies=[];
+ host.className='feature-measure';host.setAttribute('aria-hidden','true');host.setAttribute('inert','');
+ try{
+  for(const lang of ['en','zh'])for(const slide of FEATURE_SLIDES){
+   const clone=source.cloneNode(true);populateFeatureSlide(clone,slide,lang);
+   clone.removeAttribute('id');clone.removeAttribute('aria-labelledby');clone.lang=lang==='zh'?'zh-Hans':'en';
+   clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+   host.appendChild(clone);copies.push(clone);
+  }
+  board.appendChild(host);
+  const height=Math.ceil(Math.max(...copies.map(el=>el.getBoundingClientRect().height)));
+  if(height>0)board.style.setProperty('--feature-slide-height',height+'px');
+ }finally{host.remove();}
+}
+function queueFeatureMeasure(){
+ if(!data||featureMeasureFrame||typeof requestAnimationFrame!=='function')return;
+ featureMeasureFrame=requestAnimationFrame(()=>{featureMeasureFrame=0;measureFeatureSlides();});
+}
+if(typeof window!=='undefined'){
+ window.addEventListener('resize',queueFeatureMeasure);
+ window.addEventListener('pageshow',queueFeatureMeasure);
+ document.fonts?.ready.then(queueFeatureMeasure);
+ document.fonts?.addEventListener('loadingdone',queueFeatureMeasure);
+}
 function renderFeature(){
  if(!data)return;
  const focusedPage=document.activeElement?.dataset?.featurePage;
@@ -69,13 +106,7 @@ function renderFeature(){
  $('#features').setAttribute('aria-roledescription',zh?'轮播展板':'carousel');
  $('#featureSlide').setAttribute('aria-roledescription',zh?'展板':'slide');
  $('#featureSlide').setAttribute('aria-label',zh?`第 ${featureIndex+1} 页，共 ${FEATURE_SLIDES.length} 页`:`${featureIndex+1} of ${FEATURE_SLIDES.length}`);
- $('#featureEyebrow').textContent=copy.eyebrow;
- $('#introTitle').innerHTML=copy.title;
- $('#featureDescription').textContent=copy.description;
- $('#featureNote').textContent=copy.note;
- $('#featureCaption').textContent=copy.caption;
- $('#featureAction').innerHTML=slide.action==='gallery'?`<a class="primary" href="gallery/">${copy.button}</a>`:`<a class="primary" href="#catalogue" data-feature-action="${slide.action}">${copy.button}</a>`;
- $('#heroBooks').innerHTML=slide.covers.map(title=>data.books.find(b=>b.title===title)).filter(Boolean).map(b=>`<img src="${esc(b.image)}" alt="" width="110" height="160">`).join('');
+ populateFeatureSlide($('#featureSlide'),slide,state.lang);
  $('#featurePrev').setAttribute('aria-label',zh?'上一页展板':'Previous feature');
  $('#featureNext').setAttribute('aria-label',zh?'下一页展板':'Next feature');
  $('#featureDots').setAttribute('aria-label',zh?'选择展板页面':'Choose a feature');
@@ -240,6 +271,7 @@ function applyLanguage(){
  document.querySelectorAll('[data-close]').forEach(el=>el.setAttribute('aria-label',t('close')));
  renderFeature();
  render();
+ queueFeatureMeasure();
 }
 function changeView(view){state.view=view;reset();$('#catalogue').scrollIntoView({behavior:'smooth',block:'start'});}
 document.addEventListener('click',e=>{

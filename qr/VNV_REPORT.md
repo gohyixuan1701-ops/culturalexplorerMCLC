@@ -118,3 +118,47 @@ Suite adapted to the new version (no quiz checks; book choice tested by cursor i
 | Tablet | 768×1024 | touch, low | not run | 31 of 31 pass |
 
 Still not tested: a real phone, iPhone Safari, WeChat's built-in browser, slow mobile data, and scanning the printed or projected code with a camera. The team checklist in section 5 still applies, without the quiz step.
+
+## Update: redeployed at commit `cee6240` (14 November 2026, 18:00)
+
+A team member reported from a phone that, in the book "A short history of Mahua literature", some text ran over the page. The flip book was fixed for phones, the app was renamed to "The Digital Malaysian Chinese Literature Centre" (page title, link preview title, entry-page link and QR poster title), and the public address was redeployed. The address did not change.
+
+Defects, numbered on from section 2:
+
+| # | Defect | Severity | Fix | Re-tested |
+|---|---|---|---|---|
+| 6 | On an upright phone the flip book showed two pages side by side. At 375×812 each page was 167 px wide and the English history text was 7.1 px (Chinese 8.3 px). A phone browser that enlarges text this small pushes it over the page | Major | An upright phone (narrower than 760 px, taller than wide) shows one page at a time: left page, then right page, then the leaf turns. A page whose text still cannot fit scrolls inside the page | Pass: text 12.5 to 18.9 px, 0 pages spilling at four phone sizes |
+| 7 | With the phone's "reduce motion" setting on, text sizes inside the book changed over a few frames after it opened, so the new check for pages that do not fit measured sizes that were not final | Minor | Only the turning leaves animate inside the book | Pass: sizes measured as the book opens equal the sizes 400 ms later |
+| 8 | The page bar under the book ran 7 px past each edge of a 320 px wide screen in English | Minor | The bar is never wider than the screen less 12 px; a long page name wraps | Pass: 6 px clear each side at 320 px and 360 px |
+| 9 | On a phone held sideways the history text was 7.2 to 9.5 px | Minor | On screens up to 520 px tall the history text is at least 12 px and the page scrolls | Pass: 12 px, 0 pages spilling |
+
+The spill itself was not reproduced on the laptop, because its browser does not enlarge small text: at 375×812 the old version showed the 7.1 px text inside the page. The cause in row 6 is the best explanation of the phone report and has not been confirmed on that phone.
+
+Checks at each size, in Chinese and in English: no page of the history book has text past its edge or over its page number unless that page scrolls, the same for all 20 other books, and sizes measured as the book opens are final.
+
+| Screen | Size | Layout | History text (Chinese / English) | Pages spilling | Local | Public address |
+|---|---|---|---|---|---|---|
+| Small phone | 320×568 | one page | 14.4 / 12.5 px | 0 | pass | not run |
+| Small phone | 360×640 | one page | 16.4 / 14.2 px | 0 | pass | not run |
+| Phone, portrait | 375×812 | one page | 17.1 / 14.8 px | 0 | pass | pass (history book, English only) |
+| Large phone | 412×915 | one page | 18.9 / 16.4 px | 0 | pass | not run |
+| Phone, landscape | 667×375 | two pages, pages scroll | 12.0 / 12.0 px | 0 | pass | not run |
+| Phone, landscape | 844×390 | two pages, pages scroll | 12.0 / 12.0 px | 0 | pass | not run |
+| Laptop | 1280×800 | two pages, as before | 14.8 / 12.8 px | 0 | pass | not run |
+
+| Check | Result |
+|---|---|
+| Published files identical to the repository at `cee6240` | Pass: SHA-256 matches for `index.html`, `cultural explorer.html`, `covers.js`, `covers-en.js`, `three.min.js`; each returns HTTP 200 with no login |
+| Short address | `/` returns HTTP 200 and opens the app page |
+| Name | The app page title and link preview title read "The Digital Malaysian Chinese Literature Centre" on the public address |
+| QR code | The code is unchanged, because the address is the same. The poster has the new title. Both images decode to `https://cultural-explorer-roan.vercel.app` |
+| Console errors | None, local and on the public address |
+
+Limits of this round:
+
+- The full suite of the earlier sections (31 or 32 checks per screen) was **not** run again. Only the flip-book checks above were run.
+- Every run was in a browser with "reduce motion" on. The book was not tested again with it off.
+- The brand text at the top left of the app (hidden on phones) and the README heading still say "Cultural Explorer".
+- QR posters printed or put on slides before this update carry the old title.
+
+Still not tested: a real phone, iPhone Safari, WeChat's built-in browser, slow mobile data, and scanning the printed or projected code with a camera. Step 1 of the team checklist in section 5 should now include opening the history book at the end of the corridor and turning through its pages.

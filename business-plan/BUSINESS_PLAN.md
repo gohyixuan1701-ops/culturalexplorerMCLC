@@ -136,19 +136,32 @@ Not included: national-type secondary schools and universities. We could not con
 |---|---|---|---|
 | **Pandai** | Malaysian learning app with syllabus practice questions | RM 30 a month (Premium Lite) and RM 96 a month (Premium) per student in 2022 [S11]; yearly family plans of RM 800 to RM 960 shown in 2026 [S10] | General exam practice. We found no Malaysian Chinese literature content on the pages we read |
 | **DELIMa** | Ministry of Education digital learning platform | Price not stated in the source; 5.3 million users [S7] | A platform for tools and classes, not a literature collection |
-| **Google Arts & Culture** | Online collections from more than 2,000 cultural institutions [S12] | Described as non-commercial and accessible to anyone [S12] | We did not check whether the Centre is on it. No class quiz |
+| **Google Arts & Culture** | Online collections from more than 2,000 cultural institutions [S12] | Described as non-commercial and accessible to anyone [S12] | Look-only. A web search on 14 November 2026 found no partner page for the Centre; this was a search, not a full check of the site. No class quiz |
+| **Scanned 3D tours** (Matterport type) | A realistic walk through a real building, made by scanning it | Not confirmed | Needs a real exhibition room and scanning equipment. Shows the room, not the inside of a book |
+| **Build-your-own virtual galleries** (Artsteps, Kunstmatrix) | A 3D room where anyone can hang pictures | Not confirmed | Made for pictures on walls. No book data, search, language switch or quiz |
+| **Literature museums online** (for example Taiwan's National Museum of Taiwan Literature) | A virtual museum and a 3D game built on its own collection | Not researched | Covers Taiwan literature, not Malaysian Chinese literature. We did not confirm how its virtual museum works today |
+| **Online libraries and catalogues**, including the Centre's own publications page | Lists of books with search; some lend the full e-book | Not researched | A list and a search box. No place to walk through and nothing for a class to do together |
 | **Visiting the Centre in person** | The physical collection in Skudai, Johor [S6] | Travel cost not researched | One location; most schools are far away |
 | **Textbook and teacher only** | The status quo | No added cost | No visual or interactive element |
 
-We looked for prices for Ezhishi, KooBits and Artsteps and could not confirm any, so they are left out.
+We looked for prices for Ezhishi and KooBits and could not confirm any, so they are left out.
+
+The four rows on virtual museums and online libraries were added on 14 November 2026 from web search results. Those pages were not opened one by one (two returned errors), so the rows quote no prices or figures and carry no source tags.
 
 ### Differentiation
 
+A 3D walk-through is not new: virtual museums and gallery builders already offer one. What we found nowhere else is the combination below.
+
+- **A museum where the exhibits open.** A virtual museum lets you look at objects, and an online library gives you a list. Here you walk past a book and then open it.
+- **The same literature in two languages.** One wall shows works with no English translation; the other shows works published in English. The language button switches each translated work between its Chinese and English editions.
+- **No room and no scanning needed.** The gallery is generated from a list of books, where a scanned tour needs a physical exhibition and equipment.
 - **Single subject, done in depth.** The general platforms cover every subject thinly. We cover one collection as a place to visit.
 - **Group use.** The team quiz is designed for one projector and a whole class, where most learning apps assume one student per device.
 - **Price position.** Our proposed price works out at about RM 3.37 per pupil per year. That is 0.9% of one year of Pandai Premium Lite for one student (12 × RM 30 = RM 360 [S11]). It is priced as a small add-on, not a platform.
 
-What would make this wrong: a ministry or Google collection that already includes the Centre's material, or teachers telling us a quiz on book facts is not useful in a lesson.
+Where we are weaker: the product is 3D in a browser, not headset VR; it shows covers, summaries and details, not the full text that an e-library lends; and its graphics are simpler than a scanned tour.
+
+What would make this wrong: a ministry or Google collection that already includes the Centre's material, a virtual museum of Malaysian Chinese literature that our search missed, or teachers telling us a quiz on book facts is not useful in a lesson.
 
 ---
 

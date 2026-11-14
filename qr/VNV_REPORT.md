@@ -162,3 +162,33 @@ Limits of this round:
 - QR posters printed or put on slides before this update carry the old title.
 
 Still not tested: a real phone, iPhone Safari, WeChat's built-in browser, slow mobile data, and scanning the printed or projected code with a camera. Step 1 of the team checklist in section 5 should now include opening the history book at the end of the corridor and turning through its pages.
+
+## Update: mirrored walls, books on the end table, brand name (14 November 2026, working copy after `5ca9b4c`)
+
+These changes are in the working copy only. They are **not committed and not redeployed**: the public address still serves `cee6240`.
+
+| # | Change | Why | Checked |
+|---|---|---|---|
+| 10 | The two walls mirror each other. Right-wall books moved from z = -5.4 - 2.8i to z = -4 - 2.8i, straight across from the left-wall books. Pilasters stand on both walls in the bays between books. The two wall titles ("Centre publications", "In English translation") both hang at z = -1.2 | The first books and the wall titles did not line up across the corridor | Pass: the 10 book positions are identical on both walls; 13 pilaster positions, none at a book; seen from the door at 1024×768 |
+| 11 | On touch screens, of the two books facing each other the View button offers the one on the side you are turned to | With mirrored walls two books are equally far ahead | Pass: turned right gives the right-wall book (3 of 3 trials), turned left the left-wall book (2 of 2); facing straight ahead gives the left-wall book |
+| 12 | The console table at the end wall carries books only: a pile of three, a row of seven standing with one leaning, a pile of two. The two vases and the incense burner are removed | Requested | Pass: seen at the end wall at 1024×768; no vase or burner code remains |
+| 13 | The brand at the top left reads "The Digital Malaysian Chinese Literature Centre". The search bar takes its own row from 1340 px down (was 1180 px); from 900 px down the name wraps onto two lines in place of its subtitle. The README heading, first sentence and demo link carry the same name | Requested; the longer name ran under the search bar (measured at 1200 px) and under the tools (measured at 600 px) | Pass: no overlap with the search bar or the tools and no clipping at 1366, 1341, 1340, 1200, 901, 900, 768 and 561 px, English and Chinese at 561 px; hidden on phones as before |
+
+Regression checks on the working copy, local server:
+
+| Check | Result |
+|---|---|
+| History book on a phone, 375×812, one page at a time | Pass: 9 of 9 pages fit in Chinese (17.1 px) and in English (14.8 px), 0 spilling; the page bar is on screen; 10 steps of the Next button reach the end |
+| History book with all its text enlarged by 30%, 375×812, English | Pass: 9 of 9 pages scroll inside the page, 0 spilling |
+| First book on each wall opens from the corridor, 1024×768 | Pass: left 《跳蚤》 and right "Homecomings" each open their own flip book and details |
+| Minimap, first pair | Pass: the left and right icons pick the two different books |
+| History book on a laptop, 1024×768 | Pass: two pages, 0 spilling |
+| Files loaded | `cultural explorer.html`, `three.min.js`, `covers.js`, `covers-en.js` all HTTP 200 |
+
+Limits of this round:
+
+- The full suite of the earlier sections was **not** run again.
+- The QR images were not regenerated or decoded again: the address is unchanged and so are the two image files.
+- The browser pane used for these checks draws about one frame a second, so walking and page-turn animation were not judged for smoothness.
+- The signboards in the 3D scene still read "Malaysian Chinese Literature Centre". Only the brand at the top left, the page title, the entry link, the QR poster and the README carry the new name.
+- Not tested: a real phone, iPhone Safari, WeChat's built-in browser.

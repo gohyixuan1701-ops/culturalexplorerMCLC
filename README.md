@@ -1,6 +1,6 @@
-# Cultural Explorer — 马华文学馆
+# The Digital Malaysian Chinese Literature Centre — 马华文学馆
 
-Cultural Explorer is a browser-based 3D exhibition of Malaysian Chinese literature. Visitors can walk through a virtual gallery, discover books and their English editions, and explore the history of Mahua literature.
+The Digital Malaysian Chinese Literature Centre is a browser-based 3D exhibition of Malaysian Chinese literature. Visitors can walk through a virtual gallery, discover books and their English editions, and explore the history of Mahua literature.
 
 Built for the **SUC × FeedMe Startup Hackathon 2026**. The repository is named `feedme`.
 
@@ -31,7 +31,7 @@ The flip books present information about each work; they do not contain the full
 
 ## Public demo
 
-[Open Cultural Explorer](https://cultural-explorer-roan.vercel.app/)
+[Open The Digital Malaysian Chinese Literature Centre](https://cultural-explorer-roan.vercel.app/)
 
 The hosted demo is a deployment snapshot and may lag behind `main`. Use the local instructions below to inspect the repository version. QR images for the public address are in `qr/`.
 

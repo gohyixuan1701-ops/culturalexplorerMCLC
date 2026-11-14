@@ -234,7 +234,9 @@
   #catBody li i{flex:none;width:8px;height:8px;border-radius:50%}
   #catBody li small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
   /* ---------- Smaller screens ---------- */
-  @media (max-width:1180px){ #search{top:74px} #toast{top:130px} }          /* search gets its own row */
+  @media (max-width:1340px){ #search{top:74px} #toast{top:130px} }          /* search gets its own row: the brand name is long */
+  /* narrower still: the brand name wraps onto two lines beside the tools, in place of its subtitle */
+  @media (max-width:900px){ .hud-title{max-width:calc(100vw - 264px)} .hud-title b{font-size:14px} .hud-title small{display:none} }
   @media (max-width:760px){
     .hud-title small{display:none} #search kbd,#viewBtn::after{display:none}
     /* two rows: brand on the left and tools on the right, search bar centred underneath */
@@ -256,7 +258,7 @@
 </head>
 <body>
 <canvas id="scene"></canvas>
-<div class="hud-title"><span class="seal-mark" aria-hidden="true">馆</span><div><b>Cultural Explorer</b><small id="sub"></small></div></div>
+<div class="hud-title"><span class="seal-mark" aria-hidden="true">馆</span><div><b>The Digital Malaysian Chinese Literature Centre</b><small id="sub"></small></div></div>
 <div id="tools">
   <button class="tool" id="catBtn"></button>
   <button class="tool" id="langBtn" aria-label="Switch language"></button>
@@ -453,14 +455,14 @@ const TRANSLATED = [
 ];
 
 // The two walls. Left wall: ten Centre publications that have no English translation (change the titles to swap books).
-// Right wall: the ten translated works above. Books are paired off down the corridor, left then right.
+// Right wall: the ten translated works above. The two walls mirror each other: every book faces its partner across the corridor.
 const LOCAL_PICK = ['跳蚤', '等待一棵无花果树', '记忆书册', '青天白日凉飕飕', '即将远行', '小曼诗藏',
   '从婆罗洲到世界华文文学：李永平的文学行旅', '诗路', '褪色', '声声慢：黄荟如作品集 2013-2023'];
 const LOCAL = LOCAL_PICK.map(t => MCLC_BOOKS.find(b => b.title === t)).filter(Boolean);
 const ITEMS = [];
 for (let i = 0; i < Math.max(LOCAL.length, TRANSLATED.length); i++) {
   if (LOCAL[i]) ITEMS.push(Object.assign(LOCAL[i], {side:-1, z:-4 - i * 2.8}));              // left wall
-  if (TRANSLATED[i]) ITEMS.push(Object.assign(TRANSLATED[i], {side:1, z:-5.4 - i * 2.8}));   // right wall, half a step further on
+  if (TRANSLATED[i]) ITEMS.push(Object.assign(TRANSLATED[i], {side:1, z:-4 - i * 2.8}));     // right wall, straight across from it
 }
 ITEMS.sort((a, b) => b.z - a.z);                              // from the door to the far end
 // English names of authors. Only names with a checked source are listed: grade A in the name survey of 2026-11-14,
@@ -472,7 +474,7 @@ const AUTHOR_EN = {
   '锺怡慧':'Chong Yi Hui',
   '张贵兴':'Zhang Guixing', '黎紫书':'Li Zi Shu', '贺淑芳':'Ho Sok Fong', '李永平':"Li Yung-p'ing", '黄锦树':'Ng Kim Chew'
 };
-const SPACING = 1.4;                                          // distance from one book to the next (they alternate walls)
+const SPACING = 1.4;                                          // one bay: a book, then a pilaster, then the next book (the same on both walls)
 
 /* ---------------- Language: 中文 / English ---------------- */
 const GENRE_EN = {'小说集':'Short stories', '诗集':'Poetry', '微型小说':'Flash fiction', '散文集':'Essays',
@@ -861,15 +863,16 @@ add(merge([-1, 1].map(s => [new THREE.PlaneGeometry(corridorLen, .34), at(s * (H
 const ceil = add(new THREE.PlaneGeometry(HALF_W * 2, corridorLen), ceilMat, 0, WALL_H, midZ);
 ceil.rotation.x = Math.PI / 2;
 
-// Bays: a ceiling beam every 1.4 m and a timber pilaster on the wall opposite each book
+// Bays: a ceiling beam every 1.4 m. Books hang in the even bays; in each odd bay a timber pilaster stands on both walls,
+// so the two walls are mirror images and every book is framed by a pilaster on each side.
 const bays = [];
 for (let k = -5; -4 - k * SPACING > LEN_BACK + .6; k++) bays.push([k, -4 - k * SPACING]);
 copies(box(HALF_W * 2, .2, .16), timber, bays.map(([k, z]) => [0, WALL_H - .1, z]));
-const pilX = k => (k % 2 === 0 ? 1 : -1) * (HALF_W - .06);                              // books hang on the other side
-copies(box(.12, WALL_H, .26), timber, bays.map(([k, z]) => [pilX(k), WALL_H / 2, z]));
-copies(box(.16, .24, .32), timber, bays.map(([k, z]) => [pilX(k), .12, z]));            // base
-copies(box(.16, .16, .34), timber, bays.map(([k, z]) => [pilX(k), WALL_H - .32, z]));   // capital
-copies(box(.125, .03, .265), brass, bays.map(([k, z]) => [pilX(k), 2.2, z]));           // brass band
+const pilasters = y => bays.filter(([k]) => k % 2 !== 0).flatMap(([k, z]) => [-1, 1].map(s => [s * (HALF_W - .06), y, z]));
+copies(box(.12, WALL_H, .26), timber, pilasters(WALL_H / 2));
+copies(box(.16, .24, .32), timber, pilasters(.12));            // base
+copies(box(.16, .16, .34), timber, pilasters(WALL_H - .32));   // capital
+copies(box(.125, .03, .265), brass, pilasters(2.2));           // brass band
 // Carved braces (雀替) where every beam meets the wall, on both sides
 const braceShape = new THREE.Shape();
 braceShape.moveTo(0, 0); braceShape.lineTo(.8, 0); braceShape.lineTo(.8, -.05);
@@ -980,23 +983,39 @@ add(new THREE.PlaneGeometry(2.14, 1.28), std({map:inkTex, roughness:.9, envMapIn
   });
   add(new THREE.PlaneGeometry(.42, 1.68), std({map:tex, roughness:.8, envMapIntensity:.2}), s * 1.62, 1.5, LEN_BACK + .045);
 });
-// Console table with two porcelain vases
+// Console table with books on it and nothing else: a pile at each end and a row standing in the middle
 const TZ = LEN_BACK + .3;                                  // the table stands against the end wall
 add(merge([[box(2.2, .06, .44), at(0, .72, TZ)], [box(.07, .06, .44), at(-1.085, .775, TZ)], [box(.07, .06, .44), at(1.085, .775, TZ)],   // top with upturned ends
   [box(2.0, .1, .03), at(0, .64, TZ + .17)], [box(2.0, .1, .03), at(0, .64, TZ - .17)],                                                 // aprons
   ...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([a, b]) => [box(.06, .69, .06), at(a * .98, .345, TZ + b * .16)]),                         // legs
   [box(.04, .05, .32), at(-.98, .16, TZ)], [box(.04, .05, .32), at(.98, .16, TZ)], [box(1.96, .04, .04), at(0, .16, TZ)]]), timber, 0, 0, 0);   // stretchers
-add(merge(['mclc', 'translated', 'wenchuang'].map((k, n) => [box(.3 - n * .02, .042, .21 - n * .01),                                    // a pile of three books
-  at(-.3, .771 + n * .042, TZ + .01, 0, [.12, -.16, .3][n]), [], undefined, C(TYPES[k].color).multiplyScalar(.75)])), paintMat, 0, 0, 0);
-add(merge([[new THREE.LatheGeometry([[.001, .777], [.05, .779], [.084, .805], [.092, .842], [.079, .868], [.089, .882], [.07, .886], [.001, .866]]   // incense burner
-    .map(([r, y]) => new THREE.Vector2(r, y)), 18), at(.3, 0, TZ)],
-  ...[0, 1, 2].map(k => [new THREE.CylinderGeometry(.013, .008, .03, 6), at(.3 + Math.sin(k * 2.094) * .05, .764, TZ + Math.cos(k * 2.094) * .05)])]), brass, 0, 0, 0);
-const vaseGeo = new THREE.LatheGeometry([[.001, 0], [.07, 0], [.085, .03], [.12, .14], [.125, .2], [.1, .28], [.055, .34], [.045, .38], [.065, .42], [.06, .425]]
-  .map(([r, y]) => new THREE.Vector2(r, y)), 28);
-[[-.75, 0xe9eef0], [.75, 0x9fc4ad]].forEach(([x, color]) => {
-  const v = add(vaseGeo, std({color, roughness:.14, envMapIntensity:1.3, side:THREE.DoubleSide}), x, .75, LEN_BACK + .3);
-  const sh = add(new THREE.PlaneGeometry(.5, .5), new THREE.MeshBasicMaterial({map:glowTex, color:0x000000, transparent:true, opacity:.6, depthWrite:false}),
-    x, .752, LEN_BACK + .3); sh.rotation.x = -Math.PI / 2; v.renderOrder = 1;
+// A closed book made of four boxes: two boards, the spine and the page block. Lying flat it is w wide (spine at -x), t thick
+// and d deep; m puts it in the room.
+const TOP_Y = .75, BOARD = .006, PAPER = C(0xe6dcc4);
+const tableBook = (w, t, d, hex, m) => { const c = C(hex).multiplyScalar(.75); return [
+  [box(w, BOARD, d), at(0, t / 2 - BOARD / 2, 0), c], [box(w, BOARD, d), at(0, BOARD / 2 - t / 2, 0), c],
+  [box(BOARD, t, d), at(BOARD / 2 - w / 2, 0, 0), c], [box(w - .014, t - BOARD * 2, d - .014), at(.001, 0, 0), PAPER]
+].map(([geo, local, colour]) => [geo, m.clone().multiply(local), [], undefined, colour]); };
+// a pile lying flat: books = [[width, thickness, depth, colour, turn], ...] from the bottom up
+const pile = (x, books) => { let y = TOP_Y; return books.flatMap(([w, t, d, hex, turn]) => {
+  y += t; return tableBook(w, t, d, hex, at(x, y - t / 2, TZ + .01, 0, turn)); }); };
+// a book standing with its spine to the room: thickness runs along the table, depth becomes its height
+const STAND = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0));
+const ROW = [[.044, .29, '#8e2418'], [.034, .265, '#2f4f86'], [.05, .31, '#2f6b5a'], [.038, .28, '#6b4a1e'], [.046, .3, '#5b3f7d'], [.032, .26, '#a3271c'], [.042, .31, '#26374f']];
+let rowX = -ROW.reduce((sum, b) => sum + b[0], 0) / 2 - .02;   // the row is centred on the table (with the leaning book at its end)
+const row = ROW.flatMap(([t, h, hex]) => { rowX += t; return tableBook(.19, t, h, hex, at(rowX - t / 2, TOP_Y + h / 2, TZ - .03).multiply(STAND)); });
+const LEAN_T = .036, LEAN_H = .265, LEAN_A = .26;             // the last book leans against the row
+row.push(...tableBook(.19, LEAN_T, LEAN_H, '#2f6b5a', at(rowX + LEAN_T / 2 * Math.cos(LEAN_A) + LEAN_H / 2 * Math.sin(LEAN_A),
+  TOP_Y + LEAN_H / 2 * Math.cos(LEAN_A) - LEAN_T / 2 * Math.sin(LEAN_A), TZ - .03, 0, 0, LEAN_A).multiply(STAND)));
+add(merge([
+  ...pile(-.7, [[.36, .05, .25, TYPES.mclc.color, .12], [.34, .044, .24, TYPES.translated.color, -.16], [.31, .048, .23, TYPES.wenchuang.color, .3]]),
+  ...row,
+  ...pile(.7, [[.37, .054, .255, TYPES.academic.color, -.1], [.32, .042, .23, '#6b4a1e', .22]])
+]), paintMat, 0, 0, 0);
+// soft shadows on the table top under the two piles and the row
+const bookShade = new THREE.MeshBasicMaterial({map:glowTex, color:0x000000, transparent:true, opacity:.5, depthWrite:false});
+[[-.7, .62], [0, .7], [.7, .62]].forEach(([x, w]) => {
+  const sh = add(new THREE.PlaneGeometry(w, .42), bookShade, x, TOP_Y + .002, TZ); sh.rotation.x = -Math.PI / 2;
 });
 
 /* ---------------- Entrance: sky, plaza, facade, canopy roof, double door, signboard ---------------- */
@@ -1391,8 +1410,8 @@ function paintExhibit(i){
   wake();                                                    // if the loop is asleep (a box covers the scene), draw this change once
 }
 // Wall titles by the door, in both languages: which books hang on which wall
-// (each sits midway between two wall pilasters, which stand at different places on the two walls)
-[[-1, -1.2, TYPES.mclc.label, 'Centre publications'], [1, -2.6, TYPES.translated.label, 'In English translation']].forEach(([side, z, zh, en]) => {
+// (the two face each other across the corridor, each midway between the first two pilasters of its wall)
+[[-1, -1.2, TYPES.mclc.label, 'Centre publications'], [1, -1.2, TYPES.translated.label, 'In English translation']].forEach(([side, z, zh, en]) => {
   const grp = new THREE.Group(); grp.position.set(side * HALF_W, 0, z); grp.rotation.y = -side * Math.PI / 2;
   add(box(1.9, .78, .05), timber, 0, 2.05, .025, grp);
   add(new THREE.PlaneGeometry(1.78, .66), std({roughness:.7, envMapIntensity:.15, map:canvasTex(712, 264, (g, w, h) => {
@@ -2302,11 +2321,11 @@ function tick(now){
     const cursor = over >= 0 || onSign ? 'pointer' : '';         // every book and the signboard can be clicked
     if (cursor !== cursorNow) canvas.style.cursor = cursorNow = cursor;
   } else {
-    // touch: the book closest to ~1.5 m ahead of you, from either side
-    let bestD = Infinity;
+    // touch: the book closest to ~1.5 m ahead of you; of the pair facing each other there, the one on the side you are turned to
+    let bestD = Infinity; const turned = -Math.sin(yaw);        // + = turned to the right wall
     exhibits.forEach((ex, i) => {
       if (!inRange(ex.item)) return;
-      const d = Math.abs((camera.position.z - ex.item.z) - 1.5);
+      const d = Math.abs((camera.position.z - ex.item.z) - 1.5) - ex.item.side * turned * .01;
       if (d < bestD) { bestD = d; best = i; }
     });
     // ... but a book you are looking straight at (within about 30 degrees, up to 4 m away) wins

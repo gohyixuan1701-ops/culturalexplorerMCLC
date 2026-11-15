@@ -1,129 +1,14 @@
-== 1. MARKET ==
-SJKC pupils 2025 = 490,514 - 26,526 = 463,988
-SJKC enrolment change 2024 to 2025 = -5.4%
-Average pupils per SJKC = 356
-SJKCs with 150+ pupils (payable tier) = floor(1303 x 0.5) = 651
-Malay pupils in SJKC = 41,133 (source states 9.01% of enrolment)
-SPM Chinese candidates 2017 to 2025 = 60,521 to 46,046 = -23.9%
-[U] Average students per independent school = 1302
-Implied price per pupil per year: SJKC 3.37, independent 2.77 (RM)
-Pandai Premium Lite for one student for a year = 12 x 30 = RM 360; our SJKC price per pupil is 0.9% of that
+CULTURAL EXPLORER — MEMBERSHIP MODEL
+Audience: Chinese studies and Malaysian Chinese literature research users.
+Free membership: free-level content only.
+Paid membership: all content offered on the platform.
 
-TAM (every school pays): SJKC RM 1,563,600 + independent [U] RM 226,800 = RM 1,790,400 per year
-SAM (SJKC with 150+ pupils, plus independent): RM 781,200 + [U] RM 226,800 = RM 1,008,000 per year
-SAM using sourced school counts only (SJKC): RM 781,200 per year
-Top-down cross-check [U rate 4.4]: Malaysia edtech 2025 = RM 1,320,000,000 to RM 5,188,480,000
-SAM as share of edtech market = 0.019% to 0.076%
+No numeric forecast: membership price, paid member-periods and costs are not approved inputs.
+The previous school-licence market and revenue scenarios are retired.
 
-== 2. TWELVE-MONTH PROJECTION (cash basis) ==
-
--- conservative: 2 independent + 3 SJKC paying by month 12, 0 sponsored room(s) --
-  M 1  revenue      RM 0  cost RM 1,408  cumulative  RM -1,408
-  M 2  revenue      RM 0  cost RM 1,408  cumulative  RM -2,816
-  M 3  revenue      RM 0  cost RM 1,408  cumulative  RM -4,224
-  M 4  revenue      RM 0  cost   RM 308  cumulative  RM -4,532
-  M 5  revenue  RM 1,200  cost   RM 308  cumulative  RM -3,640
-  M 6  revenue  RM 3,600  cost   RM 308  cumulative    RM -348
-  M 7  revenue      RM 0  cost   RM 308  cumulative    RM -656
-  M 8  revenue  RM 1,200  cost   RM 308  cumulative     RM 236
-  M 9  revenue      RM 0  cost   RM 308  cumulative     RM -72
-  M10  revenue  RM 3,600  cost   RM 308  cumulative   RM 3,220
-  M11  revenue  RM 1,200  cost   RM 308  cumulative   RM 4,112
-  M12  revenue      RM 0  cost   RM 308  cumulative   RM 3,804
-  Licence revenue RM 10,800 + sponsor revenue RM 0 = RM 10,800
-  School visits needed at 20% conversion = 25
-  Cash costs RM 6,996; net RM 3,804; lowest cumulative cash RM -4,532
-  Share of SAM schools signed = 0.70%
-  Sensitivity, if 5 members drew RM 500 a month: stipends RM 30,000, net RM -26,196
-
--- base: 5 independent + 10 SJKC paying by month 12, 1 sponsored room(s) --
-  M 1  revenue      RM 0  cost RM 1,958  cumulative  RM -1,958
-  M 2  revenue      RM 0  cost RM 1,958  cumulative  RM -3,916
-  M 3  revenue      RM 0  cost RM 1,958  cumulative  RM -5,874
-  M 4  revenue  RM 4,800  cost   RM 858  cumulative  RM -1,932
-  M 5  revenue  RM 1,200  cost   RM 858  cumulative  RM -1,590
-  M 6  revenue  RM 4,800  cost   RM 858  cumulative   RM 2,352
-  M 7  revenue  RM 1,200  cost   RM 858  cumulative   RM 2,694
-  M 8  revenue RM 11,000  cost   RM 858  cumulative  RM 12,836
-  M 9  revenue  RM 1,200  cost   RM 858  cumulative  RM 13,178
-  M10  revenue  RM 4,800  cost   RM 858  cumulative  RM 17,120
-  M11  revenue  RM 1,200  cost   RM 858  cumulative  RM 17,462
-  M12  revenue  RM 4,800  cost   RM 858  cumulative  RM 21,404
-  Licence revenue RM 30,000 + sponsor revenue RM 5,000 = RM 35,000
-  School visits needed at 20% conversion = 75
-  Cash costs RM 13,596; net RM 21,404; lowest cumulative cash RM -5,874
-  Share of SAM schools signed = 2.10%
-  Sensitivity, if 5 members drew RM 500 a month: stipends RM 30,000, net RM -8,596
-
--- optimistic: 10 independent + 25 SJKC paying by month 12, 2 sponsored room(s) --
-  M 1  revenue      RM 0  cost RM 3,058  cumulative  RM -3,058
-  M 2  revenue      RM 0  cost RM 3,058  cumulative  RM -6,116
-  M 3  revenue      RM 0  cost RM 3,058  cumulative  RM -9,174
-  M 4  revenue  RM 7,200  cost RM 1,958  cumulative  RM -3,932
-  M 5  revenue  RM 7,200  cost RM 1,958  cumulative   RM 1,310
-  M 6  revenue RM 11,000  cost RM 1,958  cumulative  RM 10,352
-  M 7  revenue  RM 7,200  cost RM 1,958  cumulative  RM 15,594
-  M 8  revenue RM 10,800  cost RM 1,958  cumulative  RM 24,436
-  M 9  revenue  RM 7,200  cost RM 1,958  cumulative  RM 29,678
-  M10  revenue RM 11,000  cost RM 1,958  cumulative  RM 38,720
-  M11  revenue  RM 7,200  cost RM 1,958  cumulative  RM 43,962
-  M12  revenue  RM 7,200  cost RM 1,958  cumulative  RM 49,204
-  Licence revenue RM 66,000 + sponsor revenue RM 10,000 = RM 76,000
-  School visits needed at 20% conversion = 175
-  Cash costs RM 26,796; net RM 49,204; lowest cumulative cash RM -9,174
-  Share of SAM schools signed = 4.90%
-  Sensitivity, if 5 members drew RM 500 a month: stipends RM 30,000, net RM 19,204
-
-== 3. UNIT ECONOMICS ==
-Cost to sign one school = visit cost / conversion x (1 + contingency) = 120 / 0.2 x 1.1 = RM 660
-First-year margin per SJKC = RM 540 (45%); per independent school = RM 2,940 (82%)
-Fixed cash costs for the year (hosting + content, with contingency) = RM 3,696
-Break-even, SJKC only = 7 schools; at the base-case mix (blended price RM 2,000) = 3 schools
-Break-even with stipends of RM 30,000 at the base-case mix = 26 schools
-Conversion sensitivity (cost to sign one school): 5% -> RM 2,640, 10% -> RM 1,320, 20% -> RM 660, 30% -> RM 440
-
-== 4. MACHINE-READABLE SUMMARY ==
-{
- "sjkcPupils": 463988,
- "sjkcPayable": 651,
- "tam": 1790400,
- "sam": 1008000,
- "samSjkc": 781200,
- "results": {
-  "conservative": {
-   "schools": 5,
-   "visits": 25,
-   "licence": 10800,
-   "rooms": 0,
-   "revenue": 10800,
-   "cost": 6996,
-   "net": 3804,
-   "low": -4532,
-   "stipends": 30000
-  },
-  "base": {
-   "schools": 15,
-   "visits": 75,
-   "licence": 30000,
-   "rooms": 5000,
-   "revenue": 35000,
-   "cost": 13596.000000000002,
-   "net": 21404,
-   "low": -5874.000000000001,
-   "stipends": 30000
-  },
-  "optimistic": {
-   "schools": 35,
-   "visits": 175,
-   "licence": 66000,
-   "rooms": 10000,
-   "revenue": 76000,
-   "cost": 26796.000000000004,
-   "net": 49204,
-   "low": -9174.000000000002,
-   "stipends": 30000
-  }
- },
- "cac": 660,
- "fixed": 3696.0000000000005
-}
+Optional scenario: node financials.js scenario.json
+Required numeric inputs: annualPriceRM, paidMemberYears, fixedCostsRM, variableCostPerMemberYearRM, paymentFeeRate
+paidMemberYears is the sum of paid service periods expressed in years, not a year-end headcount.
+Revenue = annualPriceRM x paidMemberYears.
+Costs = fixedCostsRM + variableCostPerMemberYearRM x paidMemberYears + revenue x paymentFeeRate.
+This is a scenario calculation, not actual sales, TAM/SAM/SOM, subscriber growth, cash flow or tax advice.

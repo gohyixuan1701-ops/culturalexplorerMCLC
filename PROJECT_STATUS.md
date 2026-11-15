@@ -11,6 +11,12 @@ This status separates the standalone gallery from the catalogue and preserves th
 
 The standalone UI currently says “The Digital Malaysian Chinese Literature Centre”. The catalogue wordmark is “Malaysian Chinese Literature Center”, with bold, seal-coloured M/C/L/C initials and `by Cultural Explorer`. These are separate runtime snapshots.
 
+## Audience and membership direction
+
+For Chinese studies and Malaysian Chinese literature research: undergraduates, lecturers, postgraduates, scholars and other users who need relevant documents/references. Free members may use only free-level content; paid members may use all content offered on the platform. The exact free selection, price and billing terms remain undecided.
+
+This describes the proposed service. Both current demos remain public discovery prototypes, with no account, payment, membership enforcement or full-text delivery. See [BUSINESS_MODEL.md](BUSINESS_MODEL.md) and [survey evidence](business-plan/SURVEY_EVIDENCE.md).
+
 ## Implemented behavior
 
 | Capability | Standalone gallery | Catalogue |
@@ -28,9 +34,9 @@ The standalone UI currently says “The Digital Malaysian Chinese Literature Cen
 | First-visit guide | Included | Available in the linked gallery |
 | Class quiz | Removed | Not included |
 | AI questions | Future-feature label only | No connected AI service |
-| Teacher tools, subscriptions, payments, lending, saved class results, Malay | Not implemented | Not implemented |
+| Membership accounts/enforcement, payments, citation export, lending, cross-device research records, Malay | Not implemented | Not implemented |
 
-Counts are bibliographic records/editions, not a claim of 38 unique literary works. The financial model's school licences and sponsored rooms remain proposals.
+Counts are bibliographic records/editions, not a claim of 38 unique literary works. The current commercial direction is individual free/paid membership; earlier school-licence market and revenue scenarios are retired.
 
 ## Checks performed for this documentation refresh
 
@@ -57,4 +63,4 @@ No new browser session, rendered-layout measurement, device-performance test, re
 2. Check globe-menu selection, all feature pages at equal dimensions, long book details, author sources, and bookmarks after reload.
 3. Test the standalone gallery's walking and phone flip-book controls, catalogue gallery links, and redirect from old gallery bookmarks.
 4. Scan the existing QR images from a real print/projected slide and test venue Wi-Fi/mobile data.
-5. Obtain content permissions and collect customer/pilot evidence before claiming institutional support, classroom effectiveness, or commercial traction.
+5. Obtain content permissions and collect customer/pilot evidence before claiming institutional support, research effectiveness, or commercial traction.

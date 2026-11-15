@@ -15,6 +15,23 @@ All catalogue “3D gallery” buttons open the standalone Vercel gallery above.
 
 **Source status:** the catalogue and documentation are included in `main` following [PR #3](https://github.com/gohyixuan1701-ops/culturalexplorerMCLC/pull/3). This link update builds on `main` at `3b685cc48f2c4a289a2e8379f60fb5bfbeb2ae07`; the standalone gallery runtime is unchanged.
 
+## Who it is for
+
+**People engaged in Chinese studies and Malaysian Chinese literature research, including Chinese Studies undergraduates, lecturers, postgraduate students, scholars, and anyone who needs relevant literary documents and references for research.**
+
+服务对象为中文学习与研究群体，包括中文系学生、讲师、研究生、学者，以及需要查找马华文学文献资料的人。
+
+## Membership direction
+
+| Membership | Access |
+| --- | --- |
+| Free | Free-level content only |
+| Paid | All content offered on the platform |
+
+The exact free collection, price and billing terms remain to be defined. This is the planned business model: current demos are public prototypes without accounts, payment or enforced membership permissions. They currently provide summaries and metadata, not full literary texts.
+
+See [BUSINESS_MODEL.md](BUSINESS_MODEL.md), the [detailed plan](business-plan/BUSINESS_PLAN.md), and [survey evidence and limits](business-plan/SURVEY_EVIDENCE.md).
+
 ## What is implemented
 
 ### Standalone gallery
@@ -32,7 +49,7 @@ All catalogue “3D gallery” buttons open the standalone Vercel gallery above.
 - All **38 records**, with cover images, grid/list layouts, search, genre/collection/edition filters, sorting, and pagination.
 - A globe language selector offering 中文 and EN, with browser-local language preference.
 - **28 author cards**. Seven authors have concise sourced profiles; other cards show clearly labelled catalogue edition years and genres. Source links are available from the cards.
-- A browser-local saved bookshelf. These are personal bookmarks, not borrowing records or saved classroom results.
+- A browser-local saved bookshelf. These are personal bookmarks, not borrowing records or cross-device research records.
 - A manual three-page feature board: collection overview, 3D visit, and English translations. Buttons, position dots, arrow keys, and touch swipes switch pages. The layout calculates a shared height across the pages and languages.
 - Larger readable type and touch targets; the full formal wordmark uses bold, seal-coloured M/C/L/C initials; the credit reads `by Cultural Explorer`.
 - Book-detail and source dialogs, direct links to the standalone gallery, and bilingual FeedMe Hackathon/mock-up terms in the footer.
@@ -136,7 +153,7 @@ Pushing to GitHub does not automatically publish either demo:
 
 ## Limits and supporting documents
 
-Neither experience implements a class quiz, full-text reading, Malay, accounts, lending, payments, teacher dashboards, or saved class results. The standalone AI question area is a label with no connected service. Its author introductions remain notices rather than biographies; the catalogue has the sourced profiles described above.
+Neither experience implements membership accounts, free/paid access enforcement, payments, full-text reading, citation export, lending, Malay or a class quiz. The standalone AI question area is a label with no connected service. Its author introductions remain notices rather than biographies; the catalogue has the sourced profiles described above.
 
 The latest catalogue layout and shared-height behavior still require browser geometry and real-device checks. Historical browser reports apply only to their named snapshots. Public HTTP access and matching file hashes do not prove visual correctness.
 
@@ -146,7 +163,7 @@ The latest catalogue layout and shared-height behavior still require browser geo
 - [Development notes](EVALUATION.md): current gaps and labelled historical rounds.
 - [Judging criteria](JUDGING_CRITERIA.md): unchanged hackathon scoring rubric.
 
-Prices, adoption rates, and forecasts are proposals. The repository does not establish completed customer interviews, school pilots, paid users, or formal partnerships.
+Prices, adoption rates, and forecasts are proposals. The repository does not establish a verified research-user population, completed research-use pilots, paid members, or formal partnerships. Existing survey-chart feedback is documented separately from actual paid adoption.
 
 ## Sources and rights
 

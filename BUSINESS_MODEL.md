@@ -1,46 +1,50 @@
-# Cultural Explorer: proposed business model
+# Cultural Explorer: membership business model
 
-Team **Cultural Explorer** · SUC × FeedMe Startup Hackathon 2026
+Malaysian Chinese Literature Center (马华文学馆) · Updated 15 November 2026 (Malaysia).
 
-This is the short summary of [the detailed business plan](business-plan/BUSINESS_PLAN.md). It replaces the earlier three-year sketch. [PROJECT_STATUS.md](PROJECT_STATUS.md) is the current implementation reference; the market research remains the plan's original research snapshot.
+## Who it is for
 
-## Current prototype and proposed product
+**People engaged in Chinese studies and Malaysian Chinese literature research, including Chinese Studies undergraduates, lecturers, postgraduate students, scholars, and anyone who needs relevant literary documents and references for research.**
 
-The public prototype offers a 20-exhibit 3D gallery and a separate 38-record catalogue. It provides covers, summaries, publication/translation information, discovery controls, and a catalogue bookshelf. It does not provide complete book texts, a class quiz, teacher dashboards, saved class results, subscriptions or payments.
+我们的主要服务对象是中文学习与研究群体，包括中文系学生、讲师、研究生、学者，以及需要查找马华文学文献和资料的人。
 
-The **proposed** commercial model is a free discovery experience, with schools paying for future lesson packs and teacher tools, and sponsors paying for future commissioned exhibitions. These paid features are not implemented or validated with customers.
+This positioning replaces the previous primary/secondary-school customer model. Cultural interest can bring people into the free tier; academic study and research are the central use cases.
 
-## Customers and pricing assumptions
+## Membership offer
 
-| Segment / offer | Proposal | Evidence boundary |
+| Tier | Content entitlement | Definition |
 | --- | --- | --- |
-| Chinese independent secondary schools | First outreach target; RM 3,600 per school/year | School count and buyer demand remain assumptions as labelled in the detailed plan |
-| SJKCs with sufficient enrolment | RM 1,200 per school/year | Pricing and willingness to pay are untested |
-| Small-school/community access | Free or sponsored access | Sponsorship agreements are not established |
-| Commissioned exhibition | RM 5,000 per room in the calculator | Future offer, not a shipped product or signed sale |
+| Free membership | Free-level content only | A selected introductory collection and samples; the exact free collection must be defined before launch |
+| Paid membership | All content offered on the platform | Access to the full platform collection and research materials included in membership |
 
-Partners named in the plan are intended collaborators, not confirmed partnerships. No customer interviews, school pilots, paid customers or written content-permission records are established by the repository.
+There is one paid content tier in this proposal. Paid access means all content actually offered by the platform; it does not claim that complete books, unrestricted downloads, or third-party databases are already available. Publication permissions and any use conditions still apply.
 
-## Financial model
+The membership price, billing interval, free-content boundary, renewal rules and cancellation policy have not been fixed by the team. Survey price preferences are evidence to investigate, not an approved selling price.
 
-The calculator in [business-plan/financials.js](business-plan/financials.js) and [recorded output](business-plan/financials_output.txt) are the source of financial arithmetic. Run `node financials.js` from `business-plan/`.
+## Current prototype and planned service
 
-| Twelve-month scenario | Revenue | Cash costs | Net before student-team stipends |
-| --- | ---: | ---: | ---: |
-| Conservative | RM 10,800 | RM 6,996 | RM 3,804 |
-| Base | RM 35,000 | RM 13,596 | RM 21,404 |
-| Optimistic | RM 76,000 | RM 26,796 | RM 49,204 |
+The current public demos offer a 38-record catalogue, a 20-exhibit gallery, summaries, edition metadata, source links, author information and a browser-local bookshelf. All catalogue gallery links use the [standalone gallery](https://cultural-explorer-roan.vercel.app/).
 
-These are projections, not actual revenue. With the model's additional RM 30,000 annual stipend assumption, the base-case result becomes **RM -8,596**.
+The demos do **not** implement membership accounts, payment, server-enforced free/paid permissions, full-text delivery or subscription management. The tier table describes the planned service. A static demo and a visible “paid” label are not access enforcement.
 
-The calculator's full assumed SAM is RM 1,008,000/year; the SJKC-only calculation is RM 781,200/year. Do not describe the full SAM as independently verified: the detailed plan labels the independent-school inputs and adoption/conversion rates as assumptions. Grants are not included in projected revenue.
+Research-oriented candidates include permission-cleared excerpts/documents, fuller author/context records and citation assistance. These are roadmap items to test, not promises of shipped functionality.
 
-## Validation before commercial claims
+## Evidence and pricing
 
-1. Interview teachers and school decision-makers about preparation time, current teaching methods, device access, and purchasing authority.
-2. Observe a trial using the currently available gallery/catalogue. A quiz-based pilot first requires an implemented and tested quiz; it is not available now.
-3. Obtain written rights/permission for intended cover, excerpt and literary-content use.
-4. Validate pricing and compare the proposed lesson offer with confirmed alternatives.
-5. Record measured pilot/adoption results before revising forecasts or claiming educational impact.
+The existing pitch charts report 75% requesting excerpts, 50% “probably subscribe”, and 50% selecting RM30–60/year in an individual-student price question. See [SURVEY_EVIDENCE.md](business-plan/SURVEY_EVIDENCE.md) for all chart values and their source limits. These figures were read from existing slides, not verified against current Google Forms responses. They do not establish actual payment, renewal or lecturer/postgraduate pricing.
 
-See [the detailed plan](business-plan/BUSINESS_PLAN.md) for market sources, costs, scenarios, risks and roadmap, and [its verification report](business-plan/VNV_REPORT.md) for the original source-check scope. External source pages were not revalidated in this documentation refresh.
+No numeric TAM/SAM/SOM or revenue forecast is approved for this revised audience. The earlier school-count estimates, school licence prices and sponsored-room revenue scenarios are retired. Current revenue logic is:
+
+> Membership revenue = realised price × paid member-periods.
+
+The [calculator](business-plan/financials.js) requires explicit membership and cost inputs for a scenario. Its no-input output intentionally makes no revenue forecast.
+
+## Validation and delivery
+
+1. Reconcile the survey questions, denominators, respondent roles and collection dates with the original responses, without editing the form.
+2. Observe title-finding, reference-checking and document-discovery tasks with undergraduates, lecturers and postgraduates.
+3. Define which materials are free and secure permission for the complete paid collection.
+4. Test individual membership pricing, repeat usage, conversion and renewal intent across those groups.
+5. Implement accounts, payment verification and server-enforced entitlements before selling access.
+
+See the [detailed business plan](business-plan/BUSINESS_PLAN.md), [project status](PROJECT_STATUS.md) and [verification report](business-plan/VNV_REPORT.md).
